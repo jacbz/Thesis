@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 
 namespace Thesis
 {
@@ -13,10 +7,14 @@ namespace Thesis
     /// </summary>
     public partial class App : Application
     {
+        public static UserSettings Settings;
+        public static readonly string AppName = "Thesis";
+
         public App()
         {
             //Register Syncfusion license
             Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("***REMOVED***");
+            Settings = UserSettings.Read();
         }
     }
 }
