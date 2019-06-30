@@ -54,7 +54,7 @@ namespace Thesis
         }
 
         public Vertex(IRange cell)
-        {
+        {           
             Value = cell.Value;
             Formula = cell.Formula;
             Type = GetCellType(cell);
@@ -66,7 +66,8 @@ namespace Thesis
 
         public CellType GetCellType(IRange cell)
         {
-            if (cell.HasFormula) return CellType.Formula;
+            if (cell.HasFormula)
+                return CellType.Formula;
             if (cell.HasBoolean) return CellType.Bool;
             if (cell.HasNumber) return CellType.Number;
             if (cell.HasDateTime) return CellType.Date;

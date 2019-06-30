@@ -1,4 +1,4 @@
-﻿using ExcelFormulaParser;
+﻿using Irony.Parsing;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
@@ -21,40 +21,40 @@ namespace Thesis
 
             foreach(var cell in cells.Cells)
             {
-                if (cell.Value == "") continue;
+                //if (cell.Value == "") continue;
                 var vertex = new Vertex(cell);
 
                 VerticesDict.Add(vertex.Address, vertex);
                 Vertices.Add(vertex);
             }
+            MainWindow.Log(LogItemType.Info, $"Adding {Vertices.Count} vertices...");
 
             var allAddresses = Vertices.Select(x => x.Address);
 
             foreach (var vertix in Vertices)
             {
                 if (vertix.Type != CellType.Formula) continue;
-                var formula = vertix.Formula.Replace(",", ".");
+                var formula = vertix.Formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
+
+                // TODO: create "external" vertices (SheetNameQuotedToken etc)
+                //
 
                 try
                 {
-                    ExcelFormula excelFormula = new ExcelFormula(formula);
-
-                    foreach (var formulaToken in excelFormula)
+                    var parseTree = XLParser.ExcelFormulaParser.Parse(formula);
+                    foreach(var cell in GetListOfReferencedCells(parseTree))
                     {
-                        if (formulaToken.Type != ExcelFormulaTokenType.Operand) continue;
-                        if (allAddresses.Contains(formulaToken.Value))
-                        {
-                            Edges.Add(new Edge(vertix, VerticesDict[formulaToken.Value], ""));
-                        }
+                        Edges.Add(new Edge(vertix, VerticesDict[cell], ""));
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, App.AppName);
+                    MainWindow.Log(LogItemType.Error, $"Error processing formula in {vertix.Address} ({formula}): {ex.Message}");
                     continue;
                 }
 
             }
+            MainWindow.Log(LogItemType.Info, $"Adding {Edges.Count} edges...");
 
             Vertices.RemoveAll(x => x.Parents.Count == 0 && x.Children.Count == 0);
 
@@ -65,6 +65,22 @@ namespace Thesis
             }
             Vertex root = new Vertex("root");
             Vertices.Add(root);
+        }
+
+        // recursively gets list of referenced cells from parse tree
+        private IEnumerable<string> GetListOfReferencedCells(ParseTreeNode parseTree)
+        {
+            if (parseTree.ChildNodes.Count == 0 && parseTree.Term.Name == "CellToken")
+            {
+                yield return parseTree.Token.Text;
+            }
+            foreach(var child in parseTree.ChildNodes)
+            {
+                foreach(var cell in GetListOfReferencedCells(child))
+                {
+                    yield return cell;
+                }
+            }
         }
     }
 }

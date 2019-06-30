@@ -3,13 +3,72 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Thesis"
              StartupUri="MainWindow.xaml"
+        xmlns:fa5="http://schemas.fontawesome.com/icons/"
              xmlns:syncfusion="http://schemas.syncfusion.com/wpf">
     <Application.Resources>
+
         <ResourceDictionary>
+            <Style TargetType="fa5:SvgAwesome">
+                <Setter Property="Margin" Value="0,0,6,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="Width" Value="16" />
+                <Setter Property="Height" Value="16" />
+            </Style>
+
+            <Style TargetType="syncfusion:Node" BasedOn="{StaticResource NodeBindingStyle}">
+                <Setter Property="ContentTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <Border Width="40" Height="40" BorderThickness="1" Background="{Binding Path=Color}" 
+                        CornerRadius="6" BorderBrush="#5e5e5e">
+                                <Grid>
+                                    <TextBlock Text="{Binding Address}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="syncfusion:Connector" BasedOn="{StaticResource ConnectorBindingStyle}">
+                <Setter Property="ConnectorGeometryStyle">
+                    <Setter.Value>
+                        <Style TargetType="Path">
+                            <Setter Property="Stroke" Value="Black"  />
+                            <Setter Property="StrokeThickness" Value="1" />
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="TargetDecorator" Value="M0,0 L10,5 L0,10 L 0,0"></Setter>
+                <Setter Property="TargetDecoratorStyle">
+                    <Setter.Value>
+                        <Style TargetType="Path">
+                            <Setter Property="Stretch" Value="Fill"></Setter>
+                            <Setter Property="Width" Value="7.5"></Setter>
+                            <Setter Property="Height" Value="7.5"></Setter>
+                            <Setter Property="Stroke" Value="Black"/>
+                            <Setter Property="Fill" Value="Black"/>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="CornerRadius" Value="5"/>
+            </Style>
+            
+            <SolidColorBrush x:Key="InfoColor" Color="#00529B"/>
+            <SolidColorBrush x:Key="InfoBackground" Color="#BDE5F8"/>
+            <SolidColorBrush x:Key="SuccessColor" Color="#4F8A10"/>
+            <SolidColorBrush x:Key="SuccessBackground" Color="#DFF2BF"/>
+            <SolidColorBrush x:Key="WarningColor" Color="#9F6000"/>
+            <SolidColorBrush x:Key="WarningBackground" Color="#FEEFB3"/>
+            <SolidColorBrush x:Key="ErrorColor" Color="#D8000C"/>
+            <SolidColorBrush x:Key="ErrorBackground" Color="#FFD2D2"/>
+
+
             <ResourceDictionary.MergedDictionaries>
                 <!-- MahApps.Metro resource dictionaries. Make sure that all file names are Case Sensitive! -->
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatButton.xaml" />
                 <!-- Accent and AppTheme setting -->
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
                 <ResourceDictionary Source="/Syncfusion.SfDiagram.Wpf;component/Resources/BasicShapes.xaml" />

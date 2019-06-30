@@ -5,50 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Thesis"
         xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
+        xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         mc:Ignorable="d"
-        Title="Thesis" Height="864" Width="1536" Icon="Resources/icon.ico">
-    <Window.Resources>
-        <Style TargetType="syncfusion:Node" BasedOn="{StaticResource NodeBindingStyle}">
-            <Setter Property="ContentTemplate">
-                <Setter.Value>
-                    <DataTemplate>
-                        <Border Width="40" Height="40" BorderThickness="1" Background="{Binding Path=Color}" 
-                        CornerRadius="6" BorderBrush="#5e5e5e">
-                            <Grid>
-                                <TextBlock Text="{Binding Address}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="syncfusion:Connector" BasedOn="{StaticResource ConnectorBindingStyle}">
-            <Setter Property="ConnectorGeometryStyle">
-                <Setter.Value>
-                    <Style TargetType="Path">
-                        <Setter Property="Stroke" Value="Black"  />
-                        <Setter Property="StrokeThickness" Value="1" />
-                    </Style>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="TargetDecorator" Value="M0,0 L10,5 L0,10 L 0,0"></Setter>
-            <Setter Property="TargetDecoratorStyle">
-                <Setter.Value>
-                    <Style TargetType="Path">
-                        <Setter Property="Stretch" Value="Fill"></Setter>
-                        <Setter Property="Width" Value="7.5"></Setter>
-                        <Setter Property="Height" Value="7.5"></Setter>
-                        <Setter Property="Stroke" Value="Black"/>
-                        <Setter Property="Fill" Value="Black"/>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="CornerRadius" Value="5"/>
-        </Style>
-      
-    </Window.Resources>
+        Title="Thesis" Height="864" Width="1536" Icon="Resources/icon.ico" WindowStartupLocation="CenterScreen">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -58,30 +18,138 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="200" />
         </Grid.RowDefinitions>
         
         <!--Row 0-->
         <DockPanel Grid.Row="0" Margin="8">
-            <Button x:Name="loadFileButton" Content="Load file" VerticalAlignment="Center" Width="85" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click" />
+            <Button x:Name="loadFileButton" VerticalAlignment="Center" Width="100" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <fa5:SvgAwesome Icon="Solid_Spinner"/>
+                    <TextBlock>Load file</TextBlock>
+                </StackPanel>
+            </Button>
             <StackPanel Orientation="Horizontal" >
                 <Label Content="Load Excel file:" VerticalAlignment="Center"/>
-                <Button x:Name="chooseFileButton" Content="Choose file..." VerticalAlignment="Center" Width="100" Click="ChooseFileButton_Click"/>
+                <Button x:Name="chooseFileButton"  VerticalAlignment="Center" Width="120" Click="ChooseFileButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <fa5:SvgAwesome Icon="Solid_FolderOpen"/>
+                        <TextBlock>Choose file...</TextBlock>
+                    </StackPanel>
+                </Button>
                 <Label x:Name="pathLabel" Content="No file selected" VerticalAlignment="Center" FontStyle="Italic"/>
             </StackPanel>
-            </DockPanel>
+        </DockPanel>
         <DockPanel Grid.Row="0" Grid.Column="2" Margin="8">
-            <Button x:Name="generateButton" Content="Generate" Width="85" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="GenerateButton_Click"/>
+            <Button x:Name="generateButton" Width="100" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="GenerateButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
+                    <TextBlock>Generate</TextBlock>
+                </StackPanel>
+            </Button>
             <StackPanel Orientation="Horizontal" >
                 <Label x:Name="worksheetLabel" Content="Select worksheet from the Excel preview" VerticalAlignment="Center"/>
             </StackPanel>
         </DockPanel>
 
         <!--Row 1-->
-        <syncfusion:SfSpreadsheet Grid.Row="1" x:Name="spreadsheet" Opacity="0.2" PropertyChanged="Spreadsheet_PropertyChanged"/>
+        <syncfusion:SfSpreadsheet Grid.Row="1" x:Name="spreadsheet" Opacity="0.2" PropertyChanged="Spreadsheet_PropertyChanged" WorkbookLoaded="Spreadsheet_WorkbookLoaded"/>
         <syncfusion:SfDiagram Grid.Row="1" Grid.Column="2" x:Name="diagram"/>
+        <Controls:ProgressRing x:Name="diagramLoading" IsActive="False" Grid.Row="1" Grid.Column="2"/>
+        
+        <!--Row 2-->
+        <GridSplitter Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" />
 
-        <!--Splitter with drag controls-->
-        <GridSplitter Grid.Column="1" Grid.RowSpan="3" Width="5" HorizontalAlignment="Stretch" />
+        <!--Row 3-->
+        <GroupBox Header="Log" Grid.Row="3" Grid.Column="0" Padding="0">
+            <ListView x:Name="logListView">
+                <ListView.Resources>
+                    <Style TargetType="{x:Type ListViewItem}">
+                        <Setter Property="Focusable" Value="false"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Padding" Value="0,16"/>
+                        <Setter Property="Height" Value="25" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Type}" Value="Success">
+                                <Setter Property="Background" Value="{DynamicResource SuccessBackground}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Type}" Value="Warning">
+                                <Setter Property="Background" Value="{DynamicResource WarningBackground}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Type}" Value="Error">
+                                <Setter Property="Background" Value="{DynamicResource ErrorBackground}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.Resources>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="Type" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa5:SvgAwesome x:Name="icon" Width="12" Height="12" Margin="0,0,8,0" />
+                                        <TextBlock x:Name="type" Text="{Binding Type}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Type}" Value="Info">
+                                            <Setter TargetName="icon" Property="Icon" Value="Solid_InfoCircle" />
+                                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource InfoColor}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Success">
+                                            <Setter TargetName="icon" Property="Icon" Value="Solid_CheckCircle" />
+                                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource SuccessColor}" />
+                                            <Setter TargetName="type" Property="Foreground" Value="{DynamicResource SuccessColor}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Warning">
+                                            <Setter TargetName="icon" Property="Icon" Value="Solid_ExclamationCircle" />
+                                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource WarningColor}" />
+                                            <Setter TargetName="type" Property="Foreground" Value="{DynamicResource WarningColor}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Error">
+                                            <Setter TargetName="icon" Property="Icon" Value="Solid_TimesCircle" />
+                                            <Setter TargetName="icon" Property="Foreground" Value="{DynamicResource ErrorColor}" />
+                                            <Setter TargetName="type" Property="Foreground" Value="{DynamicResource ErrorColor}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Message" Width="662" >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="message" Text="{Binding Message}" Margin="0,0,8,0">
+                                            <TextBlock.ToolTip>
+                                                <ToolTip>
+                                                    <TextBlock Text="{Binding Message}"/>
+                                                </ToolTip>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Time, StringFormat='HH:mm:ss'}" FontSize="10" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" FontStyle="Italic" VerticalAlignment="Bottom"/>
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Type}" Value="Success">
+                                            <Setter TargetName="message" Property="Foreground" Value="{DynamicResource SuccessColor}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Warning">
+                                            <Setter TargetName="message" Property="Foreground" Value="{DynamicResource WarningColor}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Error">
+                                            <Setter TargetName="message" Property="Foreground" Value="{DynamicResource ErrorColor}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </GroupBox>
+        
+        <GridSplitter Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Stretch" />
 
     </Grid>
     

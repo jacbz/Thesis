@@ -41,6 +41,15 @@
     <Reference Include="ExcelFormulaParser, Version=1.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\ExcelFormulaParser.1.0.1\lib\net452\ExcelFormulaParser.dll</HintPath>
     </Reference>
+    <Reference Include="FontAwesome5, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9cfaf01297a008f8, processorArchitecture=MSIL">
+      <HintPath>packages\FontAwesome5.1.0.12\lib\net40\FontAwesome5.dll</HintPath>
+    </Reference>
+    <Reference Include="FontAwesome5.WPF, Version=1.0.12.93, Culture=neutral, PublicKeyToken=9cfaf01297a008f8, processorArchitecture=MSIL">
+      <HintPath>packages\FontAwesome5.1.0.12\lib\net40\FontAwesome5.WPF.dll</HintPath>
+    </Reference>
+    <Reference Include="Irony, Version=1.0.11.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
+      <HintPath>packages\Irony.NetCore.1.0.11\lib\net461\Irony.dll</HintPath>
+    </Reference>
     <Reference Include="MahApps.Metro, Version=2.0.0.0, Culture=neutral, PublicKeyToken=51482d6f650b2b3f, processorArchitecture=MSIL">
       <HintPath>packages\MahApps.Metro.2.0.0-alpha0391\lib\net47\MahApps.Metro.dll</HintPath>
     </Reference>
@@ -84,6 +93,7 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -96,6 +106,9 @@
     <Reference Include="WindowsBase" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
+    <Reference Include="XLParser, Version=1.3.7.0, Culture=neutral, PublicKeyToken=63397e1e46bb91b4, processorArchitecture=MSIL">
+      <HintPath>packages\XLParser.1.3.7\lib\net461\XLParser.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -104,12 +117,7 @@
     </ApplicationDefinition>
     <Compile Include="Edge.cs" />
     <Compile Include="Graph.cs" />
-    <Compile Include="MainWindow2.xaml.cs">
-      <DependentUpon>MainWindow2.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="MainWindow3.xaml.cs">
-      <DependentUpon>MainWindow3.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="LogItem.cs" />
     <Compile Include="UserSettings.cs" />
     <Compile Include="Vertex.cs" />
     <Page Include="MainWindow.xaml">
@@ -124,14 +132,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="MainWindow2.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="MainWindow3.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
