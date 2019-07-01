@@ -88,7 +88,7 @@ namespace Thesis
 
         private void LoadSpreadsheet()
         {
-            Log(LogItemType.Info, $"Loading {App.Settings.FilePath}...");
+            Log(LogItemType.Info, $"Loading {App.Settings.FilePath}");
             spreadsheet.Open(App.Settings.FilePath);
             spreadsheet.Opacity = 100;
         }

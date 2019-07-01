@@ -53,6 +53,8 @@
             </StackPanel>
         </DockPanel>
 
+        <GridSplitter Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Stretch" />
+        
         <!--Row 1-->
         <syncfusion:SfSpreadsheet Grid.Row="1" x:Name="spreadsheet" Opacity="0.2" PropertyChanged="Spreadsheet_PropertyChanged" WorkbookLoaded="Spreadsheet_WorkbookLoaded"/>
         <syncfusion:SfDiagram Grid.Row="1" Grid.Column="2" x:Name="diagram"/>
@@ -62,7 +64,7 @@
         <GridSplitter Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" />
 
         <!--Row 3-->
-        <GroupBox Header="Log" Grid.Row="3" Grid.Column="0" Padding="0">
+        <GroupBox Header="Log" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Padding="0">
             <ListView x:Name="logListView">
                 <ListView.Resources>
                     <Style TargetType="{x:Type ListViewItem}">
@@ -70,7 +72,7 @@
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Margin" Value="0"/>
                         <Setter Property="Padding" Value="0,16"/>
-                        <Setter Property="Height" Value="25" />
+                        <Setter Property="Height" Value="20" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Type}" Value="Success">
                                 <Setter Property="Background" Value="{DynamicResource SuccessBackground}" />
@@ -86,12 +88,12 @@
                 </ListView.Resources>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="Type" Width="80">
+                        <GridViewColumn Header="Type" Width="70">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome x:Name="icon" Width="12" Height="12" Margin="0,0,8,0" />
-                                        <TextBlock x:Name="type" Text="{Binding Type}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="type" Text="{Binding Type}" VerticalAlignment="Center" FontSize="10"/>
                                     </StackPanel>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding Type}" Value="Info">
@@ -117,18 +119,18 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Message" Width="662" >
+                        <GridViewColumn Header="Message" Width="672" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock x:Name="message" Text="{Binding Message}" Margin="0,0,8,0">
+                                        <TextBlock x:Name="message" Text="{Binding Message}" Margin="0,0,8,0" FontSize="10">
                                             <TextBlock.ToolTip>
                                                 <ToolTip>
                                                     <TextBlock Text="{Binding Message}"/>
                                                 </ToolTip>
                                             </TextBlock.ToolTip>
                                         </TextBlock>
-                                        <TextBlock Text="{Binding Time, StringFormat='HH:mm:ss'}" FontSize="10" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" FontStyle="Italic" VerticalAlignment="Bottom"/>
+                                        <TextBlock Text="{Binding Time, StringFormat='HH:mm:ss'}" FontSize="8" Foreground="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}" FontStyle="Italic" VerticalAlignment="Bottom"/>
                                     </StackPanel>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding Type}" Value="Success">
@@ -148,8 +150,8 @@
                 </ListView.View>
             </ListView>
         </GroupBox>
-        
-        <GridSplitter Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Stretch" />
+        <GroupBox Header="Options" Grid.Row="3" Grid.Column="2" Padding="8">            
+        </GroupBox>
 
     </Grid>
     
