@@ -6,10 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Thesis.ViewModels;
 
 namespace Thesis
 {
-    class Graph
+    public class Graph
     {
         public List<Vertex> Vertices { get; set; }
         public List<Edge> Edges { get; set; }
@@ -21,13 +22,12 @@ namespace Thesis
 
             foreach(var cell in cells.Cells)
             {
-                //if (cell.Value == "") continue;
                 var vertex = new Vertex(cell);
 
                 VerticesDict.Add(vertex.Address, vertex);
                 Vertices.Add(vertex);
             }
-            MainWindow.Log(LogItemType.Info, $"Adding {Vertices.Count} vertices...");
+            Logger.Log(LogItemType.Info, $"Adding {Vertices.Count} vertices...");
 
             var allAddresses = Vertices.Select(x => x.Address);
 
@@ -49,22 +49,14 @@ namespace Thesis
                 }
                 catch (Exception ex)
                 {
-                    MainWindow.Log(LogItemType.Error, $"Error processing formula in {vertix.Address} ({formula}): {ex.Message}");
+                    Logger.Log(LogItemType.Error, $"Error processing formula in {vertix.Address} ({formula}): {ex.Message}");
                     continue;
                 }
 
             }
-            MainWindow.Log(LogItemType.Info, $"Adding {Edges.Count} edges...");
+            Logger.Log(LogItemType.Info, $"Adding {Edges.Count} edges...");
 
             Vertices.RemoveAll(x => x.Parents.Count == 0 && x.Children.Count == 0);
-
-
-            foreach(Vertex v in Vertices)
-            {
-                if (v.Parents.Count == 0) v.Parents.Add("root");
-            }
-            Vertex root = new Vertex("root");
-            Vertices.Add(root);
         }
 
         // recursively gets list of referenced cells from parse tree

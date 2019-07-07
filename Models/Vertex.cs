@@ -1,10 +1,12 @@
-﻿using Syncfusion.XlsIO;
+﻿using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
+using System.Windows;
 
 namespace Thesis
 {
-    enum CellType
+    public enum CellType
     {
         Formula,
         Bool,
@@ -13,7 +15,7 @@ namespace Thesis
         Text
     }
 
-    class Vertex
+    public class Vertex
     {
         public object Value { get; set; }
         public string Formula { get; set; }
@@ -22,27 +24,7 @@ namespace Thesis
         public string Address { get; set; }
         public HashSet<string> Parents { get; set; }
         public HashSet<string> Children { get; set; }
-
-        // Layouting constants
-        public string Color
-        {
-            get
-            {
-                switch (Type)
-                {
-                    case CellType.Formula:
-                        return "#8e44ad";
-                    case CellType.Number:
-                        return "#2980b9";
-                    case CellType.Bool:
-                        return "#27ae60";
-                    case CellType.Date:
-                        return "#f39c12";
-                    default:
-                        return "#2c3e50";
-                }
-            }
-        }
+        
 
         public Vertex(string s)
         {

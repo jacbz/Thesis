@@ -12,7 +12,7 @@ namespace Thesis
 
         public App()
         {
-            //Register Syncfusion license
+            // Register Syncfusion license
             Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("***REMOVED***");
             Settings = UserSettings.Read();
         }

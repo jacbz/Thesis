@@ -14,7 +14,6 @@ namespace Thesis
         {
         }
 
-
         public static UserSettings Read()
         {
             try
@@ -23,7 +22,8 @@ namespace Thesis
                 {
                     UserSettings settings = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(PATH));
                     return settings;
-                } else
+                }
+                else
                 {
                     return new UserSettings();
                 }
