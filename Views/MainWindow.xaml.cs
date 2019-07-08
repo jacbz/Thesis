@@ -53,8 +53,10 @@ namespace Thesis
 
         private void LoadFileButton_Click(object sender, RoutedEventArgs e)
         {
-            var openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "Excel files|*.xls;*.xlsx;*.xlsm";
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Excel files|*.xls;*.xlsx;*.xlsm"
+            };
             if (openFileDialog.ShowDialog() == true)
             {
                 string path = openFileDialog.FileName;
@@ -108,10 +110,12 @@ namespace Thesis
             Vertex vertex = generator.Graph.Vertices
                 .FirstOrDefault(v => v.CellIndex[0] == e.Cell.RowIndex && v.CellIndex[1] == e.Cell.ColumnIndex);
 
-            if (vertex != null && vertex.IsOutputField)
+            if (vertex != null && vertex.NodeType == NodeType.OutputField)
             {
-                MenuItem includeInGeneration = new MenuItem();
-                includeInGeneration.Header = "Include in generation";
+                MenuItem includeInGeneration = new MenuItem
+                {
+                    Header = "Include in generation"
+                };
                 includeInGeneration.Click += (s, e1) => vertex.Include = true;
                 spreadsheet.ActiveGrid.CellContextMenu.Items.Add(includeInGeneration);
             }
@@ -151,14 +155,16 @@ namespace Thesis
         public void DiagramItemClicked(object sender, DiagramEventArgs e)
         {
             DisableDiagramNodeTools();
-            if (e.Item is NodeViewModel item)
+            if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
             {
-                if (item.Content is Vertex vertex)
-                {
-                    spreadsheet.SetActiveSheet(activeWorksheet);
-                    SpreadsheetSelectVertex(vertex);
-                    ListViewSelectVertex(vertex);
-                }
+                spreadsheet.SetActiveSheet(activeWorksheet);
+                SpreadsheetSelectVertex(vertex);
+                OutputListViewSelectVertex(vertex);
+                InitiateToolbox(vertex);
+            }
+            else
+            {
+                InitiateToolbox(null);
             }
         }
 
@@ -181,13 +187,20 @@ namespace Thesis
             spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.CellIndex[0], vertex.CellIndex[1]);
         }
 
-        public void SpreadsheetCellClicked(object sender, GridCellClickEventArgs e)
+        public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
-            Vertex vertex = generator.Graph.Vertices.FirstOrDefault(v => v.CellIndex[0] == e.RowIndex && v.CellIndex[1] == e.ColumnIndex);
+            if (e.ActivationTrigger == ActivationTrigger.Program) return;
+            Vertex vertex = generator.Graph.Vertices
+                .FirstOrDefault(v => v.CellIndex[0] == e.CurrentRowColumnIndex.RowIndex && v.CellIndex[1] == e.CurrentRowColumnIndex.ColumnIndex);
             if (vertex != null)
             {
                 DiagramSelectVertex(vertex);
-                ListViewSelectVertex(vertex);
+                OutputListViewSelectVertex(vertex);
+                InitiateToolbox(vertex);
+            }
+            else
+            {
+                InitiateToolbox(null);
             }
         }
 
@@ -233,9 +246,9 @@ namespace Thesis
             }
         }
 
-        private void ListViewSelectVertex(Vertex vertex)
+        private void OutputListViewSelectVertex(Vertex vertex)
         {
-            if (vertex.IsOutputField)
+            if (vertex.NodeType == NodeType.OutputField)
             {
                 outputFieldsListView.SelectedItem = vertex;
                 outputFieldsListView.ScrollIntoView(vertex);
@@ -248,6 +261,20 @@ namespace Thesis
             {
                 SpreadsheetSelectVertex(vertex);
                 DiagramSelectVertex(vertex);
+                InitiateToolbox(vertex);
+            }
+        }
+
+        private void InitiateToolbox(Vertex vertex)
+        {
+            if (vertex == null)
+            {
+                toolboxContent.Visibility = Visibility.Collapsed;
+            } else
+            {
+                toolboxContent.Visibility = Visibility.Visible;
+                toolboxTab.IsSelected = true;
+                DataContext = vertex;
             }
         }
         
@@ -266,12 +293,6 @@ namespace Thesis
             generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
             generator.GenerateClasses();
             EnableClassOptions();
-        }
-
-        private void HideConnectionsCheckbox_Checked(object sender, RoutedEventArgs e)
-        {
-            generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
-            generator.LayoutClasses();
         }
     }
 }

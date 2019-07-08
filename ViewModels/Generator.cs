@@ -38,6 +38,8 @@ namespace Thesis.ViewModels
             Graph = new Graph(allCells);
             logItem.AppendTime(stopwatch.ElapsedMilliseconds);
 
+            Graph.GenerateLabels(window.spreadsheet.ActiveSheet);
+
             OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
             window.outputFieldsListView.ItemsSource = OutputVertices;
 
@@ -50,7 +52,7 @@ namespace Thesis.ViewModels
             ((IGraphInfo)window.diagram.Info).ItemTappedEvent += (s, e1) => window.DiagramItemClicked(s, e1);
             window.diagram2.Tool = Tool.ZoomPan | Tool.MultipleSelect;
             ((IGraphInfo)window.diagram2.Info).ItemTappedEvent += (s, e1) => window.DiagramItemClicked(s, e1);
-            window.spreadsheet.ActiveGrid.CellClick += (s, e1) => window.SpreadsheetCellClicked(s, e1);
+            window.spreadsheet.ActiveGrid.CurrentCellActivated += (s, e1) => window.SpreadsheetCellSelected(s, e1);
 
             // load selected output fields from settings
             if (App.Settings.SelectedOutputFields != null &&
@@ -112,9 +114,7 @@ namespace Thesis.ViewModels
             var stopwatch = Stopwatch.StartNew();
 
             if (window.diagram2.Groups is GroupCollection gc && gc.Count > 0)
-            {
                 gc.Clear();
-            }
 
             window.diagram2.Nodes = new NodeCollection();
             window.diagram2.Connectors = new ConnectorCollection();
@@ -123,9 +123,9 @@ namespace Thesis.ViewModels
             double nextPos = 0;
             foreach(var generatedClass in GeneratedClasses)
             {
-                var formattedClass = generatedClass.FormatClass(nextPos);
-                nextPos = formattedClass.nextPosX;
-                (window.diagram2.Groups as GroupCollection).Add(formattedClass.group);
+                var (group, nextPosX) = generatedClass.FormatClass(nextPos);
+                nextPos = nextPosX;
+                (window.diagram2.Groups as GroupCollection).Add(group);
             }
             foreach (Vertex vertex in Graph.Vertices)
             {
@@ -171,18 +171,12 @@ namespace Thesis.ViewModels
 
         public void SelectAllOutputFields()
         {
-            foreach (Vertex vertex in OutputVertices)
-            {
-                vertex.Include = true;
-            }
+            OutputVertices.ForEach(v => v.Include = true);
         }
 
         public void UnselectAllOutputFields()
         {
-            foreach (Vertex vertex in OutputVertices)
-            {
-                vertex.Include = false;
-            }
+            OutputVertices.ForEach(v => v.Include = false);
         }
 
         public void GenerateClasses()

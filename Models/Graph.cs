@@ -34,7 +34,7 @@ namespace Thesis
                 VerticesDict.Add(vertex.Address, vertex);
                 Vertices.Add(vertex);
             }
-            Logger.Log(LogItemType.Info, $"Adding {Vertices.Count} vertices...");
+            Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
 
             var allAddresses = Vertices.Select(x => x.Address);
 
@@ -86,7 +86,7 @@ namespace Thesis
 
         public List<Vertex> GetOutputFields()
         {
-            return Vertices.Where(v => v.IsOutputField).ToList();
+            return Vertices.Where(v => v.NodeType == NodeType.OutputField).ToList();
         }
 
         public void Reset()
@@ -103,6 +103,30 @@ namespace Thesis
             PopulatedRows.Sort();
             PopulatedColumns = Vertices.Select(v => v.CellIndex[1]).Distinct().ToList();
             PopulatedColumns.Sort();
+        }
+
+        public void GenerateLabels(IWorksheet worksheet)
+        {
+            foreach(Vertex vertex in Vertices)
+            {
+                if (vertex.Address == "C47")
+                {
+                }
+                // go to the left until
+                int row = vertex.CellIndex[0];
+                int column = vertex.CellIndex[1] - 1;
+                while (column > 0 && !vertex.HasLabel)
+                {
+                    var cell = worksheet.Range[row, column];
+                    if (Vertices.Any(v => v.Address == cell.Address)) continue;
+                    if (Vertex.GetCellType(cell) == CellType.Text && !string.IsNullOrWhiteSpace(cell.DisplayText))
+                    {
+                        vertex.Label = cell.DisplayText;
+                    }
+                    column--;
+                }
+
+            }
         }
 
         public List<GeneratedClass> GenerateClasses()

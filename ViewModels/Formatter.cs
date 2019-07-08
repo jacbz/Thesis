@@ -20,10 +20,11 @@ namespace Thesis.ViewModels
     {
         public static string GetColor(this Vertex vertex)
         {
-            switch (vertex.Type)
+            switch (vertex.NodeType)
             {
-                case CellType.Formula:
-                    if (vertex.IsOutputField) return "#ff0000";
+                case NodeType.OutputField:
+                    return "#ff0000";
+                case NodeType.Formula:
                     return "#8e44ad";
                 default:
                     return "#2980b9";
@@ -44,7 +45,7 @@ namespace Thesis.ViewModels
 
         public static NodeViewModel FormatVertex(this Vertex vertex, double posX, double posY)
         {
-            var size = vertex.IsOutputField ? 40 : Math.Min(55, vertex.Parents.Count * 4 + 25);
+            var size = vertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, vertex.Parents.Count * 4 + 25);
             var node = new NodeViewModel()
             {
                 ID = vertex.Address,
@@ -55,9 +56,9 @@ namespace Thesis.ViewModels
                 OffsetX = posX,
                 OffsetY = posY,
                 Shape = Application.Current.Resources[
-                    vertex.Type == CellType.Formula 
-                        ? (vertex.IsOutputField ? "Trapezoid" : "Heptagon") 
-                        : "Ellipse"
+                    vertex.NodeType == NodeType.Formula 
+                        ? "Heptagon" 
+                        : (vertex.NodeType == NodeType.OutputField ? "Trapezoid" : "Ellipse")
                         ],
                 Annotations = new AnnotationCollection()
                 {
@@ -66,14 +67,16 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = vertex.Address
+                        Content = vertex.HasLabel ? vertex.Label : vertex.Address,
+                        ViewTemplate = Application.Current.Resources[vertex.HasLabel ? "normalLabel" : "redLabel"] as DataTemplate,
+                        UnitWidth = 200
                     }
                 }
             };
             node.ShapeStyle = GetNodeShapeStyle(Application.Current.Resources[
-                vertex.Type == CellType.Formula
-                        ? (vertex.IsOutputField ? "OutputColorBrush" : "FormulaColorBrush")
-                        : "ValueColorBrush"] as SolidColorBrush);
+                vertex.NodeType == NodeType.Formula
+                        ? "FormulaColorBrush"
+                        : (vertex.NodeType == NodeType.OutputField ? "OutputColorBrush" : "FormulaColorBrush")] as SolidColorBrush);
             SetNodeConstraints(node);
             vertex.Node = node;
             return node;
@@ -81,9 +84,11 @@ namespace Thesis.ViewModels
 
         private static Style GetNodeShapeStyle(SolidColorBrush solidColorBrush)
         {
-            Style shapeStyle = new Style();
-            shapeStyle.BasedOn = Application.Current.Resources["ShapeStyle"] as Style;
-            shapeStyle.TargetType = typeof(Path);
+            Style shapeStyle = new Style
+            {
+                BasedOn = Application.Current.Resources["ShapeStyle"] as Style,
+                TargetType = typeof(Path)
+            };
             shapeStyle.Setters.Add(new Setter(Shape.FillProperty, solidColorBrush));
             return shapeStyle;
         }
@@ -163,7 +168,8 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = generatedClass.Name
+                        Content = generatedClass.Name,
+                        ViewTemplate = Application.Current.Resources["classLabel"] as DataTemplate
                     }
                 },
                 ZIndex = int.MinValue

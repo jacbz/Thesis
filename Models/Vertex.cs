@@ -18,10 +18,18 @@ namespace Thesis
         Text
     }
 
+    public enum NodeType
+    {
+        Formula,
+        OutputField,
+        Constant
+    }
+
     public class Vertex : INotifyPropertyChanged
     {
         public object Value { get; set; }
         public string Formula { get; set; }
+        public string Label { get; set; }
         public CellType Type { get; set; }
         public int[] CellIndex { get; set; }
         public string Address { get; set; }
@@ -37,10 +45,13 @@ namespace Thesis
                 OnPropertyChanged("Include");
             }
         }
-        public bool IsOutputField { get { return Type == CellType.Formula && Parents.Count == 0; } }
+        public NodeType NodeType
+        {
+            get => Type == CellType.Formula ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) : NodeType.Constant;
+        }
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
-
+        public bool HasLabel { get => !string.IsNullOrEmpty(Label); }
 
         public Vertex(IRange cell)
         {           
@@ -54,7 +65,7 @@ namespace Thesis
             Include = true;
         }
 
-        public CellType GetCellType(IRange cell)
+        public static CellType GetCellType(IRange cell)
         {
             if (cell.HasFormula)
                 return CellType.Formula;
@@ -66,8 +77,7 @@ namespace Thesis
 
         public HashSet<Vertex> GetReachableVertices()
         {
-            var vertices = new HashSet<Vertex>();
-            vertices.Add(this);
+            var vertices = new HashSet<Vertex>() { this };
             foreach(Vertex v in Children)
             {
                 vertices.UnionWith(v.GetReachableVertices());

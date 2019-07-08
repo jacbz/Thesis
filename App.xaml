@@ -59,6 +59,18 @@
                 <Setter Property="Opacity" Value="0.3" />
             </Style>
 
+            <DataTemplate x:Key="normalLabel">
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontFamily="Arial Narrow"/>
+            </DataTemplate>
+            
+            <DataTemplate x:Key="redLabel">
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" Foreground="Red" FontFamily="Arial Narrow"/>
+            </DataTemplate>
+
+            <DataTemplate x:Key="classLabel">
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontWeight="Bold" FontSize="14" />
+            </DataTemplate>
+            
             <ResourceDictionary.MergedDictionaries>
                 <!-- MahApps.Metro resource dictionaries. Make sure that all file names are Case Sensitive! -->
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
