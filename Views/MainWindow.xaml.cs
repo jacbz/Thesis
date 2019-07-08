@@ -98,6 +98,23 @@ namespace Thesis
 
             // disable editing
             spreadsheet.ActiveGrid.AllowEditing = false;
+            spreadsheet.ActiveGrid.CellContextMenuOpening += ActiveGrid_CellContextMenuOpening;
+        }
+
+        void ActiveGrid_CellContextMenuOpening(object sender, CellContextMenuOpeningEventArgs e)
+        {
+            spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
+
+            Vertex vertex = generator.Graph.Vertices
+                .FirstOrDefault(v => v.CellIndex[0] == e.Cell.RowIndex && v.CellIndex[1] == e.Cell.ColumnIndex);
+
+            if (vertex != null && vertex.IsOutputField)
+            {
+                MenuItem includeInGeneration = new MenuItem();
+                includeInGeneration.Header = "Include in generation";
+                includeInGeneration.Click += (s, e1) => vertex.Include = true;
+                spreadsheet.ActiveGrid.CellContextMenu.Items.Add(includeInGeneration);
+            }
         }
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)

@@ -8,7 +8,7 @@ namespace Thesis
 {
     public class UserSettings
     {
-        public static readonly string PATH = @"settings.json";
+        public static readonly string PATH = @"thesissettings.json";
         public string FilePath { get; set; }
 
         // File specific settings

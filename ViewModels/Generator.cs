@@ -111,9 +111,9 @@ namespace Thesis.ViewModels
             var logItem = Logger.Log(LogItemType.Info, "Layouting classes...");
             var stopwatch = Stopwatch.StartNew();
 
-            if (window.diagram2.Groups != null)
+            if (window.diagram2.Groups is GroupCollection gc && gc.Count > 0)
             {
-                (window.diagram2.Groups as GroupCollection).Clear();
+                gc.Clear();
             }
 
             window.diagram2.Nodes = new NodeCollection();
