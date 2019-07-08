@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Thesis.Models;
 using Thesis.ViewModels;
 
 namespace Thesis
@@ -90,7 +91,7 @@ namespace Thesis
 
         public void Reset()
         {
-            Vertices = Vertices.ToList();
+            Vertices = AllVertices.ToList();
         }
 
         // Remove all vertices that are not transitively reachable from any vertex in the given list
@@ -98,11 +99,50 @@ namespace Thesis
         {
             Vertices = vertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
 
-
             PopulatedRows = Vertices.Select(v => v.CellIndex[0]).Distinct().ToList();
             PopulatedRows.Sort();
             PopulatedColumns = Vertices.Select(v => v.CellIndex[1]).Distinct().ToList();
             PopulatedColumns.Sort();
+        }
+
+        public List<GeneratedClass> GenerateClasses()
+        {
+            var classesList = new List<GeneratedClass>();
+
+            var vertexToOutputFieldVertices = Vertices.ToDictionary(v => v, v => new HashSet<Vertex>());
+
+            var rnd = new Random();
+
+            foreach (var vertex in GetOutputFields())
+            {
+                var reachableVertices = vertex.GetReachableVertices();
+                foreach(var v in reachableVertices)
+                {
+                    vertexToOutputFieldVertices[v].Add(vertex);
+                }
+                var newClass = new GeneratedClass($"Class{vertex.Address}", vertex, reachableVertices.ToList(), rnd);
+                classesList.Add(newClass);
+            }
+
+            Logger.Log(LogItemType.Info, "Applying topological sort...");
+            foreach (var generatedClass in classesList)
+            {
+                generatedClass.Vertices.RemoveAll(v => vertexToOutputFieldVertices[v].Count > 1);
+                generatedClass.TopologicalSort();
+            }
+
+            var sharedVertices = vertexToOutputFieldVertices
+                .Where(kvp => kvp.Value.Count > 1)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            if (sharedVertices.Count > 0)
+                classesList.Add(new GeneratedClass("Shared", null, sharedVertices, rnd));
+
+            if (Vertices.Count != classesList.Sum(l => l.Vertices.Count))
+                Logger.Log(LogItemType.Error, "Error creating classes; length mismatch");
+
+            return classesList;
         }
     }
 }

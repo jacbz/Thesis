@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using Thesis.Models;
 
 namespace Thesis
 {
@@ -37,6 +38,9 @@ namespace Thesis
             }
         }
         public bool IsOutputField { get { return Type == CellType.Formula && Parents.Count == 0; } }
+        public NodeViewModel Node { get; set; }
+        public GeneratedClass Class { get; set; }
+
 
         public Vertex(IRange cell)
         {           
@@ -60,15 +64,14 @@ namespace Thesis
             return CellType.Text;
         }
 
-        public List<Vertex> GetReachableVertices()
+        public HashSet<Vertex> GetReachableVertices()
         {
-            List<Vertex> vertices = new List<Vertex>();
+            var vertices = new HashSet<Vertex>();
             vertices.Add(this);
             foreach(Vertex v in Children)
             {
-                vertices.AddRange(v.GetReachableVertices());
+                vertices.UnionWith(v.GetReachableVertices());
             }
-
             return vertices;
         }
 

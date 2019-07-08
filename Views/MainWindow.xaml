@@ -27,7 +27,7 @@
         <!--Row 0-->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="8">
             <Label Content="Load Excel file:" VerticalAlignment="Center" Background="Transparent"/>
-            <Button x:Name="loadFileButton" VerticalAlignment="Center" Width="100" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
+            <Button x:Name="loadFileButton" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
                 <StackPanel Orientation="Horizontal">
                     <fa5:SvgAwesome Icon="Solid_FileImport"/>
                     <TextBlock>Load file</TextBlock>
@@ -36,15 +36,21 @@
             <Label x:Name="pathLabel" Content="No file selected" VerticalAlignment="Center" FontStyle="Italic"/>
         </StackPanel>
         <DockPanel Grid.Row="0" Grid.Column="2" Margin="8">
-            <Button x:Name="generateButton" Width="100" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="GenerateButton_Click">
-                <StackPanel Orientation="Horizontal">
-                    <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                    <TextBlock>Generate</TextBlock>
-                </StackPanel>
-            </Button>
-            <StackPanel Orientation="Horizontal" >
-                <Label x:Name="worksheetLabel" Content="Select worksheet from the Excel preview" VerticalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right" >
+                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="0,0,6,0">
+                    <StackPanel Orientation="Horizontal">
+                        <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
+                        <TextBlock>Generate graph</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
+                    <StackPanel Orientation="Horizontal">
+                        <fa5:SvgAwesome Icon="Solid_ObjectGroup"/>
+                        <TextBlock>Generate classes</TextBlock>
+                    </StackPanel>
+                </Button>
             </StackPanel>
+            <Label x:Name="worksheetLabel" Content="Select worksheet from the Excel preview" VerticalAlignment="Center"/>
         </DockPanel>
 
         <GridSplitter Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Stretch" />
@@ -56,7 +62,6 @@
                 <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
             </syncfusion:SfDiagram.SnapSettings>
         </syncfusion:SfDiagram>
-        <Controls:ProgressRing x:Name="diagramLoading" IsActive="False" Grid.Row="1" Grid.Column="2"/>
 
         <!--Row 2-->
         <GridSplitter Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" />
@@ -75,17 +80,23 @@
         </TabControl>
 
         <TabControl x:Name="optionsTabControl"  Grid.Row="3" Grid.Column="2" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,0,0">
-            <TabItem Header="Options" Controls:ControlsHelper.HeaderFontSize="13">
+            <TabItem x:Name="graphOptionsTab" Header="Graph options" Controls:ControlsHelper.HeaderFontSize="13">
                 <DockPanel Height="Auto">
                     <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                         <Label Content="Output fields (red):" Margin="0,0,6,0"/>
-                        <Button x:Name="filterOutputFieldsButton" Margin="0,0,6,0" VerticalAlignment="Center" Width="105" Height="20" Padding="0" Click="FilterOutputFieldsButton_Click">
+                        <Button x:Name="filterOutputFieldsButton" Margin="0,0,6,0" VerticalAlignment="Center" Height="20" Click="FilterOutputFieldsButton_Click" Padding="10,0">
                             <StackPanel Orientation="Horizontal">
                                 <fa5:SvgAwesome Icon="Solid_Filter" Width="10" Height="10"/>
                                 <TextBlock FontSize="10">Filter for selected</TextBlock>
                             </StackPanel>
                         </Button>
-                        <Button x:Name="unselectAllButton" VerticalAlignment="Center" Width="80" Height="20" Padding="0" Click="UnselectAllButton_Click">
+                        <Button x:Name="selectAllButton" Margin="0,0,6,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
+                                <TextBlock FontSize="10">Select all</TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click">
                             <StackPanel Orientation="Horizontal">
                                 <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
                                 <TextBlock FontSize="10">Unselect all</TextBlock>
@@ -116,6 +127,11 @@
                         </ListView.View>
                     </ListView>
                 </DockPanel>
+            </TabItem>
+            <TabItem x:Name="classOptionsTab" Header="Class options" Controls:ControlsHelper.HeaderFontSize="13">
+                <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
+                    <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections between classes" Checked="HideConnectionsCheckbox_Checked" Unchecked="HideConnectionsCheckbox_Checked"/>
+                </StackPanel>
             </TabItem>
         </TabControl>
 

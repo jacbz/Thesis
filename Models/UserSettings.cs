@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 
@@ -10,8 +11,16 @@ namespace Thesis
         public static readonly string PATH = @"settings.json";
         public string FilePath { get; set; }
 
+        // File specific settings
+        public List<string> SelectedOutputFields { get; set; }
+
         public UserSettings()
         {
+        }
+
+        public void ResetFileSpecificSettings()
+        {
+            SelectedOutputFields = null;
         }
 
         public static UserSettings Read()
