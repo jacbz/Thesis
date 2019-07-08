@@ -13,12 +13,18 @@ namespace Thesis
     public class Graph
     {
         public List<Vertex> Vertices { get; set; }
-        public List<Edge> Edges { get; set; }
+
+        // Preserve copy for filtering purposes
+        public List<Vertex> AllVertices { get; set; }
+
+        // For layouting purposes
+        public List<int> PopulatedRows { get; set; }
+        public List<int> PopulatedColumns { get; set; }
+
         public Graph(IRange cells)
         {
             var VerticesDict = new Dictionary<string, Vertex>();
             Vertices = new List<Vertex>();
-            Edges = new List<Edge>();
 
             foreach(var cell in cells.Cells)
             {
@@ -31,10 +37,10 @@ namespace Thesis
 
             var allAddresses = Vertices.Select(x => x.Address);
 
-            foreach (var vertix in Vertices)
+            foreach (var vertex in Vertices)
             {
-                if (vertix.Type != CellType.Formula) continue;
-                var formula = vertix.Formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
+                if (vertex.Type != CellType.Formula) continue;
+                var formula = vertex.Formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
 
                 // TODO: create "external" vertices (SheetNameQuotedToken etc)
                 //
@@ -44,19 +50,21 @@ namespace Thesis
                     var parseTree = XLParser.ExcelFormulaParser.Parse(formula);
                     foreach(var cell in GetListOfReferencedCells(parseTree))
                     {
-                        Edges.Add(new Edge(vertix, VerticesDict[cell], ""));
+                        vertex.Children.Add(VerticesDict[cell]);
+                        VerticesDict[cell].Parents.Add(vertex);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log(LogItemType.Error, $"Error processing formula in {vertix.Address} ({formula}): {ex.Message}");
+                    Logger.Log(LogItemType.Error, $"Error processing formula in {vertex.Address} ({formula}): {ex.Message}");
                     continue;
                 }
 
             }
-            Logger.Log(LogItemType.Info, $"Adding {Edges.Count} edges...");
+            TransitiveFilter(GetOutputFields());
+            Logger.Log(LogItemType.Info, $"Filtering for reachable vertices from output fields, {Vertices.Count} remaining");
 
-            Vertices.RemoveAll(x => x.Parents.Count == 0 && x.Children.Count == 0);
+            AllVertices = Vertices.ToList();
         }
 
         // recursively gets list of referenced cells from parse tree
@@ -73,6 +81,28 @@ namespace Thesis
                     yield return cell;
                 }
             }
+        }
+
+        public List<Vertex> GetOutputFields()
+        {
+            return Vertices.Where(v => v.IsOutputField).ToList();
+        }
+
+        public void Reset()
+        {
+            Vertices = Vertices.ToList();
+        }
+
+        // Remove all vertices that are not transitively reachable from any vertex in the given list
+        public void TransitiveFilter(List<Vertex> vertices)
+        {
+            Vertices = vertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
+
+
+            PopulatedRows = Vertices.Select(v => v.CellIndex[0]).Distinct().ToList();
+            PopulatedRows.Sort();
+            PopulatedColumns = Vertices.Select(v => v.CellIndex[1]).Distinct().ToList();
+            PopulatedColumns.Sort();
         }
     }
 }

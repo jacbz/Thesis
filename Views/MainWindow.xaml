@@ -10,7 +10,7 @@
         xmlns:view="clr-namespace:Thesis.Views"
         mc:Ignorable="d"
         Title="Thesis" Height="864" Width="1536" Icon="../Resources/icon.ico" WindowStartupLocation="CenterScreen">
-      
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -27,12 +27,12 @@
         <!--Row 0-->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="8">
             <Label Content="Load Excel file:" VerticalAlignment="Center" Background="Transparent"/>
-                <Button x:Name="loadFileButton" VerticalAlignment="Center" Width="100" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <fa5:SvgAwesome Icon="Solid_FileImport"/>
-                        <TextBlock>Load file</TextBlock>
-                    </StackPanel>
-                </Button>
+            <Button x:Name="loadFileButton" VerticalAlignment="Center" Width="100" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
+                <StackPanel Orientation="Horizontal">
+                    <fa5:SvgAwesome Icon="Solid_FileImport"/>
+                    <TextBlock>Load file</TextBlock>
+                </StackPanel>
+            </Button>
             <Label x:Name="pathLabel" Content="No file selected" VerticalAlignment="Center" FontStyle="Italic"/>
         </StackPanel>
         <DockPanel Grid.Row="0" Grid.Column="2" Margin="8">
@@ -74,9 +74,48 @@
             </TabItem>
         </TabControl>
 
-        <TabControl Grid.Row="3" Grid.Column="2" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,0,0">
+        <TabControl x:Name="optionsTabControl"  Grid.Row="3" Grid.Column="2" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,0,0">
             <TabItem Header="Options" Controls:ControlsHelper.HeaderFontSize="13">
-                <Label Content="Content goes here..." />
+                <DockPanel Height="Auto">
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                        <Label Content="Output fields (red):" Margin="0,0,6,0"/>
+                        <Button x:Name="filterOutputFieldsButton" Margin="0,0,6,0" VerticalAlignment="Center" Width="105" Height="20" Padding="0" Click="FilterOutputFieldsButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <fa5:SvgAwesome Icon="Solid_Filter" Width="10" Height="10"/>
+                                <TextBlock FontSize="10">Filter for selected</TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="unselectAllButton" VerticalAlignment="Center" Width="80" Height="20" Padding="0" Click="UnselectAllButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
+                                <TextBlock FontSize="10">Unselect all</TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <ListView x:Name="outputFieldsListView" BorderThickness="1" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="{x:Type ListViewItem}">
+                                <Setter Property="Height" Value="18" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.BorderBrush>
+                            <SolidColorBrush Color="{DynamicResource OutputColor}"/>
+                        </ListView.BorderBrush>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="40">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding Include}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding Address}" />
+                                <GridViewColumn Header="Value" Width="600" DisplayMemberBinding="{Binding Value}" />
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </DockPanel>
             </TabItem>
         </TabControl>
 

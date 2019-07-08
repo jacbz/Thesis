@@ -20,14 +20,14 @@ namespace Thesis.ViewModels
             switch (vertex.Type)
             {
                 case CellType.Formula:
-                    if (vertex.Parents.Count == 0) return "#ff0000";
+                    if (vertex.IsOutputField) return "#ff0000";
                     return "#8e44ad";
                 default:
                     return "#2980b9";
             }
         }
 
-        public static NodeViewModel FormatNode(this Vertex vertex)
+        public static NodeViewModel FormatNode(this Vertex vertex, Graph graph)
         {
             return new NodeViewModel()
             {
@@ -36,16 +36,16 @@ namespace Thesis.ViewModels
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = 40,
                 UnitHeight = 40,
-                OffsetX = vertex.CellIndex[1] * 60,
-                OffsetY = vertex.CellIndex[0] * 60,
+                OffsetX = graph.PopulatedColumns.IndexOf(vertex.CellIndex[1]) * 60 + 40,
+                OffsetY = graph.PopulatedRows.IndexOf(vertex.CellIndex[0]) * 60 + 40,
                 Shape = Application.Current.Resources[
                     vertex.Type == CellType.Formula 
-                        ? (vertex.Parents.Count == 0 ? "Trapezoid" : "Heptagon") 
+                        ? (vertex.IsOutputField ? "Trapezoid" : "Heptagon") 
                         : "Ellipse"
                         ],
                 ShapeStyle = Application.Current.Resources[
                     vertex.Type == CellType.Formula
-                        ? (vertex.Parents.Count == 0 ? "OutputStyle" : "FormulaStyle")
+                        ? (vertex.IsOutputField ? "OutputStyle" : "FormulaStyle")
                         : "ValueStyle"] as Style,
                 Annotations = new AnnotationCollection()
                 {
@@ -61,12 +61,12 @@ namespace Thesis.ViewModels
             };
         }
 
-        public static ConnectorViewModel FormatConnector(this Edge edge)
+        public static ConnectorViewModel FormatConnector(this Vertex from, Vertex to)
         {
             return new ConnectorViewModel()
             {
-                SourceNodeID = edge.From.Address,
-                TargetNodeID = edge.To.Address,
+                SourceNodeID = from.Address,
+                TargetNodeID = to.Address,
                 ConnectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style,
                 TargetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style,
                 Segments = new ObservableCollection<IConnectorSegment>()

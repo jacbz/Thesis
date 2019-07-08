@@ -11,8 +11,8 @@ namespace Thesis
         
         public Edge(Vertex from, Vertex to, string label)
         {
-            to.Parents.Add(from.Address);
-            from.Children.Add(to.Address);
+            to.Parents.Add(from);
+            from.Children.Add(to);
 
             From = from;
             To = to;

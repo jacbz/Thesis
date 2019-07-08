@@ -3,6 +3,7 @@ using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
@@ -16,12 +17,15 @@ namespace Thesis.ViewModels
     class Generator
     {
         private MainWindow window;
-        private Graph graph;
-        public bool isFinished = false;
+        public Graph Graph { get; set; }
+        public bool IsFinished { get; set; }
+
+        public ObservableCollection<Vertex> OutputVertices { get; set; }
 
         public Generator(MainWindow mainWindow)
         {
             this.window = mainWindow;
+            this.IsFinished = false;
         }
 
         public void worker_Generate(object sender, DoWorkEventArgs e)
@@ -29,28 +33,13 @@ namespace Thesis.ViewModels
             var allCells = window.spreadsheet.ActiveSheet.Range[1, 1, window.spreadsheet.ActiveSheet.Rows.Length,
                 window.spreadsheet.ActiveSheet.Columns.Length];
             var stopwatch = Stopwatch.StartNew();
-            graph = new Graph(allCells);
+            Graph = new Graph(allCells);
             Logger.Log(LogItemType.Info, $"Generating graph took {stopwatch.ElapsedMilliseconds} ms");
         }
 
         public void worker_GenerateCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            Logger.Log(LogItemType.Info, "Layouting graph...");
-            var stopwatch = Stopwatch.StartNew();
-            window.diagram.Nodes = new NodeCollection();
-            window.diagram.Connectors = new ConnectorCollection();
-
-            foreach (Vertex vertex in graph.Vertices)
-            {
-                (window.diagram.Nodes as NodeCollection).Add(vertex.FormatNode());
-            }
-
-            foreach (Edge edge in graph.Edges)
-            {
-                (window.diagram.Connectors as ConnectorCollection).Add(edge.FormatConnector());
-            }
-
-            Logger.Log(LogItemType.Info, $"Layouting graph took {stopwatch.ElapsedMilliseconds} ms");
+            LayoutGraph();
 
             window.diagram.Tool = Tool.ZoomPan | Tool.MultipleSelect;
             ((IGraphInfo)window.diagram.Info).ItemTappedEvent += (s, e1) => window.DiagramItemClicked(s, e1);
@@ -59,13 +48,46 @@ namespace Thesis.ViewModels
             Logger.Log(LogItemType.Info, "Finished graph generation.");
             window.diagramLoading.IsActive = false;
 
+            ColorSpreadsheetCells();
+
+            FormatOptionsTab();
+
+            Logger.Log(LogItemType.Success, "Done.");
+            IsFinished = true;
+
+            window.EnableTools();
+        }
+
+        private void LayoutGraph()
+        {
+            Logger.Log(LogItemType.Info, "Layouting graph...");
+            var stopwatch = Stopwatch.StartNew();
+
+            window.diagram.Nodes = new NodeCollection();
+            window.diagram.Connectors = new ConnectorCollection();
+            foreach (Vertex vertex in Graph.Vertices)
+            {
+                (window.diagram.Nodes as NodeCollection).Add(vertex.FormatNode(Graph));
+            }
+            foreach (Vertex vertex in Graph.Vertices)
+            {
+                foreach (Vertex child in vertex.Children)
+                {
+                    (window.diagram.Connectors as ConnectorCollection).Add(vertex.FormatConnector(child));
+                }
+            }
+
+            Logger.Log(LogItemType.Info, $"Layouting graph took {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        private void ColorSpreadsheetCells()
+        {
             Logger.Log(LogItemType.Info, "Coloring cells...");
             var allCells = window.spreadsheet.ActiveSheet.Range[1, 1, window.spreadsheet.ActiveSheet.Rows.Length, window.spreadsheet.ActiveSheet.Columns.Length];
             allCells.CellStyle.ColorIndex = ExcelKnownColors.White;
 
-            foreach (Vertex v in graph.Vertices)
+            foreach (Vertex v in Graph.Vertices)
             {
-                if (v.Address == "root") continue;
                 IRange range = window.spreadsheet.ActiveSheet.Range[v.Address];
                 range.CellStyle.Color = ColorTranslator.FromHtml(v.GetColor());
                 range.CellStyle.Font.Color = ExcelKnownColors.White;
@@ -73,11 +95,30 @@ namespace Thesis.ViewModels
             }
 
             window.spreadsheet.ActiveGrid.InvalidateCells();
+        }
 
+        private void FormatOptionsTab()
+        {
+            OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
+            window.outputFieldsListView.ItemsSource = OutputVertices;
+        }
+
+        public void FilterForSelectedOutputFields()
+        {
+            var includedVertices = OutputVertices.Where(v => v.Include).ToList();
+            Logger.Log(LogItemType.Info, $"Filtering for selected output fields {string.Join(", ", includedVertices.Select(v => v.Address)) }");
+            Graph.TransitiveFilter(includedVertices);
+            LayoutGraph();
+            ColorSpreadsheetCells();
             Logger.Log(LogItemType.Success, "Done.");
-            isFinished = true;
+        }
 
-            window.EnableTools();
+        public void UnselectAllOutputFields()
+        {
+            foreach(Vertex vertex in OutputVertices)
+            {
+                vertex.Include = false;
+            }
         }
     }
 }

@@ -112,6 +112,8 @@ namespace Thesis
             generator = new Generator(this);
             toolboxTab.IsEnabled = false;
             logTab.IsSelected = true;
+            optionsTabControl.IsEnabled = false;
+            optionsTabControl.Opacity = 0.5f;
             diagram.Nodes = new NodeCollection();
             diagram.Connectors = new ConnectorCollection();
         }
@@ -120,32 +122,83 @@ namespace Thesis
         {
             toolboxTab.IsEnabled = true;
             toolboxTab.IsSelected = true;
+            optionsTabControl.IsEnabled = true;
+            optionsTabControl.Opacity = 1f;
         }
 
         public void DiagramItemClicked(object sender, DiagramEventArgs e)
         {
-            if (generator.isFinished && e.Item is NodeViewModel)
+            if (generator.IsFinished && e.Item is NodeViewModel)
             {
                 var item = (NodeViewModel)e.Item;
                 if (item.Content is Vertex)
                 {
                     spreadsheet.SetActiveSheet(activeWorksheet);
                     var vertex = (Vertex)item.Content;
-                    spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.CellIndex[0], vertex.CellIndex[1]);
+                    SpreadsheetSelectVertex(vertex);
+                    ListViewSelectVertex(vertex);
                 }
             }
         }
 
+        private void SpreadsheetSelectVertex(Vertex vertex)
+        {
+            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.CellIndex[0], vertex.CellIndex[1]);
+        }
+
         public void SpreadsheetCellClicked(object sender, GridCellClickEventArgs e)
         {
-            if (generator.isFinished)
+            if (generator.IsFinished)
             {
-                foreach (var node in ((DiagramCollection<NodeViewModel>)diagram.Nodes))
+                Vertex vertex = generator.Graph.Vertices.FirstOrDefault(v => v.CellIndex[0] == e.RowIndex && v.CellIndex[1] == e.ColumnIndex);
+
+                if (vertex != null)
                 {
-                    node.IsSelected = ((Vertex)node.Content).CellIndex[0] == e.RowIndex
-                        && ((Vertex)node.Content).CellIndex[1] == e.ColumnIndex;
+                    DiagramSelectVertex(vertex);
+                    ListViewSelectVertex(vertex);
+                }
+                else
+                {
+                    Logger.Log(LogItemType.Error, $"Error selecting cell [{e.RowIndex},{e.ColumnIndex}]");
                 }
             }
+        }
+
+        private void DiagramSelectVertex(Vertex vertex)
+        {
+            foreach (var node in ((DiagramCollection<NodeViewModel>)diagram.Nodes))
+            {
+                node.IsSelected = ((Vertex)node.Content).CellIndex[0] == vertex.CellIndex[0]
+                    && ((Vertex)node.Content).CellIndex[1] == vertex.CellIndex[1];
+            }
+        }
+
+        private void ListViewSelectVertex(Vertex vertex)
+        {
+            if (vertex.IsOutputField)
+            {
+                outputFieldsListView.SelectedItem = vertex;
+                outputFieldsListView.ScrollIntoView(vertex);
+            }
+        }
+
+        private void OutputFieldsListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count == 1 && e.AddedItems[0] is Vertex vertex)
+            {
+                SpreadsheetSelectVertex(vertex);
+                DiagramSelectVertex(vertex);
+            }
+        }
+
+        private void FilterOutputFieldsButton_Click(object sender, RoutedEventArgs e)
+        {
+            generator.FilterForSelectedOutputFields();
+        }
+
+        private void UnselectAllButton_Click(object sender, RoutedEventArgs e)
+        {
+            generator.UnselectAllOutputFields();
         }
     }
 }

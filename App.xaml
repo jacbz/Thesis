@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Thesis"
              StartupUri="Views/MainWindow.xaml"
-        xmlns:fa5="http://schemas.fontawesome.com/icons/"
-             xmlns:syncfusion="http://schemas.syncfusion.com/wpf">
+             xmlns:fa5="http://schemas.fontawesome.com/icons/">
     <Application.Resources>
 
         <ResourceDictionary>
@@ -14,7 +13,7 @@
                 <Setter Property="Width" Value="16" />
                 <Setter Property="Height" Value="16" />
             </Style>
-
+            
             <Color x:Key="FormulaColor">#8e44ad</Color>
             <Color x:Key="OutputColor">#ff0000</Color>
             <Color x:Key="ValueColor">#2980b9</Color>
