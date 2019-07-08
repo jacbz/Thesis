@@ -17,125 +17,151 @@
             <ColumnDefinition Width="5" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="50"/>
-            <RowDefinition Height="*" />
-            <RowDefinition Height="5" />
-            <RowDefinition Height="200" />
-        </Grid.RowDefinitions>
 
-        <!--Row 0-->
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="8">
-            <Label Content="Load Excel file:" VerticalAlignment="Center" Background="Transparent"/>
-            <Button x:Name="loadFileButton" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" IsEnabled="False" Click="LoadFileButton_Click">
-                <StackPanel Orientation="Horizontal">
-                    <fa5:SvgAwesome Icon="Solid_FileImport"/>
-                    <TextBlock>Load file</TextBlock>
-                </StackPanel>
-            </Button>
-            <Label x:Name="pathLabel" Content="No file selected" VerticalAlignment="Center" FontStyle="Italic"/>
-        </StackPanel>
-        <DockPanel Grid.Row="0" Grid.Column="2" Margin="8">
-            <StackPanel Orientation="Horizontal"  DockPanel.Dock="Right" >
-                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="0,0,6,0">
+        <!--Left-->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="50"/>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="5" />
+                <RowDefinition Height="200" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="6">
+                <Button x:Name="loadFileButton" VerticalAlignment="Center" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="LoadFileButton_Click" Margin="0,0,3,0">
                     <StackPanel Orientation="Horizontal">
-                        <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                        <TextBlock>Generate graph</TextBlock>
+                        <fa5:SvgAwesome Icon="Solid_FileImport"/>
+                        <TextBlock>Load file</TextBlock>
                     </StackPanel>
                 </Button>
-                <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
-                    <StackPanel Orientation="Horizontal">
-                        <fa5:SvgAwesome Icon="Solid_ObjectGroup"/>
-                        <TextBlock>Generate classes</TextBlock>
-                    </StackPanel>
-                </Button>
+                <Label x:Name="pathLabel" Content="No file selected" VerticalAlignment="Center" FontStyle="Italic"/>
             </StackPanel>
-            <Label x:Name="worksheetLabel" Content="Select worksheet from the Excel preview" VerticalAlignment="Center"/>
-        </DockPanel>
 
-        <GridSplitter Grid.Column="1" Grid.RowSpan="3" HorizontalAlignment="Stretch" />
+            <syncfusion:SfSpreadsheet Grid.Row="1" x:Name="spreadsheet" Opacity="0.2" PropertyChanged="Spreadsheet_PropertyChanged" WorkbookLoaded="Spreadsheet_WorkbookLoaded"/>
 
-        <!--Row 1-->
-        <syncfusion:SfSpreadsheet Grid.Row="1" x:Name="spreadsheet" Opacity="0.2" PropertyChanged="Spreadsheet_PropertyChanged" WorkbookLoaded="Spreadsheet_WorkbookLoaded"/>
-        <syncfusion:SfDiagram Grid.Row="1" Grid.Column="2" x:Name="diagram">
-            <syncfusion:SfDiagram.SnapSettings>
-                <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
-            </syncfusion:SfDiagram.SnapSettings>
-        </syncfusion:SfDiagram>
+            <GridSplitter Grid.Row="2"  HorizontalAlignment="Stretch" />
 
-        <!--Row 2-->
-        <GridSplitter Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" />
+            <TabControl Grid.Row="3" Controls:ControlsHelper.HeaderFontSize="13" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
+                <TabItem x:Name="toolboxTab" Header="Toolbox" >
+                    <Label Content="Content goes here..." />
+                </TabItem>
+                <TabItem x:Name="logTab" Header="Log">
+                    <view:LogControl x:Name="logControl"/>
+                </TabItem>
+                <TabItem Header="Help">
+                    <Label Content="Key for colors" />
+                </TabItem>
+            </TabControl>
+        </Grid>
+        
+        <!--Splitter-->
+        <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" />
 
-        <!--Row 3-->
-        <TabControl Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Controls:ControlsHelper.HeaderFontSize="13" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
-            <TabItem x:Name="toolboxTab" Header="Toolbox" >
-                <Label Content="Content goes here..." />
-            </TabItem>
-            <TabItem x:Name="logTab" Header="Log">
-                <view:LogControl x:Name="logControl"/>
-            </TabItem>
-            <TabItem Header="Help">
-                <Label Content="Key for colors" />
-            </TabItem>
-        </TabControl>
+        <!-- Right -->
+        <TabControl Grid.Column="2" Controls:ControlsHelper.HeaderFontSize="18" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
+            <TabItem Header="1. Generate graph" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="170" />
+                        <RowDefinition Height="5" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
-        <TabControl x:Name="optionsTabControl"  Grid.Row="3" Grid.Column="2" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,0,0">
-            <TabItem x:Name="graphOptionsTab" Header="Graph options" Controls:ControlsHelper.HeaderFontSize="13">
-                <DockPanel Height="Auto">
-                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
-                        <Label Content="Output fields (red):" Margin="0,0,6,0"/>
-                        <Button x:Name="filterOutputFieldsButton" Margin="0,0,6,0" VerticalAlignment="Center" Height="20" Click="FilterOutputFieldsButton_Click" Padding="10,0">
+                    <Grid Grid.Row="0">
+                        <Grid.Background>
+                            <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
+                        </Grid.Background>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <Label Content="Output fields (red):" Margin="0,0,6,0"/>
+                            <Button x:Name="selectAllButton" Margin="0,0,6,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click" IsEnabled="False">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
+                                    <TextBlock FontSize="10">Select all</TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click" IsEnabled="False">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
+                                    <TextBlock FontSize="10">Unselect all</TextBlock>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                        <ListView x:Name="outputFieldsListView" Grid.Row="1" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}">
+                                    <Setter Property="Height" Value="20" />
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Width="40">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Include}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding Address}" />
+                                    <GridViewColumn Header="Value" Width="600" DisplayMemberBinding="{Binding Value}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <Border Grid.Row="2" Padding="6,6,6,0" >
                             <StackPanel Orientation="Horizontal">
-                                <fa5:SvgAwesome Icon="Solid_Filter" Width="10" Height="10"/>
-                                <TextBlock FontSize="10">Filter for selected</TextBlock>
+                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" >
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
+                                        <TextBlock>Generate graph</TextBlock>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                        </Button>
-                        <Button x:Name="selectAllButton" Margin="0,0,6,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
-                                <TextBlock FontSize="10">Select all</TextBlock>
+                        </Border>
+                    </Grid>
+
+                    <GridSplitter Grid.Row="1"  HorizontalAlignment="Stretch" />
+
+                    <syncfusion:SfDiagram Grid.Row="3" x:Name="diagram">
+                        <syncfusion:SfDiagram.SnapSettings>
+                            <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
+                        </syncfusion:SfDiagram.SnapSettings>
+                    </syncfusion:SfDiagram>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="2. Generate classes" >
+                <DockPanel>
+                    <Border Padding="2" DockPanel.Dock="Top">
+                        <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
+                        </Border.Background>
+                        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
+                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections between classes" Checked="HideConnectionsCheckbox_Checked" Unchecked="HideConnectionsCheckbox_Checked" IsEnabled="False"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa5:SvgAwesome Icon="Solid_ObjectGroup"/>
+                                        <TextBlock>Generate classes</TextBlock>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                        </Button>
-                        <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
-                                <TextBlock FontSize="10">Unselect all</TextBlock>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    <ListView x:Name="outputFieldsListView" BorderThickness="1" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="{x:Type ListViewItem}">
-                                <Setter Property="Height" Value="18" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.BorderBrush>
-                            <SolidColorBrush Color="{DynamicResource OutputColor}"/>
-                        </ListView.BorderBrush>
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Width="40">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <CheckBox IsChecked="{Binding Include}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding Address}" />
-                                <GridViewColumn Header="Value" Width="600" DisplayMemberBinding="{Binding Value}" />
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
+                        </StackPanel>
+                    </Border>
+                    <syncfusion:SfDiagram x:Name="diagram2">
+                        <syncfusion:SfDiagram.SnapSettings>
+                            <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
+                        </syncfusion:SfDiagram.SnapSettings>
+                    </syncfusion:SfDiagram>
                 </DockPanel>
             </TabItem>
-            <TabItem x:Name="classOptionsTab" Header="Class options" Controls:ControlsHelper.HeaderFontSize="13">
-                <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                    <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections between classes" Checked="HideConnectionsCheckbox_Checked" Unchecked="HideConnectionsCheckbox_Checked"/>
-                </StackPanel>
+
+            <TabItem Header="3. Generate code" >
             </TabItem>
         </TabControl>
-
     </Grid>
-
-
 </Controls:MetroWindow>

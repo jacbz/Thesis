@@ -68,13 +68,14 @@ namespace Thesis
 
         private void LoadSpreadsheet()
         {
-            loadFileButton.IsEnabled = true;
             pathLabel.Content = pathLabel.ToolTip = App.Settings.FilePath;
             pathLabel.FontStyle = FontStyles.Normal;
 
             Logger.Log(LogItemType.Info, $"Loading {App.Settings.FilePath}");
             spreadsheet.Open(App.Settings.FilePath);
             spreadsheet.Opacity = 100;
+
+            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;
 
             DisableGraphOptions();
         }
@@ -83,9 +84,6 @@ namespace Thesis
         {
             if (e.PropertyName == "ActiveSheet")
             {
-                worksheetLabel.Content = $"Selected {spreadsheet.ActiveSheet.Name}: " +
-                    $"{spreadsheet.ActiveSheet.Columns.Length} columns, {spreadsheet.ActiveSheet.Rows.Length} rows ";
-                generateGraphButton.IsEnabled = true;
             }
         }
         private void Spreadsheet_WorkbookLoaded(object sender, Syncfusion.UI.Xaml.Spreadsheet.Helpers.WorkbookLoadedEventArgs args)
@@ -93,7 +91,9 @@ namespace Thesis
             if (((WorkbookImpl)args.Workbook).IsLoaded)
             {
                 Logger.Log(LogItemType.Success, "Successfully loaded file.");
-                GenerateGraph();
+                generator = new Generator(this);
+                activeWorksheet = spreadsheet.ActiveSheet.Name;
+                generator.GenerateGraph();
             }
 
             // disable editing
@@ -102,26 +102,14 @@ namespace Thesis
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
-            GenerateGraph();
+            generator.LoadDataIntoGraphAndSpreadsheet();
         }
 
-        private void GenerateGraph()
-        {
-            activeWorksheet = spreadsheet.ActiveSheet.Name;
-            generator = new Generator(this);
-
-            BackgroundWorker worker = new BackgroundWorker();
-            worker.DoWork += generator.worker_Generate;
-            worker.RunWorkerCompleted += generator.worker_GenerateCompleted;
-            worker.RunWorkerAsync();
-        }
         public void EnableGraphOptions()
         {
             toolboxTab.IsEnabled = true;
             //toolboxTab.IsSelected = true;
-            optionsTabControl.IsEnabled = true;
-            optionsTabControl.Opacity = 1f;
-            generateClassesButton.IsEnabled = true;
+            generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = true;
         }
 
         private void DisableGraphOptions()
@@ -129,28 +117,24 @@ namespace Thesis
             generator = new Generator(this);
             toolboxTab.IsEnabled = false;
             logTab.IsSelected = true;
-            optionsTabControl.IsEnabled = false;
-            optionsTabControl.Opacity = 0.5f;
             diagram.Nodes = new NodeCollection();
             diagram.Connectors = new ConnectorCollection();
-            generateClassesButton.IsEnabled = false;
+            generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = false;
             DisableClassOptions();
         }
 
         private void EnableClassOptions()
         {
-            classOptionsTab.IsSelected = true;
         }
 
         private void DisableClassOptions()
         {
-            graphOptionsTab.IsSelected = true;
         }
 
         public void DiagramItemClicked(object sender, DiagramEventArgs e)
         {
             DisableDiagramNodeTools();
-            if (generator.IsFinishedGeneratingGraph && e.Item is NodeViewModel item)
+            if (e.Item is NodeViewModel item)
             {
                 if (item.Content is Vertex vertex)
                 {
@@ -162,6 +146,12 @@ namespace Thesis
         }
 
         private void DisableDiagramNodeTools()
+        {
+            DisableDiagramNodeTools(diagram);
+            DisableDiagramNodeTools(diagram2);
+        }
+
+        private void DisableDiagramNodeTools(SfDiagram diagram)
         {
             // disable remove, rotate buttons etc. on click
             var selecteditem = diagram.SelectedItems as SelectorViewModel;
@@ -176,19 +166,17 @@ namespace Thesis
 
         public void SpreadsheetCellClicked(object sender, GridCellClickEventArgs e)
         {
-            if (generator.IsFinishedGeneratingGraph)
+            Vertex vertex = generator.Graph.Vertices.FirstOrDefault(v => v.CellIndex[0] == e.RowIndex && v.CellIndex[1] == e.ColumnIndex);
+            if (vertex != null)
             {
-                Vertex vertex = generator.Graph.Vertices.FirstOrDefault(v => v.CellIndex[0] == e.RowIndex && v.CellIndex[1] == e.ColumnIndex);
-                if (vertex != null)
-                {
-                    DiagramSelectVertex(vertex);
-                    ListViewSelectVertex(vertex);
-                }
+                DiagramSelectVertex(vertex);
+                ListViewSelectVertex(vertex);
             }
         }
 
         private void DiagramSelectVertex(Vertex vertex)
         {
+            if (diagram.Nodes == null) return;
             foreach (var node in (DiagramCollection<NodeViewModel>)diagram.Nodes)
             {
                 if (node.Content is Vertex nodeVertex)
@@ -197,16 +185,33 @@ namespace Thesis
                     {
                         node.IsSelected = true;
                         (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
-                        DisableDiagramNodeTools();
+                        DisableDiagramNodeTools(diagram);
                     }
                     else
                     {
                         node.IsSelected = false;
                     }
                 }
-                else if (node.Content is GeneratedClass generatedClass)
-                {
+            }
 
+            if (diagram2.Groups == null) return;
+            foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
+            {
+                foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+                {
+                    if (node.Content is Vertex nodeVertex)
+                    {
+                        if (nodeVertex.CellIndex[0] == vertex.CellIndex[0] && nodeVertex.CellIndex[1] == vertex.CellIndex[1])
+                        {
+                            node.IsSelected = true;
+                            (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
+                            DisableDiagramNodeTools(diagram2);
+                        }
+                        else
+                        {
+                            node.IsSelected = false;
+                        }
+                    }
                 }
             }
         }
@@ -228,12 +233,7 @@ namespace Thesis
                 DiagramSelectVertex(vertex);
             }
         }
-
-        private void FilterOutputFieldsButton_Click(object sender, RoutedEventArgs e)
-        {
-            generator.FilterForSelectedOutputFields();
-        }
-
+        
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
             generator.SelectAllOutputFields();

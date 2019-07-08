@@ -19,7 +19,6 @@ namespace Thesis.ViewModels
     {
         private MainWindow window;
         public Graph Graph { get; set; }
-        public bool IsFinishedGeneratingGraph { get; set; }
         public bool HideConnections { get; set; }
         public List<GeneratedClass> GeneratedClasses { get; set; }
         public ObservableCollection<Vertex> OutputVertices { get; set; }
@@ -28,10 +27,9 @@ namespace Thesis.ViewModels
         public Generator(MainWindow mainWindow)
         {
             this.window = mainWindow;
-            this.IsFinishedGeneratingGraph = false;
         }
 
-        public void worker_Generate(object sender, DoWorkEventArgs e)
+        public void GenerateGraph()
         {
             var logItem = Logger.Log(LogItemType.Info, "Generating graph...");
             var allCells = window.spreadsheet.ActiveSheet.Range[1, 1, window.spreadsheet.ActiveSheet.Rows.Length,
@@ -39,24 +37,20 @@ namespace Thesis.ViewModels
             var stopwatch = Stopwatch.StartNew();
             Graph = new Graph(allCells);
             logItem.AppendTime(stopwatch.ElapsedMilliseconds);
+
+            OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
+            window.outputFieldsListView.ItemsSource = OutputVertices;
+
+            PrepareUI();
         }
 
-        public void worker_GenerateCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void PrepareUI()
         {
-            LayoutGraph();
-
             window.diagram.Tool = Tool.ZoomPan | Tool.MultipleSelect;
             ((IGraphInfo)window.diagram.Info).ItemTappedEvent += (s, e1) => window.DiagramItemClicked(s, e1);
+            window.diagram2.Tool = Tool.ZoomPan | Tool.MultipleSelect;
+            ((IGraphInfo)window.diagram2.Info).ItemTappedEvent += (s, e1) => window.DiagramItemClicked(s, e1);
             window.spreadsheet.ActiveGrid.CellClick += (s, e1) => window.SpreadsheetCellClicked(s, e1);
-
-            ColorSpreadsheetCells();
-
-            FormatOptionsTab();
-
-            Logger.Log(LogItemType.Success, "Done.");
-            IsFinishedGeneratingGraph = true;
-
-            window.EnableGraphOptions();
 
             // load selected output fields from settings
             if (App.Settings.SelectedOutputFields != null &&
@@ -69,8 +63,24 @@ namespace Thesis.ViewModels
                     if (App.Settings.SelectedOutputFields.Contains(v.Address))
                         v.Include = true;
                 }
-                FilterForSelectedOutputFields();
+                window.outputFieldsListView.ScrollIntoView(OutputVertices.Where(v => v.Include).First());
+                LoadDataIntoGraphAndSpreadsheet();
             }
+        }
+
+        public void LoadDataIntoGraphAndSpreadsheet()
+        {
+            window.EnableGraphOptions();
+
+            var includedVertices = OutputVertices.Where(v => v.Include).ToList();
+            Logger.Log(LogItemType.Info, $"Including selected output fields {string.Join(", ", includedVertices.Select(v => v.Address)) }");
+            Graph.TransitiveFilter(includedVertices);
+            LayoutGraph();
+            ColorSpreadsheetCells();
+            Logger.Log(LogItemType.Success, "Done.");
+
+            App.Settings.SelectedOutputFields = includedVertices.Select(v => v.Address).ToList();
+            App.Settings.Save();
         }
 
         private void LayoutGraph()
@@ -80,11 +90,6 @@ namespace Thesis.ViewModels
 
             window.diagram.Nodes = new NodeCollection();
             window.diagram.Connectors = new ConnectorCollection();
-
-            if (window.diagram.Groups != null)
-            {
-                (window.diagram.Groups as GroupCollection).Clear();
-            }
 
             foreach (Vertex vertex in Graph.Vertices)
             {
@@ -106,28 +111,28 @@ namespace Thesis.ViewModels
             var logItem = Logger.Log(LogItemType.Info, "Layouting classes...");
             var stopwatch = Stopwatch.StartNew();
 
-            if (window.diagram.Groups != null)
+            if (window.diagram2.Groups != null)
             {
-                (window.diagram.Groups as GroupCollection).Clear();
+                (window.diagram2.Groups as GroupCollection).Clear();
             }
 
-            window.diagram.Nodes = new NodeCollection();
-            window.diagram.Connectors = new ConnectorCollection();
-            window.diagram.Groups = new GroupCollection();
+            window.diagram2.Nodes = new NodeCollection();
+            window.diagram2.Connectors = new ConnectorCollection();
+            window.diagram2.Groups = new GroupCollection();
 
             double nextPos = 0;
             foreach(var generatedClass in GeneratedClasses)
             {
                 var formattedClass = generatedClass.FormatClass(nextPos);
                 nextPos = formattedClass.nextPosX;
-                (window.diagram.Groups as GroupCollection).Add(formattedClass.group);
+                (window.diagram2.Groups as GroupCollection).Add(formattedClass.group);
             }
             foreach (Vertex vertex in Graph.Vertices)
             {
                 foreach (Vertex child in vertex.Children)
                 {
                     if (HideConnections && vertex.Class != child.Class) continue;
-                    (window.diagram.Connectors as ConnectorCollection).Add(vertex.FormatEdge(child));
+                    (window.diagram2.Connectors as ConnectorCollection).Add(vertex.FormatEdge(child));
                 }
             }
 
@@ -162,25 +167,6 @@ namespace Thesis.ViewModels
             var allCells = window.spreadsheet.ActiveSheet.Range[1, 1, window.spreadsheet.ActiveSheet.Rows.Length, window.spreadsheet.ActiveSheet.Columns.Length];
             allCells.CellStyle.Color = Color.Transparent;
             allCells.Borders.LineStyle = ExcelLineStyle.None;
-        }
-
-        private void FormatOptionsTab()
-        {
-            OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
-            window.outputFieldsListView.ItemsSource = OutputVertices;
-        }
-
-        public void FilterForSelectedOutputFields()
-        {
-            var includedVertices = OutputVertices.Where(v => v.Include).ToList();
-            Logger.Log(LogItemType.Info, $"Filtering for selected output fields {string.Join(", ", includedVertices.Select(v => v.Address)) }");
-            Graph.TransitiveFilter(includedVertices);
-            LayoutGraph();
-            ColorSpreadsheetCells();
-            Logger.Log(LogItemType.Success, "Done.");
-
-            App.Settings.SelectedOutputFields = includedVertices.Select(v => v.Address).ToList();
-            App.Settings.Save();
         }
 
         public void SelectAllOutputFields()

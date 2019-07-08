@@ -63,7 +63,7 @@ namespace Thesis
 
             }
             TransitiveFilter(GetOutputFields());
-            Logger.Log(LogItemType.Info, $"Filtering for reachable vertices from output fields, {Vertices.Count} remaining");
+            Logger.Log(LogItemType.Info, $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
 
             AllVertices = Vertices.ToList();
         }

@@ -24,12 +24,9 @@ namespace Thesis.ViewModels
         public static LogItem Log(LogItemType type, string message)
         {
             var logItem = new LogItem(type, message);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                log.Add(logItem);
-                logView.SelectedIndex = logView.Items.Count - 1;
-                logView.ScrollIntoView(logView.SelectedItem);
-            });
+            log.Add(logItem);
+            logView.SelectedIndex = logView.Items.Count - 1;
+            logView.ScrollIntoView(logView.SelectedItem);
             return logItem;
         }
     }
