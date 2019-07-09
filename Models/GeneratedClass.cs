@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using Thesis.Models.CodeGenerators;
 using Thesis.ViewModels;
 
 namespace Thesis.Models
@@ -51,6 +52,22 @@ namespace Thesis.Models
             if (edges.Count != 0)
                 Logger.Log(LogItemType.Error, "Error during topological sort. Graph has at least one cycle?");
             Vertices = sortedVertices;
+        }
+
+        public string ToCode(Language language, Dictionary<string, Vertex> addressToVertexDictionary)
+        {
+            CodeGenerator codeGenerator;
+            switch (language)
+            {
+                case Language.CSharp:
+                    codeGenerator = new CSharpGenerator(this, addressToVertexDictionary);
+                    break;
+                default:
+                    codeGenerator = new CSharpGenerator(this, addressToVertexDictionary);
+                    break;
+            }
+
+            return codeGenerator.ClassToCode();
         }
     }
 }

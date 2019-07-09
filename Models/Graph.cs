@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
 using Thesis.Models;
+using Thesis.Models.CodeGenerators;
 using Thesis.ViewModels;
 using XLParser;
 
@@ -35,23 +38,21 @@ namespace Thesis
 
             Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
 
-            var allAddresses = Vertices.Select(x => x.Address);
-
             foreach (var vertex in Vertices)
             {
                 if (vertex.Type != CellType.Formula) continue;
 
-                // TODO: create "external" vertices (SheetNameQuotedToken etc)
-                //
-
                 try
                 {
-                    var parseTree = XLParser.ExcelFormulaParser.Parse(vertex.Formula);
-                    foreach (var cell in GetListOfReferencedCells(vertex.Address, parseTree))
+                    var (referencedCells, externalReferencedCells) =
+                        GetListOfReferencedCells(vertex.Address, vertex.ParseTree);
+                    foreach (var cell in referencedCells)
                     {
                         vertex.Children.Add(verticesDict[cell]);
                         verticesDict[cell].Parents.Add(vertex);
                     }
+                    // TODO: so something with external cells
+
                 }
                 catch (Exception ex)
                 {
@@ -68,10 +69,10 @@ namespace Thesis
         }
 
         // recursively gets list of referenced cells from parse tree using DFS
-        private List<string> GetListOfReferencedCells(string address, ParseTreeNode parseTree)
+        private (List<string>, List<(string, string)>) GetListOfReferencedCells(string address, ParseTreeNode parseTree)
         {
             var referencedCells = new List<string>();
-            var externalReferencedCells = new List<string>();
+            var externalReferencedCells = new List<(string, string)>();
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
             stack.Push(parseTree);
@@ -93,7 +94,7 @@ namespace Thesis
                         if (!externalMatch.Equals(default))
                         {
                             Logger.Log(LogItemType.Warning, $"Skipping external reference in {address}: {externalMatch.Item2}");
-                            externalReferencedCells.Add(node.FindTokenAndGetText());
+                            externalReferencedCells.Add((node.FindTokenAndGetText(), externalMatch.Item2));
                         }
                         else
                         {
@@ -131,7 +132,7 @@ namespace Thesis
                 }
             }
 
-            return referencedCells;
+            return (referencedCells, externalReferencedCells);
         }
 
         private void MarkChildNodesAsExternal(List<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
@@ -140,19 +141,6 @@ namespace Thesis
             {
                 externalList.Add((child, refName));
                 MarkChildNodesAsExternal(externalList, child, refName);
-            }
-        }
-
-        private void GetTopReference(ref ParseTreeNode node, ParseTreeNode parseTree)
-        {
-
-            ParseTreeNode reference = node.Parent(parseTree);
-            var traverse = node;
-            while (traverse != parseTree)
-            {
-                traverse = node.Parent(parseTree);
-                if (traverse.Term.Name == "Reference")
-                    reference = traverse;
             }
         }
 
@@ -189,7 +177,7 @@ namespace Thesis
                     var cell = worksheet.Range[row, column];
                     if (Vertices.Any(v => v.Address == cell.Address)) continue;
                     if (Vertex.GetCellType(cell) == CellType.Text && !string.IsNullOrWhiteSpace(cell.DisplayText))
-                        vertex.Label = cell.DisplayText;
+                        vertex.Label = CodeGenerator.ToCamelCase(cell.DisplayText);
                     column--;
                 }
             }

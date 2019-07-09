@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Irony.Parsing;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
@@ -35,6 +36,7 @@ namespace Thesis
         public string Address { get; }
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
+        public ParseTreeNode ParseTree { get; set; }
 
         public bool Include
         {
@@ -53,6 +55,7 @@ namespace Thesis
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
         public bool HasLabel => !string.IsNullOrEmpty(Label);
+        public string LabelOrAddress => HasLabel ? Label : Address;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -66,6 +69,9 @@ namespace Thesis
             Parents = new HashSet<Vertex>();
             Children = new HashSet<Vertex>();
             Include = true;
+
+            if (Type == CellType.Formula)
+                ParseTree = XLParser.ExcelFormulaParser.Parse(Formula);
         }
 
         private string FormatFormula(string formula)

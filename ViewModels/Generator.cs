@@ -8,6 +8,7 @@ using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
+using Thesis.Models.CodeGenerators;
 
 namespace Thesis.ViewModels
 {
@@ -209,6 +210,17 @@ namespace Thesis.ViewModels
             LayoutClasses();
 
             Logger.Log(LogItemType.Success, $"Generated {GeneratedClasses.Count} classes.");
+        }
+
+        public void GenerateCode()
+        {
+            _window.codeTextBox.Text = "";
+            var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.Address, v => v);
+
+            foreach (var generatedClass in GeneratedClasses)
+            {
+                _window.codeTextBox.Text += generatedClass.ToCode(Language.CSharp, addressToVertexDictionary) + "\n\n";
+            }
         }
     }
 }

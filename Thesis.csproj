@@ -53,6 +53,9 @@
     <Reference Include="FontAwesome5.WPF, Version=1.0.12.93, Culture=neutral, PublicKeyToken=9cfaf01297a008f8, processorArchitecture=MSIL">
       <HintPath>packages\FontAwesome5.1.0.12\lib\net40\FontAwesome5.WPF.dll</HintPath>
     </Reference>
+    <Reference Include="ICSharpCode.AvalonEdit, Version=5.0.3.0, Culture=neutral, PublicKeyToken=9cc39be672370310, processorArchitecture=MSIL">
+      <HintPath>packages\AvalonEdit.5.0.4\lib\Net40\ICSharpCode.AvalonEdit.dll</HintPath>
+    </Reference>
     <Reference Include="Irony, Version=1.0.11.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
       <HintPath>packages\Irony.NetCore.1.0.11\lib\net461\Irony.dll</HintPath>
     </Reference>
@@ -122,11 +125,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\CodeGenerators\CodeGenerator.cs" />
+    <Compile Include="Models\CodeGenerators\CSharpGenerator.cs" />
     <Compile Include="Models\GeneratedClass.cs" />
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\LogItem.cs" />
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Models\Vertex.cs" />
+    <Compile Include="Views\BraceFoldingStrategy.cs" />
     <Compile Include="Views\Window1.xaml.cs">
       <DependentUpon>Window1.xaml</DependentUpon>
     </Compile>

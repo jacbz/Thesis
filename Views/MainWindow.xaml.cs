@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ICSharpCode.AvalonEdit.Folding;
 using MahApps.Metro.Controls;
 using Microsoft.Win32;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
@@ -10,6 +11,7 @@ using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO.Implementation;
 using Thesis.ViewModels;
+using Thesis.Views;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 
 namespace Thesis
@@ -20,13 +22,17 @@ namespace Thesis
     public partial class MainWindow : MetroWindow
     {
         private Generator generator;
+        private FoldingManager foldingManager;
+        private BraceFoldingStrategy foldingStrategy;
 
         public MainWindow()
         {
             InitializeComponent();
             Logger.Instantiate(logControl.logListView, SelectLogTab);
-
             if (!string.IsNullOrEmpty(App.Settings.FilePath)) LoadSpreadsheet();
+
+            foldingManager = FoldingManager.Install(codeTextBox.TextArea);
+            foldingStrategy = new BraceFoldingStrategy();
         }
 
         private void LoadFileButton_Click(object sender, RoutedEventArgs e)
@@ -127,15 +133,17 @@ namespace Thesis
             diagram.Nodes = new NodeCollection();
             diagram.Connectors = new ConnectorCollection();
             generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = false;
-            DisableClassOptions();
+            DisableCodeGenerationOptions();
         }
 
-        private void EnableClassOptions()
+        private void EnableCodeGenerationOptions()
         {
+            generateCodeButton.IsEnabled = true;
         }
 
-        private void DisableClassOptions()
+        private void DisableCodeGenerationOptions()
         {
+            generateCodeButton.IsEnabled = false;
         }
 
         public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)
@@ -284,12 +292,22 @@ namespace Thesis
         {
             generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
             generator.GenerateClasses();
-            EnableClassOptions();
+            EnableCodeGenerationOptions();
         }
 
         private void SelectLogTab()
         {
             logTab.IsSelected = true;
+        }
+
+        private void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            generator.GenerateCode();
+        }
+
+        private void CodeTextBox_TextChanged(object sender, System.EventArgs e)
+        {
+            foldingStrategy.UpdateFoldings(foldingManager, codeTextBox.Document);
         }
     }
 }
