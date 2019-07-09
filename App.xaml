@@ -15,12 +15,12 @@
             </Style>
 
             <Color x:Key="FormulaColor">#8e44ad</Color>
-            <Color x:Key="OutputColor">#ff0000</Color>
-            <Color x:Key="ValueColor">#2980b9</Color>
+            <Color x:Key="OutputColor">#e74c3c</Color>
+            <Color x:Key="ConstantColor">#2980b9</Color>
 
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
-            <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ValueColor}" />
+            <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
             <SolidColorBrush x:Key="InfoColor" Color="#00529B" />
             <SolidColorBrush x:Key="InfoBackground" Color="#BDE5F8" />
             <SolidColorBrush x:Key="SuccessColor" Color="#4F8A10" />

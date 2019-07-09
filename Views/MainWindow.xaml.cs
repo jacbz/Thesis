@@ -19,13 +19,12 @@ namespace Thesis
     /// </summary>
     public partial class MainWindow : MetroWindow
     {
-        private string activeWorksheet;
         private Generator generator;
 
         public MainWindow()
         {
             InitializeComponent();
-            Logger.Instantiate(logControl.logListView);
+            Logger.Instantiate(logControl.logListView, SelectLogTab);
 
             if (!string.IsNullOrEmpty(App.Settings.FilePath)) LoadSpreadsheet();
         }
@@ -40,7 +39,7 @@ namespace Thesis
             {
                 var path = openFileDialog.FileName;
                 App.Settings.FilePath = path;
-                App.Settings.ResetFileSpecificSettings();
+                App.Settings.ResetWorkbookSpecificSettings();
                 App.Settings.Save();
                 Logger.Log(LogItemType.Info, "Selected file " + App.Settings.FilePath);
                 LoadSpreadsheet();
@@ -73,8 +72,15 @@ namespace Thesis
             if (((WorkbookImpl) args.Workbook).IsLoaded)
             {
                 Logger.Log(LogItemType.Success, "Successfully loaded file.");
+
+                if (!string.IsNullOrEmpty(App.Settings.SelectedWorksheet)
+                    && spreadsheet.Workbook.Worksheets.Any(w => w.Name == App.Settings.SelectedWorksheet))
+                {
+                    Logger.Log(LogItemType.Info, $"Loading last selected worksheet {App.Settings.SelectedWorksheet}");
+                    spreadsheet.SetActiveSheet(App.Settings.SelectedWorksheet);
+                }
+
                 generator = new Generator(this);
-                activeWorksheet = spreadsheet.ActiveSheet.Name;
                 generator.GenerateGraph();
             }
 
@@ -143,7 +149,7 @@ namespace Thesis
             DisableDiagramNodeTools();
             if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
             {
-                spreadsheet.SetActiveSheet(activeWorksheet);
+                spreadsheet.SetActiveSheet(generator.ActiveWorksheet);
                 SpreadsheetSelectVertex(vertex);
                 OutputListViewSelectVertex(vertex);
                 InitiateToolbox(vertex);
@@ -234,7 +240,6 @@ namespace Thesis
         {
             if (vertex.NodeType == NodeType.OutputField)
             {
-                outputFieldsListView.SelectedItem = vertex;
                 outputFieldsListView.ScrollIntoView(vertex);
             }
         }
@@ -253,11 +258,13 @@ namespace Thesis
         {
             if (vertex == null)
             {
-                toolboxContent.Visibility = Visibility.Collapsed;
+                toolboxContent.Opacity = 0.3f;
+                toolboxContent.IsEnabled = false;
             }
             else
             {
-                toolboxContent.Visibility = Visibility.Visible;
+                toolboxContent.Opacity = 1f;
+                toolboxContent.IsEnabled = true;
                 toolboxTab.IsSelected = true;
                 DataContext = vertex;
             }
@@ -278,6 +285,11 @@ namespace Thesis
             generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
             generator.GenerateClasses();
             EnableClassOptions();
+        }
+
+        private void SelectLogTab()
+        {
+            logTab.IsSelected = true;
         }
     }
 }

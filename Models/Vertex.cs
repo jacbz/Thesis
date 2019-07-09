@@ -27,18 +27,6 @@ namespace Thesis
     {
         private bool _include;
 
-        public Vertex(IRange cell)
-        {
-            Value = cell.Value;
-            Formula = cell.Formula;
-            Type = GetCellType(cell);
-            CellIndex = new[] {cell.Row, cell.Column};
-            Address = cell.AddressLocal;
-            Parents = new HashSet<Vertex>();
-            Children = new HashSet<Vertex>();
-            Include = true;
-        }
-
         public object Value { get; set; }
         public string Formula { get; set; }
         public string Label { get; set; }
@@ -67,6 +55,23 @@ namespace Thesis
         public bool HasLabel => !string.IsNullOrEmpty(Label);
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public Vertex(IRange cell)
+        {
+            Type = GetCellType(cell);
+            Value = Type == CellType.Formula ? FormatFormula(cell.Value) : cell.Value;
+            Formula = cell.Formula != null ? FormatFormula(cell.Formula) : null;
+            CellIndex = new[] { cell.Row, cell.Column };
+            Address = cell.AddressLocal;
+            Parents = new HashSet<Vertex>();
+            Children = new HashSet<Vertex>();
+            Include = true;
+        }
+
+        private string FormatFormula(string formula)
+        {
+            return formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
+        }
 
         public static CellType GetCellType(IRange cell)
         {

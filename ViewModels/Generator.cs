@@ -15,18 +15,23 @@ namespace Thesis.ViewModels
     {
         private readonly MainWindow _window;
 
+        public Graph Graph { get; set; }
+        public bool HideConnections { get; set; }
+        public List<GeneratedClass> GeneratedClasses { get; set; }
+        public ObservableCollection<Vertex> OutputVertices { get; set; }
+        public string ActiveWorksheet { get; set; }
+
         public Generator(MainWindow mainWindow)
         {
             _window = mainWindow;
         }
 
-        public Graph Graph { get; set; }
-        public bool HideConnections { get; set; }
-        public List<GeneratedClass> GeneratedClasses { get; set; }
-        public ObservableCollection<Vertex> OutputVertices { get; set; }
-
         public void GenerateGraph()
         {
+            ActiveWorksheet = _window.spreadsheet.ActiveSheet.Name;
+            App.Settings.SelectedWorksheet = ActiveWorksheet;
+            App.Settings.Save();
+
             var logItem = Logger.Log(LogItemType.Info, "Generating graph...");
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, _window.spreadsheet.ActiveSheet.Rows.Length,
                 _window.spreadsheet.ActiveSheet.Columns.Length];
@@ -55,6 +60,7 @@ namespace Thesis.ViewModels
             // load selected output fields from settings
             if (App.Settings.SelectedOutputFields != null &&
                 App.Settings.SelectedOutputFields.Count > 0 &&
+                OutputVertices.Count > 0 && 
                 !OutputVertices.Where(v => v.Include).Select(v => v.Address).ToList()
                     .SequenceEqual(App.Settings.SelectedOutputFields))
             {
@@ -70,6 +76,12 @@ namespace Thesis.ViewModels
 
         public void LoadDataIntoGraphAndSpreadsheet()
         {
+            if (_window.spreadsheet.ActiveSheet.Name != ActiveWorksheet)
+            {
+                App.Settings.ResetWorkbookSpecificSettings();
+                GenerateGraph();
+            }
+
             _window.EnableGraphOptions();
 
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
@@ -93,10 +105,10 @@ namespace Thesis.ViewModels
             _window.diagram.Connectors = new ConnectorCollection();
 
             foreach (var vertex in Graph.Vertices)
-                (_window.diagram.Nodes as NodeCollection).Add(vertex.FormatVertex(Graph));
+                ((NodeCollection) _window.diagram.Nodes).Add(vertex.FormatVertex(Graph));
             foreach (var vertex in Graph.Vertices)
             foreach (var child in vertex.Children)
-                (_window.diagram.Connectors as ConnectorCollection).Add(vertex.FormatEdge(child));
+                ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child));
 
             logItem.AppendTime(stopwatch.ElapsedMilliseconds);
         }
@@ -107,7 +119,16 @@ namespace Thesis.ViewModels
             var stopwatch = Stopwatch.StartNew();
 
             if (_window.diagram2.Groups is GroupCollection gc && gc.Count > 0)
-                gc.Clear();
+            {
+                try
+                {
+                    gc.Clear();
+                }
+                catch (Exception)
+                {
+                    Logger.Log(LogItemType.Error, "Error in graph drawing library");
+                }
+            }
 
             _window.diagram2.Nodes = new NodeCollection();
             _window.diagram2.Connectors = new ConnectorCollection();
@@ -134,19 +155,18 @@ namespace Thesis.ViewModels
         private void ColorSpreadsheetCells()
         {
             ResetSpreadsheetColors();
-            ColorSpreadsheetCellsInner(Graph.Vertices, v => Color.White, v => ColorTranslator.FromHtml(v.GetColor()));
+            ColorSpreadsheetCellsInner(Graph.Vertices, v => Color.White);
             _window.spreadsheet.ActiveGrid.InvalidateCells();
         }
 
-        private void ColorSpreadsheetCellsInner(List<Vertex> vertices, Func<Vertex, Color> cellColorFunc,
-            Func<Vertex, Color> borderColorFunc)
+        private void ColorSpreadsheetCellsInner(List<Vertex> vertices, Func<Vertex, Color> cellColorFunc)
         {
             foreach (var v in vertices)
             {
                 var range = _window.spreadsheet.ActiveSheet.Range[v.Address];
                 range.CellStyle.Color = cellColorFunc(v);
                 range.CellStyle.Font.RGBColor = cellColorFunc(v).GetTextColor();
-                range.Borders.ColorRGB = borderColorFunc(v);
+                range.Borders.ColorRGB = v.GetColor();
                 range.Borders.LineStyle = ExcelLineStyle.Thick;
 
                 _window.spreadsheet.ActiveGrid.InvalidateCell(range.Row, range.Column);
@@ -181,8 +201,7 @@ namespace Thesis.ViewModels
             ResetSpreadsheetColors();
             foreach (var generatedClass in GeneratedClasses)
             {
-                ColorSpreadsheetCellsInner(generatedClass.Vertices, v => generatedClass.Color,
-                    v => ColorTranslator.FromHtml(v.GetColor()));
+                ColorSpreadsheetCellsInner(generatedClass.Vertices, v => generatedClass.Color);
             }
 
             _window.spreadsheet.ActiveGrid.InvalidateCells();

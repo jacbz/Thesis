@@ -7,7 +7,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
-using Color = System.Drawing.Color;
+using MColor = System.Windows.Media.Color;
+using DColor = System.Drawing.Color;
 
 namespace Thesis.ViewModels
 {
@@ -19,17 +20,22 @@ namespace Thesis.ViewModels
         private static readonly int CLASS_PADDING = 20; // padding inside classes
         private static readonly int CLASS_SPACING = 40; // spacing between classes
 
-        public static string GetColor(this Vertex vertex)
+        public static DColor GetColor(this Vertex vertex)
         {
+            MColor color;
             switch (vertex.NodeType)
             {
                 case NodeType.OutputField:
-                    return "#ff0000";
+                    color = (MColor) Application.Current.Resources["OutputColor"];
+                    break;
                 case NodeType.Formula:
-                    return "#8e44ad";
+                    color = (MColor)Application.Current.Resources["FormulaColor"];
+                    break;
                 default:
-                    return "#2980b9";
+                    color = (MColor)Application.Current.Resources["ConstantColor"];
+                    break;
             }
+            return color.ToDrawingColor();
         }
 
         public static NodeViewModel FormatVertex(this Vertex vertex, Graph graph)
@@ -243,15 +249,20 @@ namespace Thesis.ViewModels
             };
         }
 
-        public static Color GetTextColor(this Color c)
+        public static DColor GetTextColor(this DColor c)
         {
             var l = 0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B;
-            return l < 128 ? Color.White : Color.Black;
+            return l < 128 ? DColor.White : DColor.Black;
         }
 
-        public static System.Windows.Media.Color ToMediaColor(this Color color)
+        public static MColor ToMediaColor(this DColor color)
         {
-            return System.Windows.Media.Color.FromArgb(color.A, color.R, color.G, color.B);
+            return MColor.FromArgb(color.A, color.R, color.G, color.B);
+        }
+
+        public static DColor ToDrawingColor(this MColor color)
+        {
+            return DColor.FromArgb(color.A, color.R, color.G, color.B);
         }
     }
 }

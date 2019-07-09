@@ -8,13 +8,16 @@ namespace Thesis.Models
 {
     public class GeneratedClass
     {
+        private static Color _sharedColor = ColorTranslator.FromHtml("#CFD8DC");
         public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd)
         {
             Name = name;
             OutputVertex = outputVertex;
             Vertices = vertices;
             Vertices.ForEach(v => v.Class = this);
-            Color = Color.FromArgb(rnd.Next(164, 256), rnd.Next(164, 256), rnd.Next(164, 256));
+            Color = outputVertex == null
+                ? _sharedColor
+                : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
 
         public string Name { get; set; }

@@ -43,7 +43,7 @@
 
             <TabControl Grid.Row="3" Controls:ControlsHelper.HeaderFontSize="13" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
                 <TabItem x:Name="toolboxTab" Header="Toolbox" >
-                    <StackPanel x:Name="toolboxContent" Orientation="Vertical">
+                    <StackPanel x:Name="toolboxContent" Orientation="Vertical" Opacity="0.3" IsEnabled="False">
                         <TextBlock Margin="6">
                         <TextBlock FontWeight="Bold" FontSize="16" >
                             <TextBlock Text="{Binding NodeType, FallbackValue='0'}" Padding="4,0" Foreground="White" Margin="0,0,2,0">
@@ -93,9 +93,6 @@
                 </TabItem>
                 <TabItem x:Name="logTab" Header="Log">
                     <view:LogControl x:Name="logControl"/>
-                </TabItem>
-                <TabItem Header="Help">
-                    <Label Content="Key for colors" />
                 </TabItem>
             </TabControl>
         </Grid>
@@ -187,7 +184,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections between classes" IsEnabled="False"/>
+                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to the shared class" IsEnabled="False"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
                                     <StackPanel Orientation="Horizontal">
