@@ -1,32 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace Thesis.ViewModels
 {
     public static class Logger
     {
-        private static ObservableCollection<LogItem> log;
-        private static ListView logView;
+        private static ObservableCollection<LogItem> _log;
+        private static ListView _logView;
 
         public static void Instantiate(ListView logView)
         {
-            log = new ObservableCollection<LogItem>();
-            Logger.logView = logView;
-            logView.ItemsSource = log;
+            _log = new ObservableCollection<LogItem>();
+            Logger._logView = logView;
+            logView.ItemsSource = _log;
         }
 
         public static LogItem Log(LogItemType type, string message)
         {
             var logItem = new LogItem(type, message);
-            log.Add(logItem);
-            logView.SelectedIndex = logView.Items.Count - 1;
-            logView.ScrollIntoView(logView.SelectedItem);
+            _log.Add(logItem);
+            _logView.SelectedIndex = _logView.Items.Count - 1;
+            _logView.ScrollIntoView(_logView.SelectedItem);
             return logItem;
         }
     }

@@ -1,23 +1,24 @@
-﻿using Syncfusion.UI.Xaml.Diagram;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
 using Color = System.Drawing.Color;
-using Point = System.Windows.Point;
 
 namespace Thesis.ViewModels
 {
     // Extension methods to layout and format objects
     public static class Formatter
     {
+        private static readonly int DIAGRAM_PADDING = 40;
+        private static readonly int VERTEX_BOX = 60; // width and height of a vertex including spacing
+        private static readonly int CLASS_PADDING = 20; // padding inside classes
+        private static readonly int CLASS_SPACING = 40; // spacing between classes
+
         public static string GetColor(this Vertex vertex)
         {
             switch (vertex.NodeType)
@@ -31,11 +32,6 @@ namespace Thesis.ViewModels
             }
         }
 
-        private static readonly int DIAGRAM_PADDING = 40;
-        private static readonly int VERTEX_BOX = 60; // width and height of a vertex including spacing
-        private static readonly int CLASS_PADDING = 20; // padding inside classes
-        private static readonly int CLASS_SPACING = 40; // spacing between classes
-
         public static NodeViewModel FormatVertex(this Vertex vertex, Graph graph)
         {
             return FormatVertex(vertex,
@@ -46,7 +42,7 @@ namespace Thesis.ViewModels
         public static NodeViewModel FormatVertex(this Vertex vertex, double posX, double posY)
         {
             var size = vertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, vertex.Parents.Count * 4 + 25);
-            var node = new NodeViewModel()
+            var node = new NodeViewModel
             {
                 ID = vertex.Address,
                 Content = vertex,
@@ -55,28 +51,33 @@ namespace Thesis.ViewModels
                 UnitHeight = size,
                 OffsetX = posX,
                 OffsetY = posY,
+                ShapeStyle = GetNodeShapeStyle(Application.Current.Resources[
+                    vertex.NodeType == NodeType.Formula
+                        ? "FormulaColorBrush"
+                        : vertex.NodeType == NodeType.OutputField
+                            ? "OutputColorBrush"
+                            : "ConstantColorBrush"] as SolidColorBrush),
                 Shape = Application.Current.Resources[
-                    vertex.NodeType == NodeType.Formula 
-                        ? "Heptagon" 
-                        : (vertex.NodeType == NodeType.OutputField ? "Trapezoid" : "Ellipse")
-                        ],
-                Annotations = new AnnotationCollection()
+                    vertex.NodeType == NodeType.Formula
+                        ? "Heptagon"
+                        : vertex.NodeType == NodeType.OutputField
+                            ? "Trapezoid"
+                            : "Ellipse"
+                ],
+                Annotations = new AnnotationCollection
                 {
-                    new AnnotationEditorViewModel()
+                    new AnnotationEditorViewModel
                     {
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
                         Content = vertex.HasLabel ? vertex.Label : vertex.Address,
-                        ViewTemplate = Application.Current.Resources[vertex.HasLabel ? "normalLabel" : "redLabel"] as DataTemplate,
+                        ViewTemplate =
+                            Application.Current.Resources[vertex.HasLabel ? "normalLabel" : "redLabel"] as DataTemplate,
                         UnitWidth = 200
                     }
                 }
             };
-            node.ShapeStyle = GetNodeShapeStyle(Application.Current.Resources[
-                vertex.NodeType == NodeType.Formula
-                        ? "FormulaColorBrush"
-                        : (vertex.NodeType == NodeType.OutputField ? "OutputColorBrush" : "FormulaColorBrush")] as SolidColorBrush);
             SetNodeConstraints(node);
             vertex.Node = node;
             return node;
@@ -84,7 +85,7 @@ namespace Thesis.ViewModels
 
         private static Style GetNodeShapeStyle(SolidColorBrush solidColorBrush)
         {
-            Style shapeStyle = new Style
+            var shapeStyle = new Style
             {
                 BasedOn = Application.Current.Resources["ShapeStyle"] as Style,
                 TargetType = typeof(Path)
@@ -93,64 +94,69 @@ namespace Thesis.ViewModels
             return shapeStyle;
         }
 
-        public static (GroupViewModel group, double nextPosX) FormatClass(this GeneratedClass generatedClass, double posX)
+        public static (GroupViewModel group, double nextPosX) FormatClass(this GeneratedClass generatedClass,
+            double posX)
         {
             var graphLayout = LayoutGraph(generatedClass).Reverse().ToList();
             var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.Type == CellType.Formula));
 
-            GroupViewModel group = new GroupViewModel()
+            var group = new GroupViewModel
             {
-                Nodes = new ObservableCollection<NodeViewModel>(),
+                Nodes = new ObservableCollection<NodeViewModel>()
             };
             var nodes = group.Nodes as ObservableCollection<NodeViewModel>;
 
-            double width = (VERTEX_BOX * (numOfFormulaColumns + 1)) + CLASS_PADDING * 2;
+            double width = VERTEX_BOX * (numOfFormulaColumns + 1) + CLASS_PADDING * 2;
             posX = posX == 0 ? DIAGRAM_PADDING : posX;
-            double nextPosX = posX + width + CLASS_SPACING;
+            var nextPosX = posX + width + CLASS_SPACING;
             double posY = DIAGRAM_PADDING;
             double vertexBoxCenter = VERTEX_BOX / 2;
 
-            double lastColumnX = posX + CLASS_PADDING + (numOfFormulaColumns * VERTEX_BOX) + vertexBoxCenter;
-            double currentRowY = posY + CLASS_PADDING + vertexBoxCenter;
+            var lastColumnX = posX + CLASS_PADDING + numOfFormulaColumns * VERTEX_BOX + vertexBoxCenter;
+            var currentRowY = posY + CLASS_PADDING + vertexBoxCenter;
 
             double smallVertexHeight = 40;
 
-            foreach (List<Vertex> row in graphLayout)
+            foreach (var row in graphLayout)
             {
                 var formulas = row.Where(v => v.Type == CellType.Formula).ToList();
                 var constants = row.Where(v => v.Type != CellType.Formula).ToList();
 
                 if (constants.Count > 0)
                 {
-                    double startRowY = currentRowY;
+                    var startRowY = currentRowY;
                     // layout to the right, top-to-bottom, center the rest
-                    foreach (Vertex vertex in constants)
+                    foreach (var vertex in constants)
                     {
                         var node = vertex.FormatVertex(lastColumnX, currentRowY);
                         currentRowY += smallVertexHeight;
                         nodes.Add(node);
                     }
+
                     currentRowY += VERTEX_BOX - smallVertexHeight;
 
-                    double middle = startRowY + (constants.Count - 1) / 2 * smallVertexHeight;
-                    for (int i = 0; i < formulas.Count; i++)
+                    var middle = startRowY + (constants.Count - 1) / 2 * smallVertexHeight;
+                    for (var i = 0; i < formulas.Count; i++)
                     {
-                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + (i*VERTEX_BOX), middle);
+                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
+                            middle);
                         nodes.Add(node);
                     }
                 }
                 else
                 {
-                    for (int i = 0; i < formulas.Count; i++)
+                    for (var i = 0; i < formulas.Count; i++)
                     {
-                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + (i * VERTEX_BOX), currentRowY);
+                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
+                            currentRowY);
                         nodes.Add(node);
                     }
+
                     currentRowY += VERTEX_BOX;
                 }
             }
 
-            var classNode = new NodeViewModel()
+            var classNode = new NodeViewModel
             {
                 ID = generatedClass.Name,
                 Content = generatedClass,
@@ -161,9 +167,9 @@ namespace Thesis.ViewModels
                 OffsetX = posX,
                 OffsetY = posY,
                 Shape = Application.Current.Resources["Rectangle"],
-                Annotations = new AnnotationCollection()
+                Annotations = new AnnotationCollection
                 {
-                    new AnnotationEditorViewModel()
+                    new AnnotationEditorViewModel
                     {
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
@@ -186,28 +192,29 @@ namespace Thesis.ViewModels
             if (generatedClass.OutputVertex == null)
             {
                 foreach (var vertex in generatedClass.Vertices)
-                    yield return new List<Vertex> { vertex };
+                    yield return new List<Vertex> {vertex};
             }
             else
             {
                 var vertexQueue = new Queue<Vertex>(generatedClass.Vertices);
-                yield return new List<Vertex> { vertexQueue.Dequeue() };
+                yield return new List<Vertex> {vertexQueue.Dequeue()};
                 while (vertexQueue.Count > 0)
                 {
                     var vertex = vertexQueue.Dequeue();
-                    var entry = new List<Vertex> { vertex };
+                    var entry = new List<Vertex> {vertex};
                     while (vertexQueue.Count > 0 && vertex.Children.Contains(vertexQueue.Peek()))
                     {
                         var child = vertexQueue.Dequeue();
                         entry.Add(child);
                         // TODO cleanup
-                        while (vertexQueue.Count > 0 && child.Children.Contains(vertexQueue.Peek()) && vertexQueue.Peek().Type != CellType.Formula)
+                        while (vertexQueue.Count > 0 && child.Children.Contains(vertexQueue.Peek()) &&
+                               vertexQueue.Peek().Type != CellType.Formula)
                         {
                             var child1 = vertexQueue.Dequeue();
                             entry.Add(child1);
                         }
                     }
-                    
+
                     yield return entry;
                 }
             }
@@ -215,18 +222,19 @@ namespace Thesis.ViewModels
 
         private static void SetNodeConstraints(NodeViewModel node)
         {
-            node.Constraints = node.Constraints.Remove(NodeConstraints.Delete, NodeConstraints.InheritRotatable, NodeConstraints.Rotatable, NodeConstraints.Connectable);
+            node.Constraints = node.Constraints.Remove(NodeConstraints.Delete, NodeConstraints.InheritRotatable,
+                NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
         public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to)
         {
-            return new ConnectorViewModel()
+            return new ConnectorViewModel
             {
                 SourceNode = from.Node,
                 TargetNode = to.Node,
                 ConnectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style,
                 TargetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style,
-                Segments = new ObservableCollection<IConnectorSegment>()
+                Segments = new ObservableCollection<IConnectorSegment>
                 {
                     new StraightSegment()
                 },

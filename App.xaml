@@ -13,35 +13,26 @@
                 <Setter Property="Width" Value="16" />
                 <Setter Property="Height" Value="16" />
             </Style>
-            
+
             <Color x:Key="FormulaColor">#8e44ad</Color>
             <Color x:Key="OutputColor">#ff0000</Color>
             <Color x:Key="ValueColor">#2980b9</Color>
 
-            <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}"/>
-            <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}"/>
-            <SolidColorBrush x:Key="ValueColorBrush" Color="{DynamicResource ValueColor}"/>
-            <SolidColorBrush x:Key="InfoColor" Color="#00529B"/>
-            <SolidColorBrush x:Key="InfoBackground" Color="#BDE5F8"/>
-            <SolidColorBrush x:Key="SuccessColor" Color="#4F8A10"/>
-            <SolidColorBrush x:Key="SuccessBackground" Color="#DFF2BF"/>
-            <SolidColorBrush x:Key="WarningColor" Color="#9F6000"/>
-            <SolidColorBrush x:Key="WarningBackground" Color="#FEEFB3"/>
-            <SolidColorBrush x:Key="ErrorColor" Color="#D8000C"/>
-            <SolidColorBrush x:Key="ErrorBackground" Color="#FFD2D2"/>
+            <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
+            <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
+            <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ValueColor}" />
+            <SolidColorBrush x:Key="InfoColor" Color="#00529B" />
+            <SolidColorBrush x:Key="InfoBackground" Color="#BDE5F8" />
+            <SolidColorBrush x:Key="SuccessColor" Color="#4F8A10" />
+            <SolidColorBrush x:Key="SuccessBackground" Color="#DFF2BF" />
+            <SolidColorBrush x:Key="WarningColor" Color="#9F6000" />
+            <SolidColorBrush x:Key="WarningBackground" Color="#FEEFB3" />
+            <SolidColorBrush x:Key="ErrorColor" Color="#D8000C" />
+            <SolidColorBrush x:Key="ErrorBackground" Color="#FFD2D2" />
 
             <Style TargetType="Path" x:Key="ShapeStyle">
-                <Setter Property="Stretch" Value="Fill"/>
-                <Setter Property="Stroke" Value="#5e5e5e"/>
-            </Style>
-            <Style TargetType="Path" x:Key="OutputStyle" BasedOn="{StaticResource ShapeStyle}">
-                <Setter Property="Fill" Value="{StaticResource OutputColorBrush}"/>
-            </Style>
-            <Style TargetType="Path" x:Key="FormulaStyle" BasedOn="{StaticResource ShapeStyle}">
-                <Setter Property="Fill" Value="{StaticResource FormulaColorBrush}"/>
-            </Style>
-            <Style TargetType="Path" x:Key="ValueStyle" BasedOn="{StaticResource ShapeStyle}">
-                <Setter Property="Fill" Value="{StaticResource ValueColorBrush}"/>
+                <Setter Property="Stretch" Value="Fill" />
+                <Setter Property="Stroke" Value="#5e5e5e" />
             </Style>
 
             <Style TargetType="Path" x:Key="ConnectorGeometryStyle">
@@ -51,34 +42,36 @@
             </Style>
 
             <Style TargetType="Path" x:Key="TargetDecoratorStyle">
-                <Setter Property="Stroke" Value="Black"/>
-                <Setter Property="Stretch" Value="Fill"/>
-                <Setter Property="Fill" Value="Black"/>
-                <Setter Property="Height" Value="5"/>
-                <Setter Property="Width" Value="5"/>
+                <Setter Property="Stroke" Value="Black" />
+                <Setter Property="Stretch" Value="Fill" />
+                <Setter Property="Fill" Value="Black" />
+                <Setter Property="Height" Value="5" />
+                <Setter Property="Width" Value="5" />
                 <Setter Property="Opacity" Value="0.3" />
             </Style>
 
             <DataTemplate x:Key="normalLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontFamily="Arial Narrow"/>
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontFamily="Arial Narrow" />
             </DataTemplate>
-            
+
             <DataTemplate x:Key="redLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" Foreground="Red" FontFamily="Arial Narrow"/>
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" Foreground="Red" FontFamily="Arial Narrow" />
             </DataTemplate>
 
             <DataTemplate x:Key="classLabel">
                 <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontWeight="Bold" FontSize="14" />
             </DataTemplate>
-            
+
             <ResourceDictionary.MergedDictionaries>
                 <!-- MahApps.Metro resource dictionaries. Make sure that all file names are Case Sensitive! -->
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
                 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/FlatButton.xaml" />
                 <!-- Accent and AppTheme setting -->
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.AnimatedTabControl.xaml" />
+                <ResourceDictionary
+                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
+                <ResourceDictionary
+                    Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.AnimatedTabControl.xaml" />
                 <ResourceDictionary Source="/Syncfusion.SfDiagram.Wpf;component/Resources/BasicShapes.xaml" />
                 <ResourceDictionary Source="/Syncfusion.SfDiagram.Wpf;component/Resources/BindingStyle.xaml" />
             </ResourceDictionary.MergedDictionaries>

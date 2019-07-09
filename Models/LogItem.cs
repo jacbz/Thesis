@@ -6,27 +6,39 @@ namespace Thesis
 {
     public class LogItem : INotifyPropertyChanged
     {
-        public LogItemType Type { get; }
         private string message;
+        private DateTime time;
+
+        public LogItem(LogItemType type, string message)
+        {
+            Type = type;
+            Message = message;
+            Time = DateTime.Now;
+        }
+
+        public LogItemType Type { get; }
+
         public string Message
         {
             get => message;
             set
             {
                 message = value;
-                OnPropertyChanged("Message");
+                OnPropertyChanged();
             }
         }
-        private DateTime time;
+
         public DateTime Time
         {
             get => time;
             set
             {
                 time = value;
-                OnPropertyChanged("Time");
+                OnPropertyChanged();
             }
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public void AppendTime(long ms)
         {
@@ -40,20 +52,17 @@ namespace Thesis
             Time = DateTime.Now;
         }
 
-        public LogItem(LogItemType type, string message)
-        {
-            Type = type;
-            Message = message;
-            Time = DateTime.Now;
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 
     public enum LogItemType
     {
-        Info, Warning, Success, Error
+        Info,
+        Warning,
+        Success,
+        Error
     }
 }

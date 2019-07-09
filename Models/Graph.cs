@@ -1,11 +1,8 @@
-﻿using Irony.Parsing;
-using Syncfusion.XlsIO;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+using Irony.Parsing;
+using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.ViewModels;
 
@@ -13,27 +10,19 @@ namespace Thesis
 {
     public class Graph
     {
-        public List<Vertex> Vertices { get; set; }
-
-        // Preserve copy for filtering purposes
-        public List<Vertex> AllVertices { get; set; }
-
-        // For layouting purposes
-        public List<int> PopulatedRows { get; set; }
-        public List<int> PopulatedColumns { get; set; }
-
         public Graph(IRange cells)
         {
-            var VerticesDict = new Dictionary<string, Vertex>();
+            var verticesDict = new Dictionary<string, Vertex>();
             Vertices = new List<Vertex>();
 
-            foreach(var cell in cells.Cells)
+            foreach (var cell in cells.Cells)
             {
                 var vertex = new Vertex(cell);
 
-                VerticesDict.Add(vertex.Address, vertex);
+                verticesDict.Add(vertex.Address, vertex);
                 Vertices.Add(vertex);
             }
+
             Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
 
             var allAddresses = Vertices.Select(x => x.Address);
@@ -49,39 +38,43 @@ namespace Thesis
                 try
                 {
                     var parseTree = XLParser.ExcelFormulaParser.Parse(formula);
-                    foreach(var cell in GetListOfReferencedCells(parseTree))
+                    foreach (var cell in GetListOfReferencedCells(parseTree))
                     {
-                        vertex.Children.Add(VerticesDict[cell]);
-                        VerticesDict[cell].Parents.Add(vertex);
+                        vertex.Children.Add(verticesDict[cell]);
+                        verticesDict[cell].Parents.Add(vertex);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log(LogItemType.Error, $"Error processing formula in {vertex.Address} ({formula}): {ex.Message}");
-                    continue;
+                    Logger.Log(LogItemType.Error,
+                        $"Error processing formula in {vertex.Address} ({formula}): {ex.Message}");
                 }
-
             }
+
             TransitiveFilter(GetOutputFields());
-            Logger.Log(LogItemType.Info, $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
+            Logger.Log(LogItemType.Info,
+                $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
 
             AllVertices = Vertices.ToList();
         }
+
+        public List<Vertex> Vertices { get; set; }
+
+        // Preserve copy for filtering purposes
+        public List<Vertex> AllVertices { get; set; }
+
+        // For layouting purposes
+        public List<int> PopulatedRows { get; set; }
+        public List<int> PopulatedColumns { get; set; }
 
         // recursively gets list of referenced cells from parse tree
         private IEnumerable<string> GetListOfReferencedCells(ParseTreeNode parseTree)
         {
             if (parseTree.ChildNodes.Count == 0 && parseTree.Term.Name == "CellToken")
-            {
                 yield return parseTree.Token.Text;
-            }
-            foreach(var child in parseTree.ChildNodes)
-            {
-                foreach(var cell in GetListOfReferencedCells(child))
-                {
-                    yield return cell;
-                }
-            }
+            foreach (var child in parseTree.ChildNodes)
+            foreach (var cell in GetListOfReferencedCells(child))
+                yield return cell;
         }
 
         public List<Vertex> GetOutputFields()
@@ -107,43 +100,32 @@ namespace Thesis
 
         public void GenerateLabels(IWorksheet worksheet)
         {
-            foreach(Vertex vertex in Vertices)
+            foreach (var vertex in Vertices)
             {
-                if (vertex.Address == "C47")
-                {
-                }
                 // go to the left until
-                int row = vertex.CellIndex[0];
-                int column = vertex.CellIndex[1] - 1;
+                var row = vertex.CellIndex[0];
+                var column = vertex.CellIndex[1] - 1;
                 while (column > 0 && !vertex.HasLabel)
                 {
                     var cell = worksheet.Range[row, column];
                     if (Vertices.Any(v => v.Address == cell.Address)) continue;
                     if (Vertex.GetCellType(cell) == CellType.Text && !string.IsNullOrWhiteSpace(cell.DisplayText))
-                    {
                         vertex.Label = cell.DisplayText;
-                    }
                     column--;
                 }
-
             }
         }
 
         public List<GeneratedClass> GenerateClasses()
         {
             var classesList = new List<GeneratedClass>();
-
             var vertexToOutputFieldVertices = Vertices.ToDictionary(v => v, v => new HashSet<Vertex>());
-
             var rnd = new Random();
 
             foreach (var vertex in GetOutputFields())
             {
                 var reachableVertices = vertex.GetReachableVertices();
-                foreach(var v in reachableVertices)
-                {
-                    vertexToOutputFieldVertices[v].Add(vertex);
-                }
+                foreach (var v in reachableVertices) vertexToOutputFieldVertices[v].Add(vertex);
                 var newClass = new GeneratedClass($"Class{vertex.Address}", vertex, reachableVertices.ToList(), rnd);
                 classesList.Add(newClass);
             }

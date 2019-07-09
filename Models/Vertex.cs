@@ -1,10 +1,8 @@
-﻿using Syncfusion.UI.Xaml.Diagram;
-using Syncfusion.XlsIO;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
+using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.XlsIO;
 using Thesis.Models;
 
 namespace Thesis
@@ -27,43 +25,48 @@ namespace Thesis
 
     public class Vertex : INotifyPropertyChanged
     {
+        private bool _include;
+
+        public Vertex(IRange cell)
+        {
+            Value = cell.Value;
+            Formula = cell.Formula;
+            Type = GetCellType(cell);
+            CellIndex = new[] {cell.Row, cell.Column};
+            Address = cell.AddressLocal;
+            Parents = new HashSet<Vertex>();
+            Children = new HashSet<Vertex>();
+            Include = true;
+        }
+
         public object Value { get; set; }
         public string Formula { get; set; }
         public string Label { get; set; }
         public CellType Type { get; set; }
         public int[] CellIndex { get; set; }
-        public string Address { get; set; }
+        public string Address { get; }
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
-        private bool include;
+
         public bool Include
         {
-            get => include;
+            get => _include;
             set
             {
-                include = value;
-                OnPropertyChanged("Include");
+                _include = value;
+                OnPropertyChanged();
             }
         }
-        public NodeType NodeType
-        {
-            get => Type == CellType.Formula ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) : NodeType.Constant;
-        }
+
+        public NodeType NodeType => Type == CellType.Formula
+            ? Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula
+            : NodeType.Constant;
+
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
-        public bool HasLabel { get => !string.IsNullOrEmpty(Label); }
+        public bool HasLabel => !string.IsNullOrEmpty(Label);
 
-        public Vertex(IRange cell)
-        {           
-            Value = cell.Value;
-            Formula = cell.Formula;
-            Type = GetCellType(cell);
-            CellIndex = new int[2] { cell.Row, cell.Column };
-            Address = cell.AddressLocal;            
-            Parents = new HashSet<Vertex>();
-            Children = new HashSet<Vertex>();
-            Include = true;
-        }
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public static CellType GetCellType(IRange cell)
         {
@@ -77,11 +80,8 @@ namespace Thesis
 
         public HashSet<Vertex> GetReachableVertices()
         {
-            var vertices = new HashSet<Vertex>() { this };
-            foreach(Vertex v in Children)
-            {
-                vertices.UnionWith(v.GetReachableVertices());
-            }
+            var vertices = new HashSet<Vertex> {this};
+            foreach (var v in Children) vertices.UnionWith(v.GetReachableVertices());
             return vertices;
         }
 
@@ -95,8 +95,9 @@ namespace Thesis
             return Address.GetHashCode();
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

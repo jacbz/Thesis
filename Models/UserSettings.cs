@@ -1,22 +1,19 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
+using Newtonsoft.Json;
 
 namespace Thesis
 {
     public class UserSettings
     {
         public static readonly string PATH = @"thesissettings.json";
+
         public string FilePath { get; set; }
 
         // File specific settings
         public List<string> SelectedOutputFields { get; set; }
-
-        public UserSettings()
-        {
-        }
 
         public void ResetFileSpecificSettings()
         {
@@ -29,13 +26,11 @@ namespace Thesis
             {
                 if (File.Exists(PATH))
                 {
-                    UserSettings settings = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(PATH));
+                    var settings = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(PATH));
                     return settings;
                 }
-                else
-                {
-                    return new UserSettings();
-                }
+
+                return new UserSettings();
             }
             catch (Exception ex)
             {

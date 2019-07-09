@@ -57,7 +57,7 @@
                                                     <Setter Property="Background" Value="{StaticResource OutputColorBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding NodeType, FallbackValue='{x:Static local:NodeType.Constant}'}" Value="{x:Static local:NodeType.Constant}" >
-                                                    <Setter Property="Background" Value="{StaticResource ValueColorBrush}"/>
+                                                    <Setter Property="Background" Value="{StaticResource ConstantColorBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
