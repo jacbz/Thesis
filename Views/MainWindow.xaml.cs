@@ -30,9 +30,18 @@ namespace Thesis
             InitializeComponent();
             Logger.Instantiate(logControl.logListView, SelectLogTab);
             if (!string.IsNullOrEmpty(App.Settings.FilePath)) LoadSpreadsheet();
+            SetUpUi();
+        }
 
+        private void SetUpUi()
+        {
+            // enable folding in code textbox
             foldingManager = FoldingManager.Install(codeTextBox.TextArea);
             foldingStrategy = new BraceFoldingStrategy();
+
+            // disable pasting in spreadsheet
+            spreadsheet.HistoryManager.Enabled = false;
+            spreadsheet.CopyPaste.Pasting += (sender, e) => e.Cancel = true;
         }
 
         private void LoadFileButton_Click(object sender, RoutedEventArgs e)
