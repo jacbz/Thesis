@@ -19,7 +19,8 @@ namespace Thesis.Models.CodeGenerators
         private protected override string GetMainClass()
         {
             var output = new List<string>();
-            output.Add($"class Main");
+            output.Add("using System;\n");
+            output.Add($"public class ThesisResult");
             output.Add("{");
             output.Add(FormatLine("static void Main(string[] args)", 1));
             output.Add(FormatLine("{", 1));
@@ -36,7 +37,7 @@ namespace Thesis.Models.CodeGenerators
         private protected override string ClassToCode(GeneratedClass generatedClass)
         {
             var output = new List<string>();
-            output.Add($"class {generatedClass.Name}");
+            output.Add($"public class {generatedClass.Name}");
             output.Add("{");
 
             var properties = new List<string>();
@@ -55,19 +56,19 @@ namespace Thesis.Models.CodeGenerators
                 {
                     if (outputVertex == null)
                     {
-                        properties.Add($"static {CellTypeToTypeString(vertex.Type)} {vertex.NameInCode};");
+                        properties.Add($"public static {CellTypeToTypeString(vertex.Type)} {vertex.NameInCode};");
                     }
                     method.Add(VertexToCode(vertex, generatedClass));
                 }
             }
 
             output.AddRange(FormatLines(properties, 1));
-            output.Add("\n");
+            output.Add("");
 
-            output.Add(FormatLine($"{(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.Type) + " Calculate")}()", 1));
+            output.Add(FormatLine($"public {(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.Type) + " Calculate")}()", 1));
             output.Add(FormatLine("{", 1));
             output.AddRange(FormatLines(method, 2));
-            if (generatedClass.OutputVertex != null)
+            if (outputVertex != null)
                 output.Add(FormatLine($"return {outputVertex.NameInCode};", 2));
             output.Add(FormatLine( "}", 1));
             output.Add("}");
@@ -78,24 +79,27 @@ namespace Thesis.Models.CodeGenerators
         {
             if (vertex.NodeType == NodeType.Constant)
             {
-                string prependStatic = generatedClass.OutputVertex != null ? "" : "static ";
+                string accessModifier = generatedClass.OutputVertex != null ? "static " : "public static ";
                 switch (vertex.Type)
                 {
                     case CellType.Bool:
+                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {vertex.Value};";
                     case CellType.Number:
-                        return prependStatic + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {vertex.Value};";
+                        string value = vertex.Value.ToString().Replace(",", ".");
+                        if (value.Contains("%")) value = value.Replace("%", " * 0.01");
+                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {value};";
                     case CellType.Text:
-                        return prependStatic + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = \"{vertex.Value}\";";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = \"{vertex.Value}\";";
                     case CellType.Date:
-                        return prependStatic + $"DateTime {vertex.NameInCode} = DateTime.Parse({vertex.Value});";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = DateTime.Parse({vertex.Value});";
+                    case CellType.Unknown:
+                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = null;";
                     default:
                         return "";
                 }
             }
-            else
-            {
-                return $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {TreeNodeToCode(vertex.ParseTree, generatedClass, 0)};";
-            }
+
+            return $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {TreeNodeToCode(vertex.ParseTree, vertex, 0)};";
         }
 
         public static string CellTypeToTypeString(CellType cellType)
@@ -110,20 +114,38 @@ namespace Thesis.Models.CodeGenerators
                     return "double";
                 case CellType.Text:
                     return "string";
+                case CellType.Unknown:
+                    return "object";
+                default:
+                    return "";
+            }
+        }
+        public static string CellTypeToNullValue(CellType cellType)
+        {
+            switch (cellType)
+            {
+                case CellType.Bool:
+                    return "false";
+                case CellType.Unknown:
+                case CellType.Date:
+                    return "null";
+                case CellType.Number:
+                    return "0";
+                case CellType.Text:
                 default:
                     return "";
             }
         }
 
-        private string FormatAddress(string address, GeneratedClass generatedClass)
+        private string FormatAddress(string address, Vertex vertex)
         {
-            if (addressToVertexDictionary.TryGetValue(address, out var vertex))
-                return vertex.Class == generatedClass ? vertex.NameInCode: $"{vertex.Class.Name}.{vertex.NameInCode}";
+            if (addressToVertexDictionary.TryGetValue(address, out var v))
+                return vertex.Class == v.Class ? v.NameInCode: $"{v.Class.Name}.{v.NameInCode}";
 
-            return $"/* Error: {address} not found*/";
+            return $"/* Error: {address} not found */";
         }
 
-        private string TreeNodeToCode(ParseTreeNode node, GeneratedClass generatedClass, int depth)
+        private string TreeNodeToCode(ParseTreeNode node, Vertex vertex, int depth)
         {
             depth++;
 
@@ -133,32 +155,32 @@ namespace Thesis.Models.CodeGenerators
                 switch (node.Term.Name)
                 {
                     case "Cell":
-                        return FormatAddress(node.FindTokenAndGetText(), generatedClass);
+                        return FormatAddress(node.FindTokenAndGetText(), vertex);
                     case "Constant":
                         return node.FindTokenAndGetText();
                     case "FormulaWithEq":
-                        return TreeNodeToCode(node.ChildNodes[1], generatedClass, depth);
+                        return TreeNodeToCode(node.ChildNodes[1], vertex, depth);
                     case "Formula":
                         // for rule OpenParen + Formula + CloseParen
-                        return TreeNodeToCode(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], generatedClass, depth);
+                        return TreeNodeToCode(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], vertex, depth);
                     case "FunctionCall":
-                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), generatedClass, depth);
+                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), vertex, depth);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
-                            return TreeNodeToCode(node.ChildNodes[0], generatedClass, depth);
+                            return TreeNodeToCode(node.ChildNodes[0], vertex, depth);
                         if (node.ChildNodes.Count == 2)
                         {
                             var prefix = node.ChildNodes[0];
                             var refName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            return $"ExternalRef(\"[{refName}\", {TreeNodeToCode(node.ChildNodes[1], generatedClass, depth)})";
+                            return $"ExternalRef(\"[{refName}\", {TreeNodeToCode(node.ChildNodes[1], vertex, depth)})";
                         }
                         return RuleNotImplemented(nt);
                     case "ReferenceItem":
-                        return node.ChildNodes.Count == 1 ? TreeNodeToCode(node.ChildNodes[0], generatedClass, depth) : RuleNotImplemented(nt);
+                        return node.ChildNodes.Count == 1 ? TreeNodeToCode(node.ChildNodes[0], vertex, depth) : RuleNotImplemented(nt);
                     case "ReferenceFunctionCall":
-                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), generatedClass, depth);
+                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), vertex, depth);
                     case "UDFunctionCall":
-                        return $"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToCode(a, generatedClass, depth)))})";
+                        return $"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToCode(a, vertex, depth)))})";
                     // Not implemented
                     default:
                         return $"/* Parse token {node.Term.Name} is not implemented yet! {node} */";
@@ -180,76 +202,76 @@ namespace Thesis.Models.CodeGenerators
             return $"/* Rule {nt.Rule} is not implemented for {nt.Name}! */";
         }
 
-        private string ParseFunction(string functionName, ParseTreeNode[] arguments, GeneratedClass generatedClass, int depth)
+        private string ParseFunction(string functionName, ParseTreeNode[] arguments, Vertex vertex, int depth)
         {
             switch (functionName)
             {
                 // arithmetic
                 case "+":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], generatedClass, depth) + " + " + TreeNodeToCode(arguments[1], generatedClass, depth);
+                    return TreeNodeToCode(arguments[0], vertex, depth) + " + " + TreeNodeToCode(arguments[1], vertex, depth);
                 case "-":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], generatedClass, depth) + " - " + TreeNodeToCode(arguments[1], generatedClass, depth);
+                    return TreeNodeToCode(arguments[0], vertex, depth) + " - " + TreeNodeToCode(arguments[1], vertex, depth);
                 case "*":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], generatedClass, depth) + " * " + TreeNodeToCode(arguments[1], generatedClass, depth);
+                    return TreeNodeToCode(arguments[0], vertex, depth) + " * " + TreeNodeToCode(arguments[1], vertex, depth);
                 case "/":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], generatedClass, depth) + " / " + TreeNodeToCode(arguments[1], generatedClass, depth);
+                    return TreeNodeToCode(arguments[0], vertex, depth) + " / " + TreeNodeToCode(arguments[1], vertex, depth);
                 case "%":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], generatedClass, depth) + " * 0.01";
+                    return TreeNodeToCode(arguments[0], vertex, depth) + " * 0.01";
                 case "^":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"Math.Pow({TreeNodeToCode(arguments[0], generatedClass, depth)}, {TreeNodeToCode(arguments[1], generatedClass, depth)})";
+                    return $"Math.Pow({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)})";
                 case "ROUND":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"Math.Round({TreeNodeToCode(arguments[0], generatedClass, depth)}, {TreeNodeToCode(arguments[1], generatedClass, depth)}, MidpointRounding.AwayFromZero)";
+                    return $"Math.Round({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)}, MidpointRounding.AwayFromZero)";
                 case "SUM":
-                    return string.Join(".Concat(", arguments.Select(a => TreeNodeToCode(a, generatedClass, depth))) 
+                    return string.Join(".Concat(", arguments.Select(a => TreeNodeToCode(a, vertex, depth))) 
                            + (arguments.Length > 1 ? ")" : "") + ".Sum()";
 
                 // conditionals
                 case "IF":
                     if (arguments.Length == 2)
-                        return $"(({TreeNodeToCode(arguments[0], generatedClass, depth)})\n" +
-                               FormatLine($"? {TreeNodeToCode(arguments[1], generatedClass, depth)}\n", depth / 2) +
-                               FormatLine($": null)", depth / 2);
+                        return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
+                               FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +
+                               FormatLine($": {CellTypeToNullValue(vertex.Type)})", depth / 2);
                     if (arguments.Length == 3)
-                        return $"(({TreeNodeToCode(arguments[0], generatedClass, depth)})\n" +
-                               FormatLine($"? {TreeNodeToCode(arguments[1], generatedClass, depth)}\n", depth / 2) +
-                               FormatLine($": {TreeNodeToCode(arguments[2], generatedClass, depth)})", depth / 2);
+                        return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
+                               FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +
+                               FormatLine($": {TreeNodeToCode(arguments[2], vertex, depth)})", depth / 2);
                     return FunctionError(functionName, arguments);
                 case "=":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} == {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} == {TreeNodeToCode(arguments[1], vertex, depth)}";
                 case "<>":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} != {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} != {TreeNodeToCode(arguments[1], vertex, depth)}";
                 case "<":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} < {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} < {TreeNodeToCode(arguments[1], vertex, depth)}";
                 case "<=":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} <= {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} <= {TreeNodeToCode(arguments[1], vertex, depth)}";
                 case ">=":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} >= {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} >= {TreeNodeToCode(arguments[1], vertex, depth)}";
                 case ">":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], generatedClass, depth)} > {TreeNodeToCode(arguments[1], generatedClass, depth)}";
+                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} > {TreeNodeToCode(arguments[1], vertex, depth)}";
 
                 // strings
                 case "&":
                 case "CONCATENATE":
                     if (arguments.Length < 2 ) return FunctionError(functionName, arguments);
-                    return string.Join(" + ", arguments.Select(a => TreeNodeToCode(a, generatedClass, depth)));
+                    return string.Join(" + ", arguments.Select(a => TreeNodeToCode(a, vertex, depth)));
 
                 // ranges
                 case ":":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"GetRange({TreeNodeToCode(arguments[0], generatedClass, depth)}, {TreeNodeToCode(arguments[1], generatedClass, depth)})";
+                    return $"GetRange({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)})";
 
                 // other
                 case "TODAY":
@@ -261,11 +283,11 @@ namespace Thesis.Models.CodeGenerators
                 case "MONTH":
                 case "YEAR":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return $"DateTime.Parse({TreeNodeToCode(arguments[0], generatedClass, depth)})." + functionName.Substring(0,1) + functionName.Substring(1).ToLower();
+                    return $"DateTime.Parse({TreeNodeToCode(arguments[0], vertex, depth)})." + functionName.Substring(0,1) + functionName.Substring(1).ToLower();
 
                 default:
                     return $"/* Function {functionName} not implemented yet! Args: \n " +
-                           $"{string.Join("\n", arguments.Select(a => TreeNodeToCode(a, generatedClass, depth)))} */";
+                           $"{string.Join("\n", arguments.Select(a => TreeNodeToCode(a, vertex, depth)))} */";
             }
         }
 

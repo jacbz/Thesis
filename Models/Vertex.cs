@@ -14,7 +14,8 @@ namespace Thesis
         Bool,
         Number,
         Date,
-        Text
+        Text,
+        Unknown
     }
 
     public enum NodeType
@@ -52,9 +53,10 @@ namespace Thesis
 
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
-        public string CellTypeString { get => Type.ToString(); }
+        // ReSharper disable once UnusedMember.Global
+        public string CellTypeString => Type.ToString();
         public bool HasLabel => !string.IsNullOrEmpty(Label);
-        public string NameInCode => CodeGenerator.ToCamelCase(Address) + Label;
+        public string NameInCode => Label + "_" + Address;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -78,7 +80,8 @@ namespace Thesis
             if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;
             if (cell.HasNumber || cell.HasFormulaNumberValue) return CellType.Number;
             if (cell.HasDateTime || cell.HasFormulaBoolValue) return CellType.Date;
-            return CellType.Text;
+            if (cell.HasString || cell.HasFormulaStringValue) return CellType.Text;
+            return CellType.Unknown;
         }
         
         private string FormatFormula(string formula)

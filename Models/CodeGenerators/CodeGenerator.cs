@@ -37,7 +37,9 @@ namespace Thesis.Models.CodeGenerators
         {
             var textInfo = new CultureInfo("en-US", false).TextInfo;
             inputString = Regex.Replace(RemoveDiacritics(inputString), "[^0-9a-zA-Z ]+", "");
-            return textInfo.ToTitleCase(inputString).Replace(" ", "");
+            inputString = textInfo.ToTitleCase(inputString).Replace(" ", "");
+            if (char.IsDigit(inputString.ToCharArray()[0])) inputString = "_" + inputString;
+            return inputString;
         }
 
         // ö => oe etc.
