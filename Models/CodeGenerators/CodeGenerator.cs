@@ -10,16 +10,21 @@ namespace Thesis.Models.CodeGenerators
 {
     public abstract class CodeGenerator
     {
-        private protected GeneratedClass generatedClass;
+        private protected List<GeneratedClass> generatedClasses;
         private protected Dictionary<string, Vertex> addressToVertexDictionary;
 
-        public abstract string ClassToCode();
-        public abstract string VertexToCode(Vertex vertex);
+        private protected abstract string GetMainClass();
+        private protected abstract string ClassToCode(GeneratedClass generatedClass);
 
-        protected CodeGenerator(GeneratedClass generatedClass, Dictionary<string, Vertex> addressToVertexDictionary)
+        protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
         {
-            this.generatedClass = generatedClass;
+            this.generatedClasses = generatedClasses;
             this.addressToVertexDictionary = addressToVertexDictionary;
+        }
+
+        public string GetCode()
+        {
+            return GetMainClass() + "\n\n" + string.Join("\n\n", generatedClasses.Select(c => ClassToCode(c)));
         }
 
         public static string ToCamelCase(string inputString)

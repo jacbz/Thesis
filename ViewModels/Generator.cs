@@ -214,15 +214,24 @@ namespace Thesis.ViewModels
 
         public void GenerateCode()
         {
+            var logItem = Logger.Log(LogItemType.Info, $"Generating code...");
+
             _window.codeTextBox.Text = "";
+            var stopwatch = Stopwatch.StartNew();
+
             var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.Address, v => v);
-
-            _window.codeTextBox.Text += CSharpGenerator.GetMainClass(GeneratedClasses) + "\n\n";
-
-            foreach (var generatedClass in GeneratedClasses)
+            CodeGenerator codeGenerator;
+            switch (_window.languageComboBox.SelectedIndex)
             {
-                _window.codeTextBox.Text += generatedClass.ToCode(Language.CSharp, addressToVertexDictionary) + "\n\n";
+                default:
+                    codeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
+                    break;
             }
+            string code = codeGenerator.GetCode();
+            logItem.AppendTime(stopwatch.ElapsedMilliseconds);
+
+            _window.codeTextBox.Text = code;
+            Logger.Log(LogItemType.Success, $"Successfully generated code.");
         }
     }
 }

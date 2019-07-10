@@ -53,21 +53,5 @@ namespace Thesis.Models
                 Logger.Log(LogItemType.Error, "Error during topological sort. Graph has at least one cycle?");
             Vertices = sortedVertices;
         }
-
-        public string ToCode(Language language, Dictionary<string, Vertex> addressToVertexDictionary)
-        {
-            CodeGenerator codeGenerator;
-            switch (language)
-            {
-                case Language.CSharp:
-                    codeGenerator = new CSharpGenerator(this, addressToVertexDictionary);
-                    break;
-                default:
-                    codeGenerator = new CSharpGenerator(this, addressToVertexDictionary);
-                    break;
-            }
-
-            return codeGenerator.ClassToCode();
-        }
     }
 }

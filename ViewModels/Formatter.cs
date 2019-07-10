@@ -77,7 +77,7 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = vertex.LabelOrAddress,
+                        Content = vertex.NameInCode,
                         ViewTemplate =
                             Application.Current.Resources[vertex.HasLabel ? "normalLabel" : "redLabel"] as DataTemplate,
                         UnitWidth = 200

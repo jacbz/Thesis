@@ -224,7 +224,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <ComboBox Width="300" HorizontalAlignment="Left" SelectedIndex="0" >
+                            <ComboBox x:Name="languageComboBox" Width="300" HorizontalAlignment="Left" SelectedIndex="0" >
                                 <ComboBoxItem>C#</ComboBoxItem>
                             </ComboBox>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">

@@ -5,6 +5,7 @@ using Irony.Parsing;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
+using Thesis.Models.CodeGenerators;
 
 namespace Thesis
 {
@@ -53,7 +54,7 @@ namespace Thesis
         public GeneratedClass Class { get; set; }
         public string CellTypeString { get => Type.ToString(); }
         public bool HasLabel => !string.IsNullOrEmpty(Label);
-        public string LabelOrAddress => HasLabel ? Label : Address;
+        public string NameInCode => CodeGenerator.ToCamelCase(Address) + Label;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
