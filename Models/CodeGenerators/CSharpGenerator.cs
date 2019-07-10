@@ -28,9 +28,9 @@ namespace Thesis.Models.CodeGenerators
             {
                 var vertex = generatedClass.Vertices[i];
                 if (vertex.Type == CellType.Formula)
-                    method.AddRange(VertexToCode(vertex));
+                    method.Add(VertexToCode(vertex));
                 else
-                    properties.AddRange(VertexToCode(vertex));
+                    properties.Add(VertexToCode(vertex));
             }
 
             output.AddRange(FormatLines(properties, 1));
@@ -44,27 +44,24 @@ namespace Thesis.Models.CodeGenerators
             return string.Join("\n", output);
         }
 
-        public override IEnumerable<string> VertexToCode(Vertex vertex)
+        public override string VertexToCode(Vertex vertex)
         {
             var label = vertex.LabelOrAddress;
 
             switch (vertex.Type)
             {
                 case CellType.Bool:
-                    yield return $"static bool {label} = {vertex.Value};";
-                    break;
+                    return $"static bool {label} = {vertex.Value};";
                 case CellType.Date:
-                    yield return $"static DateTime {label} = DateTime.Parse({vertex.Value});";
-                    break;
+                    return $"static DateTime {label} = DateTime.Parse({vertex.Value});";
                 case CellType.Formula:
-                    yield return $"var {label} = {TreeNodeToCode(vertex.ParseTree, 0)};";
-                    break;
+                    return $"var {label} = {TreeNodeToCode(vertex.ParseTree, 0)};";
                 case CellType.Number:
-                    yield return $"static decimal {label} = {vertex.Value};";
-                    break;
+                    return $"static decimal {label} = {vertex.Value};";
                 case CellType.Text:
-                    yield return $"static string {label} = \"{vertex.Value}\";";
-                    break;
+                    return $"static string {label} = \"{vertex.Value}\";";
+                default:
+                    return "";
             }
         }
 

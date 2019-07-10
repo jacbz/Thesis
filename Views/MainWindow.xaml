@@ -235,7 +235,8 @@
                         SyntaxHighlighting="C#"
                         ShowLineNumbers="True"
                         FontSize="9pt"
-                        TextChanged="CodeTextBox_TextChanged"/>
+                        TextChanged="CodeTextBox_TextChanged"
+                        WordWrap="True"/>
                 </DockPanel>
             </TabItem>
         </TabControl>

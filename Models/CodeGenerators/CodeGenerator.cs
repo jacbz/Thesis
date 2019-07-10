@@ -14,7 +14,7 @@ namespace Thesis.Models.CodeGenerators
         private protected Dictionary<string, Vertex> addressToVertexDictionary;
 
         public abstract string ClassToCode();
-        public abstract IEnumerable<string> VertexToCode(Vertex vertex);
+        public abstract string VertexToCode(Vertex vertex);
 
         public abstract string Indent(int level);
 
