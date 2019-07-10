@@ -82,13 +82,23 @@
                             <RowDefinition Height="26"/>
                             <RowDefinition Height="6"/>
                             <RowDefinition Height="26"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="26"/>
+                            <RowDefinition Height="6"/>
+                            <RowDefinition Height="26"/>
                         </Grid.RowDefinitions>
                         
-                        <TextBlock Text="Label:" Grid.Row="0" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding Label}" Grid.Row="0" Grid.Column="1"/>
+                        <TextBlock Text="Type:" Grid.Row="0" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding CellTypeString}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold"/>
                         
-                        <TextBlock Text="Value:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding Value}" Grid.Row="2" Grid.Column="1" IsReadOnly="True"/>    
+                        <TextBlock Text="Label:" Grid.Row="2" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Label}" Grid.Row="2" Grid.Column="1"/>
+                        
+                        <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True"/>    
+                        
+                        <TextBlock Text="Formula:" Grid.Row="6" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Formula}" Grid.Row="6" Grid.Column="1" IsReadOnly="True"/>   
                     </Grid>
                         
                     </StackPanel>

@@ -40,12 +40,11 @@ namespace Thesis
 
             foreach (var vertex in Vertices)
             {
-                if (vertex.Type != CellType.Formula) continue;
+                if (vertex.NodeType == NodeType.Constant) continue;
 
                 try
                 {
-                    var (referencedCells, externalReferencedCells) =
-                        GetListOfReferencedCells(vertex.Address, vertex.ParseTree);
+                    var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.Address, vertex.ParseTree);
                     foreach (var cell in referencedCells)
                     {
                         vertex.Children.Add(verticesDict[cell]);
@@ -176,7 +175,7 @@ namespace Thesis
                 {
                     var cell = worksheet.Range[row, column];
                     if (Vertices.Any(v => v.Address == cell.Address)) continue;
-                    if (Vertex.GetCellType(cell) == CellType.Text && !string.IsNullOrWhiteSpace(cell.DisplayText))
+                    if (!cell.HasFormula && !string.IsNullOrWhiteSpace(cell.DisplayText))
                         vertex.Label = CodeGenerator.ToCamelCase(cell.DisplayText);
                     column--;
                 }

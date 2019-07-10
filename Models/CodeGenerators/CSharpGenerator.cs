@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Irony.Parsing;
+using Syncfusion.XlsIO;
 using XLParser;
 
 namespace Thesis.Models.CodeGenerators
@@ -15,6 +16,23 @@ namespace Thesis.Models.CodeGenerators
         {
         }
 
+        public static string GetMainClass(List<GeneratedClass> classes)
+        {
+            var output = new List<string>();
+            output.Add($"class Main");
+            output.Add("{");
+            output.Add(FormatLine("static void Main(string[] args)", 1));
+            output.Add(FormatLine("{", 1));
+
+            output.AddRange(FormatLines(classes.Where(c => c.OutputVertex == null).Select(c => $"{c.Name} {c.Name.ToLower()} = new {c.Name}();"), 2));
+            output.AddRange(FormatLines(classes.Where(c => c.OutputVertex != null).Select(c => $"{CellTypeToTypeString(c.OutputVertex.Type)} {c.OutputVertex.LabelOrAddress} = {c.Name}.Calculate();"), 2));
+
+            output.Add(FormatLine("}", 1));
+
+            output.Add("}");
+            return string.Join("\n", output);
+        }
+
         public override string ClassToCode()
         {
             var output = new List<string>();
@@ -24,21 +42,33 @@ namespace Thesis.Models.CodeGenerators
             var properties = new List<string>();
             var method = new List<string>();
 
+            var outputVertex = generatedClass.OutputVertex;
+
             for (int i = generatedClass.Vertices.Count - 1; i >= 0; i--)
             {
                 var vertex = generatedClass.Vertices[i];
-                if (vertex.Type == CellType.Formula)
-                    method.Add(VertexToCode(vertex));
-                else
+                if (vertex.NodeType == NodeType.Constant)
+                {
                     properties.Add(VertexToCode(vertex));
+                }
+                else
+                {
+                    if (outputVertex == null)
+                    {
+                        properties.Add($"{CellTypeToTypeString(vertex.Type)} {vertex.LabelOrAddress};");
+                    }
+                    method.Add(VertexToCode(vertex));
+                }
             }
 
             output.AddRange(FormatLines(properties, 1));
             output.Add("\n");
 
-            output.Add(FormatLine($"{generatedClass.Name}()", 1));
+            output.Add(FormatLine($"{(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.Type) + " Calculate")}()", 1));
             output.Add(FormatLine("{", 1));
             output.AddRange(FormatLines(method, 2));
+            if (generatedClass.OutputVertex != null)
+                output.Add(FormatLine($"return {outputVertex.LabelOrAddress};", 2));
             output.Add(FormatLine( "}", 1));
             output.Add("}");
             return string.Join("\n", output);
@@ -46,20 +76,39 @@ namespace Thesis.Models.CodeGenerators
 
         public override string VertexToCode(Vertex vertex)
         {
-            var label = vertex.LabelOrAddress;
+            if (vertex.NodeType == NodeType.Constant)
+            {
+                switch (vertex.Type)
+                {
+                    case CellType.Bool:
+                    case CellType.Number:
+                        return $"static {CellTypeToTypeString(vertex.Type)} {vertex.LabelOrAddress} = {vertex.Value};";
+                    case CellType.Text:
+                        return $"static {CellTypeToTypeString(vertex.Type)} {vertex.LabelOrAddress} = \"{vertex.Value}\";";
+                    case CellType.Date:
+                        return $"static DateTime {vertex.LabelOrAddress} = DateTime.Parse({vertex.Value});";
+                    default:
+                        return "";
+                }
+            }
+            else
+            {
+                return $"{CellTypeToTypeString(vertex.Type)} {vertex.LabelOrAddress} = {TreeNodeToCode(vertex.ParseTree, 0)};";
+            }
+        }
 
-            switch (vertex.Type)
+        public static string CellTypeToTypeString(CellType cellType)
+        {
+            switch (cellType)
             {
                 case CellType.Bool:
-                    return $"static bool {label} = {vertex.Value};";
+                    return "bool";
                 case CellType.Date:
-                    return $"static DateTime {label} = DateTime.Parse({vertex.Value});";
-                case CellType.Formula:
-                    return $"var {label} = {TreeNodeToCode(vertex.ParseTree, 0)};";
+                    return "DateTime";
                 case CellType.Number:
-                    return $"static decimal {label} = {vertex.Value};";
+                    return "double";
                 case CellType.Text:
-                    return $"static string {label} = \"{vertex.Value}\";";
+                    return "string";
                 default:
                     return "";
             }
@@ -230,17 +279,17 @@ namespace Thesis.Models.CodeGenerators
 //            return new List<string> { $"// Parsing rules for {node.ToString()} not implemented yet! {node.ToString()}" };
 //        }
 
-        public string FormatLine(string s, int indentLevel = 1)
+        public static string FormatLine(string s, int indentLevel = 1)
         {
             return Indent(indentLevel) + s;
         }
 
-        public IEnumerable<string> FormatLines(IEnumerable<string> list, int indentLevel)
+        public static IEnumerable<string> FormatLines(IEnumerable<string> list, int indentLevel)
         {
             return list.Select(i => FormatLine(i.Replace("\n", "\n".PadRight(indentLevel * 4)), indentLevel));
         }
 
-        public override string Indent(int level)
+        public static string Indent(int level)
         {
             return "".PadLeft(level * 4);
         }

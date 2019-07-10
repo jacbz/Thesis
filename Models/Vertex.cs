@@ -10,7 +10,6 @@ namespace Thesis
 {
     public enum CellType
     {
-        Formula,
         Bool,
         Number,
         Date,
@@ -48,12 +47,11 @@ namespace Thesis
             }
         }
 
-        public NodeType NodeType => Type == CellType.Formula
-            ? Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula
-            : NodeType.Constant;
+        public NodeType NodeType => ParseTree != null ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) : NodeType.Constant;
 
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
+        public string CellTypeString { get => Type.ToString(); }
         public bool HasLabel => !string.IsNullOrEmpty(Label);
         public string LabelOrAddress => HasLabel ? Label : Address;
 
@@ -62,31 +60,29 @@ namespace Thesis
         public Vertex(IRange cell)
         {
             Type = GetCellType(cell);
-            Value = Type == CellType.Formula ? FormatFormula(cell.Value) : cell.Value;
-            Formula = cell.Formula != null ? FormatFormula(cell.Formula) : null;
+            Value = cell.DisplayText;
+            Formula = cell.HasFormula ? FormatFormula(cell.Formula) : null;
             CellIndex = new[] { cell.Row, cell.Column };
             Address = cell.AddressLocal;
             Parents = new HashSet<Vertex>();
             Children = new HashSet<Vertex>();
             Include = true;
 
-            if (Type == CellType.Formula)
+            if (cell.HasFormula)
                 ParseTree = XLParser.ExcelFormulaParser.Parse(Formula);
         }
 
+        public CellType GetCellType(IRange cell)
+        {
+            if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;
+            if (cell.HasNumber || cell.HasFormulaNumberValue) return CellType.Number;
+            if (cell.HasDateTime || cell.HasFormulaBoolValue) return CellType.Date;
+            return CellType.Text;
+        }
+        
         private string FormatFormula(string formula)
         {
             return formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
-        }
-
-        public static CellType GetCellType(IRange cell)
-        {
-            if (cell.HasFormula)
-                return CellType.Formula;
-            if (cell.HasBoolean) return CellType.Bool;
-            if (cell.HasNumber) return CellType.Number;
-            if (cell.HasDateTime) return CellType.Date;
-            return CellType.Text;
         }
 
         public HashSet<Vertex> GetReachableVertices()

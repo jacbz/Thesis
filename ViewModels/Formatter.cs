@@ -104,7 +104,7 @@ namespace Thesis.ViewModels
             double posX)
         {
             var graphLayout = LayoutGraph(generatedClass).Reverse().ToList();
-            var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.Type == CellType.Formula));
+            var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
             var group = new GroupViewModel
             {
@@ -125,8 +125,8 @@ namespace Thesis.ViewModels
 
             foreach (var row in graphLayout)
             {
-                var formulas = row.Where(v => v.Type == CellType.Formula).ToList();
-                var constants = row.Where(v => v.Type != CellType.Formula).ToList();
+                var formulas = row.Where(v => v.NodeType != NodeType.Constant).ToList();
+                var constants = row.Where(v => v.NodeType == NodeType.Constant).ToList();
 
                 if (constants.Count > 0)
                 {
@@ -214,7 +214,7 @@ namespace Thesis.ViewModels
                         entry.Add(child);
                         // TODO cleanup
                         while (vertexQueue.Count > 0 && child.Children.Contains(vertexQueue.Peek()) &&
-                               vertexQueue.Peek().Type != CellType.Formula)
+                               vertexQueue.Peek().NodeType == NodeType.Constant)
                         {
                             var child1 = vertexQueue.Dequeue();
                             entry.Add(child1);

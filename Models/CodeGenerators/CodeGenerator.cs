@@ -16,8 +16,6 @@ namespace Thesis.Models.CodeGenerators
         public abstract string ClassToCode();
         public abstract string VertexToCode(Vertex vertex);
 
-        public abstract string Indent(int level);
-
         protected CodeGenerator(GeneratedClass generatedClass, Dictionary<string, Vertex> addressToVertexDictionary)
         {
             this.generatedClass = generatedClass;

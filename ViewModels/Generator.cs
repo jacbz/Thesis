@@ -217,6 +217,8 @@ namespace Thesis.ViewModels
             _window.codeTextBox.Text = "";
             var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.Address, v => v);
 
+            _window.codeTextBox.Text += CSharpGenerator.GetMainClass(GeneratedClasses) + "\n\n";
+
             foreach (var generatedClass in GeneratedClasses)
             {
                 _window.codeTextBox.Text += generatedClass.ToCode(Language.CSharp, addressToVertexDictionary) + "\n\n";
