@@ -101,6 +101,7 @@ namespace Thesis
 
             // disable editing
             spreadsheet.ActiveGrid.AllowEditing = false;
+            spreadsheet.ActiveGrid.FillSeriesController.AllowFillSeries = false;
             spreadsheet.ActiveGrid.CellContextMenuOpening += ActiveGrid_CellContextMenuOpening;
         }
 
