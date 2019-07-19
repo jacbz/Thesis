@@ -9,6 +9,7 @@ using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.Models.CodeGenerators;
+using Thesis.Views;
 
 namespace Thesis.ViewModels
 {
@@ -118,18 +119,6 @@ namespace Thesis.ViewModels
         {
             var logItem = Logger.Log(LogItemType.Info, "Layouting classes...");
             var stopwatch = Stopwatch.StartNew();
-
-            if (_window.diagram2.Groups is GroupCollection gc && gc.Count > 0)
-            {
-                try
-                {
-                    gc.Clear();
-                }
-                catch (Exception)
-                {
-                    Logger.Log(LogItemType.Error, "Error in graph drawing library");
-                }
-            }
 
             _window.diagram2.Nodes = new NodeCollection();
             _window.diagram2.Connectors = new ConnectorCollection();

@@ -8,7 +8,7 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:view="clr-namespace:Thesis.Views"
-        xmlns:system="clr-namespace:System;assembly=mscorlib" x:Class="Thesis.MainWindow"
+        xmlns:system="clr-namespace:System;assembly=mscorlib" x:Class="Thesis.Views.MainWindow"
         mc:Ignorable="d"
         Title="Thesis" Height="864" Width="1536" Icon="../icon.ico" WindowStartupLocation="CenterScreen">
 

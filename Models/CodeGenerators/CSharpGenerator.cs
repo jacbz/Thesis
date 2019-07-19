@@ -111,7 +111,7 @@ namespace Thesis.Models.CodeGenerators
                 case CellType.Date:
                     return "DateTime";
                 case CellType.Number:
-                    return "double";
+                    return "decimal";
                 case CellType.Text:
                     return "string";
                 case CellType.Unknown:
@@ -147,8 +147,6 @@ namespace Thesis.Models.CodeGenerators
 
         private string TreeNodeToCode(ParseTreeNode node, Vertex vertex, int depth)
         {
-            depth++;
-
             // Non-Terminals
             if (node.Term is NonTerminal nt)
             {
@@ -161,11 +159,13 @@ namespace Thesis.Models.CodeGenerators
                     case "FormulaWithEq":
                         return TreeNodeToCode(node.ChildNodes[1], vertex, depth);
                     case "Formula":
+                        depth++;
                         // for rule OpenParen + Formula + CloseParen
                         return TreeNodeToCode(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], vertex, depth);
                     case "FunctionCall":
                         return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), vertex, depth);
                     case "Reference":
+                        depth++;
                         if (node.ChildNodes.Count == 1)
                             return TreeNodeToCode(node.ChildNodes[0], vertex, depth);
                         if (node.ChildNodes.Count == 2)
@@ -204,6 +204,7 @@ namespace Thesis.Models.CodeGenerators
 
         private string ParseFunction(string functionName, ParseTreeNode[] arguments, Vertex vertex, int depth)
         {
+            depth++;
             switch (functionName)
             {
                 // arithmetic
@@ -295,12 +296,6 @@ namespace Thesis.Models.CodeGenerators
         {
             return "Error in " + functionName;
         }
-
-//        private List<string> Error(ParseTreeNode node)
-//        {
-//            ExcelFormulaGrammar
-//            return new List<string> { $"// Parsing rules for {node.ToString()} not implemented yet! {node.ToString()}" };
-//        }
 
         public static string FormatLine(string s, int indentLevel = 1)
         {

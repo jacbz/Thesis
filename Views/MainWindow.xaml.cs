@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,10 +12,9 @@ using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO.Implementation;
 using Thesis.ViewModels;
-using Thesis.Views;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 
-namespace Thesis
+namespace Thesis.Views
 {
     /// <summary>
     ///     Interaction logic for MainWindow.xaml
@@ -35,7 +35,7 @@ namespace Thesis
 
         private void SetUpUi()
         {
-            // enable folding in code textbox
+            // enable folding in code text box
             foldingManager = FoldingManager.Install(codeTextBox.TextArea);
             foldingStrategy = new BraceFoldingStrategy();
 
@@ -67,7 +67,14 @@ namespace Thesis
             pathLabel.FontStyle = FontStyles.Normal;
 
             Logger.Log(LogItemType.Info, $"Loading {App.Settings.FilePath}");
-            spreadsheet.Open(App.Settings.FilePath);
+            try
+            {
+                spreadsheet.Open(App.Settings.FilePath);
+            }
+            catch (IOException e)
+            {
+                Logger.Log(LogItemType.Error, "Could not open file: " + e.Message);
+            }
             spreadsheet.Opacity = 100;
 
             generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;
@@ -126,6 +133,9 @@ namespace Thesis
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
             generator.LoadDataIntoGraphAndSpreadsheet();
+
+            // scroll to top left
+            (diagram.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
         }
 
         public void EnableGraphOptions()
@@ -300,9 +310,21 @@ namespace Thesis
 
         private void GenerateClassesButton_Click(object sender, RoutedEventArgs e)
         {
+            // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
+            if (diagram2.Groups != null)
+                foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
+                foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+                    if (node.Content is Vertex)
+                    {
+                        node.IsSelected = false;
+                    }
+
             generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
             generator.GenerateClasses();
             EnableCodeGenerationOptions();
+
+            // scroll to top left
+            (diagram2.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
         }
 
         private void SelectLogTab()
