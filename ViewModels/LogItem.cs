@@ -1,49 +1,54 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Thesis.ViewModels
 {
     public class LogItem : INotifyPropertyChanged
     {
-        private string message;
-        private DateTime time;
+        private string _message;
+        private DateTime _time;
+        private Stopwatch _stopwatch;
 
-        public LogItem(LogItemType type, string message)
+        public LogItem(LogItemType type, string message, Stopwatch stopwatch)
         {
             Type = type;
             Message = message;
             Time = DateTime.Now;
+            _stopwatch = stopwatch;
         }
 
         public LogItemType Type { get; }
 
         public string Message
         {
-            get => message;
+            get => _message;
             set
             {
-                message = value;
+                _message = value;
                 OnPropertyChanged();
             }
         }
 
         public DateTime Time
         {
-            get => time;
+            get => _time;
             set
             {
-                time = value;
+                _time = value;
                 OnPropertyChanged();
             }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public void AppendTime(long ms)
+        public void AppendElapsedTime()
         {
-            Message += $" (elapsed {ms} ms)";
+            Message += $" (elapsed {_stopwatch.ElapsedMilliseconds} ms)";
             Time = DateTime.Now;
+
+            _stopwatch.Stop();
         }
 
         public void Append(string message)

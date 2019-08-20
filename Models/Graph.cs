@@ -59,7 +59,7 @@ namespace Thesis.Models
 
             AllVertices = Vertices.ToList();
 
-            TransitiveFilter(GetOutputFields());
+            PerformTransitiveFilter(GetOutputFields());
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
 
@@ -67,6 +67,7 @@ namespace Thesis.Models
 
         private void GenerateLabels()
         {
+            var logItem = Logger.Log(LogItemType.Info, "Generating labels...", true);
             // Create labels
             Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
             foreach (var vertex in Vertices)
@@ -172,6 +173,7 @@ namespace Thesis.Models
 
                 vertex.Label.GenerateVariableName();
             }
+            logItem.AppendElapsedTime();
         }
 
         // recursively gets list of referenced cells from parse tree using DFS
@@ -261,9 +263,11 @@ namespace Thesis.Models
         }
 
         // Remove all vertices that are not transitively reachable from any vertex in the given list
-        public void TransitiveFilter(List<Vertex> vertices)
+        public void PerformTransitiveFilter(List<Vertex> vertices)
         {
+            var logItem = Logger.Log(LogItemType.Info, "Perform transitive filter...", true);
             Vertices = vertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
+            logItem.AppendElapsedTime();
 
             PopulatedRows = Vertices.Select(v => v.Address.row).Distinct().ToList();
             PopulatedRows.Sort();
@@ -285,12 +289,13 @@ namespace Thesis.Models
                 classesList.Add(newClass);
             }
 
-            Logger.Log(LogItemType.Info, "Applying topological sort...");
+            var logItem = Logger.Log(LogItemType.Info, "Applying topological sort...", true);
             foreach (var generatedClass in classesList)
             {
                 generatedClass.Vertices.RemoveAll(v => vertexToOutputFieldVertices[v].Count > 1);
                 generatedClass.TopologicalSort();
             }
+            logItem.AppendElapsedTime();
 
             var sharedVertices = vertexToOutputFieldVertices
                 .Where(kvp => kvp.Value.Count > 1)

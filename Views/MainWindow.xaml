@@ -107,7 +107,15 @@
 
                 </TabItem>
                 <TabItem x:Name="logTab" Header="Log">
-                    <view:LogControl x:Name="logControl"/>
+                    <Grid>
+                        <view:LogControl x:Name="logControl"/>
+                        <Button x:Name="clearLogButton" VerticalAlignment="Top" Height="18" Width="60" Padding="10,0" HorizontalAlignment="Right" Margin="0,0,12,0" Click="ClearLogButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <fa5:SvgAwesome Icon="Regular_TrashAlt" Width="10" Height="10"/>
+                                <TextBlock FontSize="10"><Run Text="Clear"/></TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
                 </TabItem>
                 <TabItem x:Name="helpTab" Header="Help">
                     <Grid>
@@ -210,7 +218,7 @@
                                 <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" >
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                                        <TextBlock><Run Text="Generate graph and labels"/></TextBlock>
+                                        <TextBlock><Run Text="Filter by selected output fields and generate graph"/></TextBlock>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

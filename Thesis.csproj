@@ -137,6 +137,8 @@
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Models\Vertex.cs" />
     <Compile Include="Views\BraceFoldingStrategy.cs" />
+    <Compile Include="Views\MainWindowEvents.cs" />
+    <Compile Include="Views\MainWindowActions.cs" />
     <Compile Include="Views\TestWindow.xaml.cs">
       <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>

@@ -20,7 +20,7 @@ namespace Thesis.Models
         {
             SelectedWorksheet = null;
             SelectedOutputFields = null;
-            Save();
+            Persist();
         }
 
         public static UserSettings Read()
@@ -44,7 +44,7 @@ namespace Thesis.Models
             }
         }
 
-        public void Save()
+        public void Persist()
         {
             File.WriteAllText(Path, JsonConvert.SerializeObject(this));
         }
