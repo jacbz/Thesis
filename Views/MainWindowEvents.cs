@@ -42,8 +42,12 @@ namespace Thesis.Views
 
         private void Spreadsheet_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "ActiveSheet")
+            if (e.PropertyName == "ActiveGrid" && spreadsheet.ActiveGrid != null)
             {
+                spreadsheet.ActiveGrid.AllowEditing = false;
+                spreadsheet.ActiveGrid.FillSeriesController.AllowFillSeries = false;
+                spreadsheet.ActiveGrid.CellContextMenuOpening += ActiveGrid_CellContextMenuOpening;
+                spreadsheet.ActiveGrid.CurrentCellActivated += SpreadsheetCellSelected;
             }
         }
 
@@ -64,21 +68,13 @@ namespace Thesis.Views
                 _generator.GenerateGraph();
                 Logger.Log(LogItemType.Success, "Successfully generated graph.");
             }
-
-            // disable editing
-            spreadsheet.ActiveGrid.AllowEditing = false;
-            spreadsheet.ActiveGrid.FillSeriesController.AllowFillSeries = false;
-
-            spreadsheet.ActiveGrid.CellContextMenuOpening += ActiveGrid_CellContextMenuOpening;
-            spreadsheet.ActiveGrid.CurrentCellActivated += SpreadsheetCellSelected;
         }
 
         private void ActiveGrid_CellContextMenuOpening(object sender, CellContextMenuOpeningEventArgs e)
         {
             spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
 
-            var vertex = _generator.Graph.Vertices
-                .FirstOrDefault(v => v.Address.row == e.Cell.RowIndex && v.Address.col == e.Cell.ColumnIndex);
+            var vertex = _generator.GetVertexByAddress(e.Cell.RowIndex, e.Cell.ColumnIndex);
 
             if (vertex != null && vertex.NodeType == NodeType.OutputField)
             {
@@ -104,94 +100,6 @@ namespace Thesis.Views
             (diagram.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
         }
 
-        private void OutputFieldsListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-        {
-            if (e.AddedItems.Count == 1 && e.AddedItems[0] is Vertex vertex)
-            {
-                SelectVertexInSpreadsheet(vertex);
-                SelectVertexInDiagrams(vertex);
-                InitiateToolbox(vertex);
-            }
-        }
-
-        public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)
-        {
-            // disable annotation editing
-            args.Cancel = true;
-        }
-
-        public void DiagramItemClicked(object sender, DiagramEventArgs e)
-        {
-            DisableDiagramNodeTools();
-            if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
-            {
-                spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
-                SelectVertexInSpreadsheet(vertex);
-                SelectVertexInOutputListView(vertex);
-                InitiateToolbox(vertex);
-            }
-            else
-            {
-                InitiateToolbox(null);
-            }
-        }
-
-        public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
-        {
-            if (e.ActivationTrigger == ActivationTrigger.Program) return;
-            var vertex = _generator.Graph.Vertices
-                .FirstOrDefault(v =>
-                    v.Address.row == e.CurrentRowColumnIndex.RowIndex &&
-                    v.Address.col == e.CurrentRowColumnIndex.ColumnIndex);
-            if (vertex != null)
-            {
-                SelectVertexInDiagrams(vertex);
-                SelectVertexInOutputListView(vertex);
-                InitiateToolbox(vertex);
-            }
-            else
-            {
-                InitiateToolbox(null);
-            }
-        }
-
-        private void SelectVertexInDiagrams(Vertex vertex)
-        {
-            if (diagram.Nodes == null) return;
-            foreach (var node in (DiagramCollection<NodeViewModel>)diagram.Nodes)
-                if (node.Content is Vertex nodeVertex)
-                {
-                    if (nodeVertex.Address.row == vertex.Address.row &&
-                        nodeVertex.Address.col == vertex.Address.col)
-                    {
-                        node.IsSelected = true;
-                        (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
-                        DisableDiagramNodeTools(diagram);
-                    }
-                    else
-                    {
-                        node.IsSelected = false;
-                    }
-                }
-
-            if (diagram2.Groups == null) return;
-            foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
-                foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
-                    if (node.Content is Vertex nodeVertex)
-                    {
-                        if (nodeVertex.Address.row == vertex.Address.row &&
-                            nodeVertex.Address.col == vertex.Address.col)
-                        {
-                            node.IsSelected = true;
-                            (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
-                            DisableDiagramNodeTools(diagram2);
-                        }
-                        else
-                        {
-                            node.IsSelected = false;
-                        }
-                    }
-        }
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
             _generator.SelectAllOutputFields();
@@ -207,11 +115,11 @@ namespace Thesis.Views
             // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
             if (diagram2.Groups != null)
                 foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
-                    foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
-                        if (node.Content is Vertex)
-                        {
-                            node.IsSelected = false;
-                        }
+                foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+                    if (node.Content is Vertex)
+                    {
+                        node.IsSelected = false;
+                    }
 
             _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
             _generator.GenerateClasses();
@@ -224,6 +132,55 @@ namespace Thesis.Views
         private void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
         {
             _generator.GenerateCode();
+        }
+
+        public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)
+        {
+            // disable annotation editing
+            args.Cancel = true;
+        }
+
+        public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
+        {
+            if (e.ActivationTrigger == ActivationTrigger.Program) return;
+            var vertex = _generator.GetVertexByAddress(e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
+            if (vertex != null)
+            {
+                SelectVertexInDiagrams(vertex);
+                SelectVertexInOutputListView(vertex);
+                InitiateToolbox(vertex);
+            }
+            else
+            {
+                InitiateToolbox(null);
+            }
+        }
+
+        public void DiagramItemClicked(object sender, DiagramEventArgs e)
+        {
+            DisableDiagramNodeTools();
+            if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
+            {
+                SelectVertexInSpreadsheet(vertex);
+                outputFieldsListView.Tag = true; // avoiding triggering OutputFieldsListView_SelectionChanged
+                SelectVertexInOutputListView(vertex);
+                outputFieldsListView.Tag = null;
+                InitiateToolbox(vertex);
+            }
+            else
+            {
+                InitiateToolbox(null);
+            }
+        }
+
+        private void OutputFieldsListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (outputFieldsListView.Tag == null && e.AddedItems.Count == 1 && e.AddedItems[0] is Vertex vertex)
+            {
+                SelectVertexInSpreadsheet(vertex);
+                SelectVertexInDiagrams(vertex);
+                InitiateToolbox(vertex);
+            }
         }
 
         private void CodeTextBox_TextChanged(object sender, System.EventArgs e)

@@ -158,15 +158,28 @@ namespace Thesis.ViewModels
             OutputVertices.ForEach(v => v.Include = false);
         }
 
+        public Vertex GetVertexByAddress(int row, int col)
+        {
+            return Graph.AllVertices
+                .FirstOrDefault(v =>
+                    v.Address.row == row &&
+                    v.Address.col == col);
+        }
+
         public void GenerateClasses()
         {
-            Logger.Log(LogItemType.Info, "Generate classes for selected output fields...");
+            var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
+
             GeneratedClasses = Graph.GenerateClasses();
 
+            logItem.AppendElapsedTime();
             _window.ResetSpreadsheetColors();
             foreach (var generatedClass in GeneratedClasses)
             {
-                _window.ColorSpreadsheetCells(Graph.AllVertices, generatedClass.Vertices, v => generatedClass.Color);
+                _window.ColorSpreadsheetCells(generatedClass.Vertices, (vertex, style) =>
+                {
+                    _window.StyleCellByColor(generatedClass.Color, style);
+                }, _window.StyleBorderByNodeType);
             }
 
             _window.spreadsheet.ActiveGrid.InvalidateCells();

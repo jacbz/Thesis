@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.ViewModels;
@@ -39,7 +41,46 @@ namespace Thesis.Views
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
+            spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
             spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.Address.row, vertex.Address.col);
+        }
+
+        private void SelectVertexInDiagrams(Vertex vertex)
+        {
+            if (diagram.Nodes == null) return;
+            foreach (var node in (DiagramCollection<NodeViewModel>)diagram.Nodes)
+                if (node.Content is Vertex nodeVertex)
+                {
+                    if (nodeVertex.Address.row == vertex.Address.row &&
+                        nodeVertex.Address.col == vertex.Address.col)
+                    {
+                        node.IsSelected = true;
+                        (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
+                        DisableDiagramNodeTools(diagram);
+                    }
+                    else
+                    {
+                        node.IsSelected = false;
+                    }
+                }
+
+            if (diagram2.Groups == null) return;
+            foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
+            foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+                if (node.Content is Vertex nodeVertex)
+                {
+                    if (nodeVertex.Address.row == vertex.Address.row &&
+                        nodeVertex.Address.col == vertex.Address.col)
+                    {
+                        node.IsSelected = true;
+                        (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
+                        DisableDiagramNodeTools(diagram2);
+                    }
+                    else
+                    {
+                        node.IsSelected = false;
+                    }
+                }
         }
 
         private void SelectVertexInOutputListView(Vertex vertex)
@@ -47,6 +88,7 @@ namespace Thesis.Views
             if (vertex.NodeType == NodeType.OutputField)
             {
                 outputFieldsListView.ScrollIntoView(vertex);
+                outputFieldsListView.SelectedItem = vertex;
             }
         }
 
@@ -58,45 +100,58 @@ namespace Thesis.Views
         public void ResetAndColorAllCells(List<Vertex> allVertices, List<Vertex> filteredVertices)
         {
             ResetSpreadsheetColors();
-            ColorSpreadsheetCells(allVertices, filteredVertices, vertex =>
-            {
-                switch (vertex.Label.Type)
-                {
-                    case LabelType.Attribute:
-                        return ((System.Windows.Media.Color)Application.Current.Resources["AttributeColor"]).ToDColor();
-                    case LabelType.Data:
-                        return ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
-                    case LabelType.Header:
-                        return ((System.Windows.Media.Color)Application.Current.Resources["HeaderColor"]).ToDColor();
-                    default:
-                        return Color.Transparent;
-                }
-            });
+            ColorSpreadsheetCells(allVertices, StyleCellByLabelType, StyleBorderByNodeType);
             spreadsheet.ActiveGrid.InvalidateCells();
         }
 
-        /// <summary>
-        /// Color spreadsheet cells, given their vertices.
-        /// </summary>
-        /// <param name="allVertices">For all cells, the background color will be determined using cellColorFunc</param>
-        /// <param name="filteredVertices">Only these will get a border (correspondig to the node type)</param>
-        /// <param name="cellColorFunc">Determines cell background color for all cells.</param>
-        public void ColorSpreadsheetCells(List<Vertex> allVertices, List<Vertex> filteredVertices, Func<Vertex, Color> cellColorFunc)
+        public void StyleCellByLabelType(Vertex vertex, IStyle cellStyle)
         {
-            foreach (var vertex in allVertices)
+            Color color;
+            switch (vertex.Label.Type)
+            {
+                case LabelType.Attribute:
+                    color = ((System.Windows.Media.Color)Application.Current.Resources["AttributeColor"]).ToDColor();
+                    break;
+                case LabelType.Data:
+                    color = ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
+                    break;
+                case LabelType.Header:
+                    color = ((System.Windows.Media.Color)Application.Current.Resources["HeaderColor"]).ToDColor();
+                    break;
+                default:
+                    color = Color.Transparent;
+                    break;
+            }
+
+            StyleCellByColor(color, cellStyle);
+        }
+
+        public void StyleCellByColor(Color color, IStyle cellStyle)
+        {
+            cellStyle.Color = color;
+            cellStyle.Font.RGBColor = color.GetTextColor();
+        }
+
+        public void StyleBorderByNodeType(Vertex vertex, IBorders borderStyle)
+        {
+            borderStyle.ColorRGB = vertex.GetNodeTypeColor();
+            borderStyle.LineStyle = vertex.NodeType == NodeType.None ? ExcelLineStyle.None : ExcelLineStyle.Thick;
+        }
+
+        /// <summary>
+        /// Color spreadsheet cells by given vertices and styling functions.
+        /// </summary>
+        /// <param name="vertices">Cells to style</param>
+        /// <param name="styleCell">Cell styling function</param>
+        /// <param name="styleBorder">Border styling function</param>
+        public void ColorSpreadsheetCells(List<Vertex> vertices, Action<Vertex, IStyle> styleCell, Action<Vertex, IBorders> styleBorder)
+        {
+            foreach (var vertex in vertices)
             {
                 var range = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
-                range.CellStyle.Color = cellColorFunc(vertex);
-                range.CellStyle.Font.RGBColor = cellColorFunc(vertex).GetTextColor();
-                if (!filteredVertices.Contains(vertex))
-                {
-                    range.Borders.LineStyle = ExcelLineStyle.None;
-                }
-                else
-                {
-                    range.Borders.ColorRGB = vertex.GetNodeTypeColor();
-                    range.Borders.LineStyle = ExcelLineStyle.Thick;
-                }
+
+                styleCell(vertex, range.CellStyle);
+                styleBorder(vertex, range.Borders);
             }
             spreadsheet.ActiveGrid.InvalidateCells();
         }
