@@ -24,7 +24,7 @@ namespace Thesis.Models.CodeGenerators
 
         public string GetCode()
         {
-            return GetMainClass() + "\n\n" + string.Join("\n\n", generatedClasses.Select(c => ClassToCode(c)));
+            return GetMainClass() + "\n\n" + string.Join("\n\n", generatedClasses.Select(ClassToCode));
         }
     }
 

@@ -192,3 +192,7 @@ git_stats/*
 StyleCop.Cache
 bin
 obj
+
+#Fody
+FodyWeavers.xml
+FodyWeavers.xsd

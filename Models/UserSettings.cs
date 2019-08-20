@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows;
 using Newtonsoft.Json;
 using Thesis.ViewModels;
 
-namespace Thesis
+namespace Thesis.Models
 {
     public class UserSettings
     {
-        public static readonly string PATH = @"thesissettings.json";
+        public static readonly string Path = @"ThesisSettings.json";
 
         public string FilePath { get; set; }
 
@@ -28,9 +27,9 @@ namespace Thesis
         {
             try
             {
-                if (!File.Exists(PATH)) return new UserSettings();
+                if (!File.Exists(Path)) return new UserSettings();
 
-                var settings = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(PATH));
+                var settings = JsonConvert.DeserializeObject<UserSettings>(File.ReadAllText(Path));
                 if (!string.IsNullOrEmpty(settings.FilePath))
                 {
                     if (!File.Exists(settings.FilePath))
@@ -40,14 +39,14 @@ namespace Thesis
             }
             catch (Exception ex)
             {
-                Logger.Log(LogItemType.Error, $"Error reading {PATH}, creating a new settings file. ({ex.Message})");
+                Logger.Log(LogItemType.Error, $"Error reading {Path}, creating a new settings file. ({ex.Message})");
                 return new UserSettings();
             }
         }
 
         public void Save()
         {
-            File.WriteAllText(PATH, JsonConvert.SerializeObject(this));
+            File.WriteAllText(Path, JsonConvert.SerializeObject(this));
         }
     }
 }

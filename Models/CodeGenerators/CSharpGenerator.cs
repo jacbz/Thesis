@@ -26,7 +26,7 @@ namespace Thesis.Models.CodeGenerators
             output.Add(FormatLine("{", 1));
 
             output.AddRange(FormatLines(generatedClasses.Where(c => c.OutputVertex == null).Select(c => $"{c.Name} {c.Name.ToLower()} = new {c.Name}();"), 2));
-            output.AddRange(FormatLines(generatedClasses.Where(c => c.OutputVertex != null).Select(c => $"{CellTypeToTypeString(c.OutputVertex.Type)} {c.OutputVertex.NameInCode} = {c.Name}.Calculate();"), 2));
+            output.AddRange(FormatLines(generatedClasses.Where(c => c.OutputVertex != null).Select(c => $"{CellTypeToTypeString(c.OutputVertex.CellType)} {c.OutputVertex.VariableName} = {c.Name}.Calculate();"), 2));
 
             output.Add(FormatLine("}", 1));
 
@@ -56,7 +56,7 @@ namespace Thesis.Models.CodeGenerators
                 {
                     if (outputVertex == null)
                     {
-                        properties.Add($"public static {CellTypeToTypeString(vertex.Type)} {vertex.NameInCode};");
+                        properties.Add($"public static {CellTypeToTypeString(vertex.CellType)} {vertex.VariableName};");
                     }
                     method.Add(VertexToCode(vertex, generatedClass));
                 }
@@ -65,11 +65,11 @@ namespace Thesis.Models.CodeGenerators
             output.AddRange(FormatLines(properties, 1));
             output.Add("");
 
-            output.Add(FormatLine($"public {(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.Type) + " Calculate")}()", 1));
+            output.Add(FormatLine($"public {(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.CellType) + " Calculate")}()", 1));
             output.Add(FormatLine("{", 1));
             output.AddRange(FormatLines(method, 2));
             if (outputVertex != null)
-                output.Add(FormatLine($"return {outputVertex.NameInCode};", 2));
+                output.Add(FormatLine($"return {outputVertex.VariableName};", 2));
             output.Add(FormatLine( "}", 1));
             output.Add("}");
             return string.Join("\n", output);
@@ -80,26 +80,26 @@ namespace Thesis.Models.CodeGenerators
             if (vertex.NodeType == NodeType.Constant)
             {
                 string accessModifier = generatedClass.OutputVertex != null ? "static " : "public static ";
-                switch (vertex.Type)
+                switch (vertex.CellType)
                 {
                     case CellType.Bool:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {vertex.Value};";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {vertex.Value};";
                     case CellType.Number:
                         string value = vertex.Value.ToString().Replace(",", ".");
                         if (value.Contains("%")) value = value.Replace("%", " * 0.01");
-                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {value};";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {value};";
                     case CellType.Text:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = \"{vertex.Value}\";";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = \"{vertex.Value}\";";
                     case CellType.Date:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = DateTime.Parse({vertex.Value});";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = DateTime.Parse({vertex.Value});";
                     case CellType.Unknown:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = null;";
+                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = null;";
                     default:
                         return "";
                 }
             }
 
-            return $"{CellTypeToTypeString(vertex.Type)} {vertex.NameInCode} = {TreeNodeToCode(vertex.ParseTree, vertex, 0)};";
+            return $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {TreeNodeToCode(vertex.ParseTree, vertex, 0)};";
         }
 
         public static string CellTypeToTypeString(CellType cellType)
@@ -140,7 +140,7 @@ namespace Thesis.Models.CodeGenerators
         private string FormatAddress(string address, Vertex vertex)
         {
             if (addressToVertexDictionary.TryGetValue(address, out var v))
-                return vertex.Class == v.Class ? v.NameInCode: $"{v.Class.Name}.{v.NameInCode}";
+                return vertex.Class == v.Class ? v.VariableName: $"{v.Class.Name}.{v.VariableName}";
 
             return $"/* Error: {address} not found */";
         }
@@ -238,7 +238,7 @@ namespace Thesis.Models.CodeGenerators
                     if (arguments.Length == 2)
                         return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
                                FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +
-                               FormatLine($": {CellTypeToNullValue(vertex.Type)})", depth / 2);
+                               FormatLine($": {CellTypeToNullValue(vertex.CellType)})", depth / 2);
                     if (arguments.Length == 3)
                         return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
                                FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +

@@ -15,7 +15,7 @@ using Thesis.Views;
 
 namespace Thesis.ViewModels
 {
-    internal class Generator
+    public class Generator
     {
         private readonly MainWindow _window;
 
@@ -43,8 +43,6 @@ namespace Thesis.ViewModels
             Graph = new Graph(allCells);
             logItem.AppendTime(stopwatch.ElapsedMilliseconds);
 
-            //Graph.GenerateLabels(_window.spreadsheet.ActiveSheet);
-
             OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
             _window.outputFieldsListView.ItemsSource = OutputVertices;
 
@@ -71,8 +69,13 @@ namespace Thesis.ViewModels
                 Logger.Log(LogItemType.Info, "Loading selected output fields from user settings");
                 UnselectAllOutputFields();
                 foreach (var v in OutputVertices)
+                {
                     if (App.Settings.SelectedOutputFields.Contains(v.StringAddress))
+                    {
                         v.Include = true;
+                    }
+                }
+
                 _window.outputFieldsListView.ScrollIntoView(OutputVertices.First(v => v.Include));
                 LoadDataIntoGraphAndSpreadsheet();
             }
@@ -233,6 +236,7 @@ namespace Thesis.ViewModels
 
             var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.StringAddress, v => v);
             CodeGenerator codeGenerator;
+            // implement different languages here
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:

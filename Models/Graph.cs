@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
-using Thesis.Models;
-using Thesis.Models.CodeGenerators;
 using Thesis.ViewModels;
 using XLParser;
 
-namespace Thesis
+namespace Thesis.Models
 {
     public class Graph
     {
@@ -40,7 +36,7 @@ namespace Thesis
 
             foreach (var vertex in Vertices)
             {
-                if (vertex.NodeType != NodeType.Formula && vertex.NodeType != NodeType.OutputField) continue;
+                if (vertex.ParseTree == null) continue;
                 try
                 {
                     var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
@@ -72,17 +68,17 @@ namespace Thesis
         private void GenerateLabels()
         {
             // Create labels
-            Dictionary<(int row, int col), Label> Labels = new Dictionary<(int row, int col), Label>();
+            Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
             foreach (var vertex in Vertices)
             {
-                Label label = new Label();
-                if (vertex.Type == CellType.Unknown)
+                Label label = new Label(vertex);
+                if (vertex.CellType == CellType.Unknown && vertex.NodeType == NodeType.None)
                 {
                     label.Type = LabelType.None;
                 }
-                else if (vertex.Children.Count == 0 && vertex.Parents.Count == 0 && vertex.Type == CellType.Text)
+                else if (vertex.Children.Count == 0 && vertex.Parents.Count == 0 && vertex.CellType == CellType.Text)
                 {
-                    if (Labels.TryGetValue((vertex.Address.row - 1, vertex.Address.col), out Label labelAbove)
+                    if (labelDictionary.TryGetValue((vertex.Address.row - 1, vertex.Address.col), out Label labelAbove)
                         && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
                     {
                         label.Type = LabelType.Attribute;
@@ -101,7 +97,7 @@ namespace Thesis
                 }
 
                 vertex.Label = label;
-                Labels.Add((vertex.Address.row, vertex.Address.col), label);
+                labelDictionary.Add((vertex.Address.row, vertex.Address.col), label);
             }
 
             // assign attributes and headers for each data type
@@ -118,7 +114,7 @@ namespace Thesis
                 List<int> distancesToAttribute = new List<int>();
                 while (currentPos.col-- > 1)
                 {
-                    var currentLabel = Labels[currentPos];
+                    var currentLabel = labelDictionary[currentPos];
                     if (foundAttribute && currentLabel.Type != LabelType.Attribute) break;
 
                     distanceToAttribute++;
@@ -137,7 +133,7 @@ namespace Thesis
                     // no attributes, use first header on the top
                     while (currentPos.row-- > 1)
                     {
-                        var currentLabel = Labels[currentPos];
+                        var currentLabel = labelDictionary[currentPos];
                         if (currentLabel.Type == LabelType.Header)
                         {
                             vertex.Label.Headers.Add(currentLabel);
@@ -151,13 +147,13 @@ namespace Thesis
                     bool foundHeader = false;
                     while (currentPos.row-- > 1)
                     {
-                        var currentLabel = Labels[currentPos];
+                        var currentLabel = labelDictionary[currentPos];
 
                         bool anyAttributeDistanceMatch = false;
                         foreach (int dist in distancesToAttribute)
                         {
-                            if (Labels[(currentPos.row, currentPos.col - dist)].Type == LabelType.Attribute ||
-                                Labels[(currentPos.row + 1, currentPos.col - dist)].Type == LabelType.Attribute)
+                            if (labelDictionary[(currentPos.row, currentPos.col - dist)].Type == LabelType.Attribute ||
+                                labelDictionary[(currentPos.row + 1, currentPos.col - dist)].Type == LabelType.Attribute)
                                 anyAttributeDistanceMatch = true;
                         }
 

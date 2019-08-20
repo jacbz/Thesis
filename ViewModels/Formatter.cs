@@ -83,9 +83,9 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = vertex.NameInCode,
+                        Content = vertex.VariableName,
                         ViewTemplate =
-                            Application.Current.Resources[vertex.Label.VariableName != "" ? "normalLabel" : "redLabel"] as DataTemplate,
+                            Application.Current.Resources[vertex.VariableName != "" ? "normalLabel" : "redLabel"] as DataTemplate,
                         UnitWidth = 200
                     }
                 }
@@ -271,7 +271,7 @@ namespace Thesis.ViewModels
             return DColor.FromArgb(color.A, color.R, color.G, color.B);
         }
 
-        // string tools
+        // String tools
 
         public static string ToCamelCase(this string inputString)
         {

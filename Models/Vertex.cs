@@ -4,42 +4,22 @@ using System.Runtime.CompilerServices;
 using Irony.Parsing;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
-using Thesis.Models;
-using Thesis.Models.CodeGenerators;
 
-namespace Thesis
+namespace Thesis.Models
 {
-    public enum CellType
-    {
-        Bool,
-        Number,
-        Date,
-        Text,
-        Unknown
-    }
-
-    public enum NodeType
-    {
-        Formula,
-        OutputField,
-        Constant,
-        None
-    }
-
     public class Vertex : INotifyPropertyChanged
     {
-        private bool _include;
-
         public object Value { get; set; }
         public string Formula { get; set; }
         public Label Label { get; set; }
-        public CellType Type { get; set; }
+        public string VariableName { get; set; }
         public (int row, int col) Address { get; set; }
         public string StringAddress { get; }
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
         public ParseTreeNode ParseTree { get; set; }
 
+        private bool _include;
         public bool Include
         {
             get => _include;
@@ -50,23 +30,27 @@ namespace Thesis
             }
         }
 
-        public NodeType NodeType => ParseTree != null 
-            ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) 
-            : (string)Value != "" 
-                ? NodeType.Constant 
-                : NodeType.None;
+        public CellType CellType { get; set; }
+        public NodeType NodeType =>
+            Parents.Count > 0
+                ? Children.Count == 0
+                    ? NodeType.Constant
+                    : NodeType.Formula
+                : Children.Count > 0
+                    ? NodeType.OutputField
+                    : NodeType.None;
 
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
-        // ReSharper disable once UnusedMember.Global
-        public string CellTypeString => Type.ToString();
-        public string NameInCode => Label.VariableName;
+
+        // used in XAML binding
+        public string CellTypeString => CellType.ToString();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
         public Vertex(IRange cell)
         {
-            Type = GetCellType(cell);
+            CellType = GetCellType(cell);
             Value = cell.DisplayText;
             Formula = cell.HasFormula ? FormatFormula(cell.Formula) : null;
             Address = (cell.Row, cell.Column);
@@ -103,7 +87,7 @@ namespace Thesis
 
         public override string ToString()
         {
-            return $"{StringAddress},{Type.ToString()}: {Value}";
+            return $"{StringAddress},{CellType.ToString()}: {Value}";
         }
 
         public override int GetHashCode()
@@ -115,5 +99,22 @@ namespace Thesis
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+    }
+
+    public enum CellType
+    {
+        Bool,
+        Number,
+        Date,
+        Text,
+        Unknown
+    }
+
+    public enum NodeType
+    {
+        Formula,
+        OutputField,
+        Constant,
+        None
     }
 }

@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Thesis
+namespace Thesis.ViewModels
 {
     public class LogItem : INotifyPropertyChanged
     {

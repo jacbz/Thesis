@@ -8,7 +8,9 @@
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         xmlns:controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         xmlns:view="clr-namespace:Thesis.Views"
-        xmlns:system="clr-namespace:System;assembly=mscorlib" x:Class="Thesis.Views.MainWindow"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:models="clr-namespace:Thesis.Models"
+        x:Class="Thesis.Views.MainWindow"
         mc:Ignorable="d"
         Title="Thesis" Height="864" Width="1536" Icon="../icon.ico" WindowStartupLocation="CenterScreen">
 
@@ -51,13 +53,13 @@
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding NodeType}" Value="{x:Static local:NodeType.Formula}" >
+                                                        <DataTrigger Binding="{Binding NodeType}" Value="{x:Static models:NodeType.Formula}" >
                                                             <Setter Property="Background" Value="{StaticResource FormulaColorBrush}"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding NodeType}" Value="{x:Static local:NodeType.OutputField}" >
+                                                        <DataTrigger Binding="{Binding NodeType}" Value="{x:Static models:NodeType.OutputField}" >
                                                             <Setter Property="Background" Value="{StaticResource OutputColorBrush}"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding NodeType, FallbackValue={x:Static local:NodeType.Constant}}" Value="{x:Static local:NodeType.Constant}" >
+                                                        <DataTrigger Binding="{Binding NodeType, FallbackValue={x:Static models:NodeType.Constant}}" Value="{x:Static models:NodeType.Constant}" >
                                                             <Setter Property="Background" Value="{StaticResource ConstantColorBrush}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -92,7 +94,7 @@
                         <TextBlock Text="{Binding CellTypeString}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold"/>
                         
                         <TextBlock Text="Label:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox DataContext="{Binding Path=Label}" Text="{Binding VariableName, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
+                        <TextBox Text="{Binding VariableName, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
                         
                         <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center"/>
                         <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True"/>    

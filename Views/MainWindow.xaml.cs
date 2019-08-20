@@ -11,6 +11,7 @@ using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO.Implementation;
+using Thesis.Models;
 using Thesis.ViewModels;
 using SelectionChangedEventArgs = System.Windows.Controls.SelectionChangedEventArgs;
 
@@ -21,9 +22,9 @@ namespace Thesis.Views
     /// </summary>
     public partial class MainWindow
     {
-        private Generator generator;
-        private FoldingManager foldingManager;
-        private BraceFoldingStrategy foldingStrategy;
+        private Generator _generator;
+        private FoldingManager _foldingManager;
+        private BraceFoldingStrategy _foldingStrategy;
 
         public MainWindow()
         {
@@ -36,8 +37,8 @@ namespace Thesis.Views
         private void SetUpUi()
         {
             // enable folding in code text box
-            foldingManager = FoldingManager.Install(codeTextBox.TextArea);
-            foldingStrategy = new BraceFoldingStrategy();
+            _foldingManager = FoldingManager.Install(codeTextBox.TextArea);
+            _foldingStrategy = new BraceFoldingStrategy();
 
             // disable pasting in spreadsheet
             spreadsheet.HistoryManager.Enabled = false;
@@ -102,8 +103,8 @@ namespace Thesis.Views
                     spreadsheet.SetActiveSheet(App.Settings.SelectedWorksheet);
                 }
 
-                generator = new Generator(this);
-                generator.GenerateGraph();
+                _generator = new Generator(this);
+                _generator.GenerateGraph();
             }
 
             // disable editing
@@ -116,7 +117,7 @@ namespace Thesis.Views
         {
             spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
 
-            var vertex = generator.Graph.Vertices
+            var vertex = _generator.Graph.Vertices
                 .FirstOrDefault(v => v.Address.row == e.Cell.RowIndex && v.Address.col == e.Cell.ColumnIndex);
 
             if (vertex != null && vertex.NodeType == NodeType.OutputField)
@@ -132,7 +133,7 @@ namespace Thesis.Views
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
-            generator.LoadDataIntoGraphAndSpreadsheet();
+            _generator.LoadDataIntoGraphAndSpreadsheet();
 
             // scroll to top left
             (diagram.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
@@ -147,7 +148,7 @@ namespace Thesis.Views
 
         private void DisableGraphOptions()
         {
-            generator = new Generator(this);
+            _generator = new Generator(this);
             toolboxTab.IsEnabled = false;
             logTab.IsSelected = true;
             diagram.Nodes = new NodeCollection();
@@ -177,7 +178,7 @@ namespace Thesis.Views
             DisableDiagramNodeTools();
             if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
             {
-                spreadsheet.SetActiveSheet(generator.ActiveWorksheet);
+                spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
                 SpreadsheetSelectVertex(vertex);
                 OutputListViewSelectVertex(vertex);
                 InitiateToolbox(vertex);
@@ -210,7 +211,7 @@ namespace Thesis.Views
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
             if (e.ActivationTrigger == ActivationTrigger.Program) return;
-            var vertex = generator.Graph.Vertices
+            var vertex = _generator.Graph.Vertices
                 .FirstOrDefault(v =>
                     v.Address.row == e.CurrentRowColumnIndex.RowIndex &&
                     v.Address.col == e.CurrentRowColumnIndex.ColumnIndex);
@@ -300,12 +301,12 @@ namespace Thesis.Views
 
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
-            generator.SelectAllOutputFields();
+            _generator.SelectAllOutputFields();
         }
 
         private void UnselectAllButton_Click(object sender, RoutedEventArgs e)
         {
-            generator.UnselectAllOutputFields();
+            _generator.UnselectAllOutputFields();
         }
 
         private void GenerateClassesButton_Click(object sender, RoutedEventArgs e)
@@ -319,8 +320,8 @@ namespace Thesis.Views
                         node.IsSelected = false;
                     }
 
-            generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
-            generator.GenerateClasses();
+            _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
+            _generator.GenerateClasses();
             EnableCodeGenerationOptions();
 
             // scroll to top left
@@ -334,12 +335,12 @@ namespace Thesis.Views
 
         private void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
         {
-            generator.GenerateCode();
+            _generator.GenerateCode();
         }
 
         private void CodeTextBox_TextChanged(object sender, System.EventArgs e)
         {
-            foldingStrategy.UpdateFoldings(foldingManager, codeTextBox.Document);
+            _foldingStrategy.UpdateFoldings(_foldingManager, codeTextBox.Document);
         }
     }
 }

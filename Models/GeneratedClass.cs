@@ -31,7 +31,7 @@ namespace Thesis.Models
         {
             var sortedVertices = new List<Vertex>();
             var verticesWithNoParents = Vertices.Where(v => v.Parents.Count == 0).ToHashSet();
-            var edges = new HashSet<(Vertex, Vertex)>();
+            var edges = new HashSet<(Vertex from, Vertex to)>();
 
             foreach (var (vertex, child) in Vertices.SelectMany(vertex =>
                 vertex.Children.Select(child => (vertex, child)))) edges.Add((vertex, child));
@@ -45,7 +45,7 @@ namespace Thesis.Models
                 foreach (var m in n.Children)
                 {
                     edges.Remove((n, m));
-                    if (edges.Count(x => x.Item2 == m) == 0) verticesWithNoParents.Add(m);
+                    if (edges.Count(x => x.to == m) == 0) verticesWithNoParents.Add(m);
                 }
             }
 
