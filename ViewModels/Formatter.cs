@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -20,7 +23,7 @@ namespace Thesis.ViewModels
         private static readonly int CLASS_PADDING = 20; // padding inside classes
         private static readonly int CLASS_SPACING = 40; // spacing between classes
 
-        public static DColor GetColor(this Vertex vertex)
+        public static DColor GetNodeTypeColor(this Vertex vertex)
         {
             MColor color;
             switch (vertex.NodeType)
@@ -31,18 +34,21 @@ namespace Thesis.ViewModels
                 case NodeType.Formula:
                     color = (MColor)Application.Current.Resources["FormulaColor"];
                     break;
-                default:
+                case NodeType.Constant:
                     color = (MColor)Application.Current.Resources["ConstantColor"];
                     break;
+                default:
+                    color = Colors.Transparent;
+                    break;
             }
-            return color.ToDrawingColor();
+            return color.ToDColor();
         }
 
         public static NodeViewModel FormatVertex(this Vertex vertex, Graph graph)
         {
             return FormatVertex(vertex,
-                graph.PopulatedColumns.IndexOf(vertex.CellIndex[1]) * VERTEX_BOX + DIAGRAM_PADDING,
-                graph.PopulatedRows.IndexOf(vertex.CellIndex[0]) * VERTEX_BOX + DIAGRAM_PADDING);
+                graph.PopulatedColumns.IndexOf(vertex.Address.col) * VERTEX_BOX + DIAGRAM_PADDING,
+                graph.PopulatedRows.IndexOf(vertex.Address.row) * VERTEX_BOX + DIAGRAM_PADDING);
         }
 
         public static NodeViewModel FormatVertex(this Vertex vertex, double posX, double posY)
@@ -50,7 +56,7 @@ namespace Thesis.ViewModels
             var size = vertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, vertex.Parents.Count * 4 + 25);
             var node = new NodeViewModel
             {
-                ID = vertex.Address,
+                ID = vertex.StringAddress,
                 Content = vertex,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = size,
@@ -79,7 +85,7 @@ namespace Thesis.ViewModels
                         VerticalAlignment = VerticalAlignment.Bottom,
                         Content = vertex.NameInCode,
                         ViewTemplate =
-                            Application.Current.Resources[vertex.HasLabel ? "normalLabel" : "redLabel"] as DataTemplate,
+                            Application.Current.Resources[vertex.Label.VariableName != "" ? "normalLabel" : "redLabel"] as DataTemplate,
                         UnitWidth = 200
                     }
                 }
@@ -186,7 +192,7 @@ namespace Thesis.ViewModels
                 },
                 ZIndex = int.MinValue
             };
-            classNode.ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(generatedClass.Color.ToMediaColor()));
+            classNode.ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(generatedClass.Color.ToMColor()));
             SetNodeConstraints(classNode);
 
             nodes.Add(classNode);
@@ -255,14 +261,58 @@ namespace Thesis.ViewModels
             return l < 128 ? DColor.White : DColor.Black;
         }
 
-        public static MColor ToMediaColor(this DColor color)
+        public static MColor ToMColor(this DColor color)
         {
             return MColor.FromArgb(color.A, color.R, color.G, color.B);
         }
 
-        public static DColor ToDrawingColor(this MColor color)
+        public static DColor ToDColor(this MColor color)
         {
             return DColor.FromArgb(color.A, color.R, color.G, color.B);
+        }
+
+        // string tools
+
+        public static string ToCamelCase(this string inputString)
+        {
+            var output = ToPascalCase(inputString);
+            if (output == "") return "";
+            return FirstToLower(output);
+        }
+
+        public static string FirstToLower(this string inputString)
+        {
+            return inputString.First().ToString().ToLower() + inputString.Substring(1);
+        }
+
+        public static string ToPascalCase(this string inputString)
+        {
+            if (inputString == "") return "";
+            var textInfo = new CultureInfo("en-US", false).TextInfo;
+            inputString = ProcessDiacritics(inputString.Replace("%", "Percent"));
+            inputString = Regex.Replace(inputString, "[^0-9a-zA-Z ]+", "");
+            inputString = textInfo.ToTitleCase(inputString).Replace(" ", "");
+            if (inputString == "") return "";
+            if (char.IsDigit(inputString.ToCharArray()[0])) inputString = "_" + inputString;
+            return inputString;
+        }
+
+        public static string ProcessDiacritics(this string inputString)
+        {
+            inputString = inputString
+                .Replace("ö", "oe")
+                .Replace("ä", "ae")
+                .Replace("ü", "ue")
+                .Replace("ß", "ss");
+            var normalizedString = inputString.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+            foreach (var c in normalizedString)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    stringBuilder.Append(c);
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

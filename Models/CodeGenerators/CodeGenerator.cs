@@ -26,35 +26,6 @@ namespace Thesis.Models.CodeGenerators
         {
             return GetMainClass() + "\n\n" + string.Join("\n\n", generatedClasses.Select(c => ClassToCode(c)));
         }
-
-        public static string ToCamelCase(string inputString)
-        {
-            var output = ToPascalCase(inputString);
-            return output.First().ToString().ToLower() + output.Substring(1);
-        }
-
-        public static string ToPascalCase(string inputString)
-        {
-            var textInfo = new CultureInfo("en-US", false).TextInfo;
-            inputString = Regex.Replace(RemoveDiacritics(inputString), "[^0-9a-zA-Z ]+", "");
-            inputString = textInfo.ToTitleCase(inputString).Replace(" ", "");
-            if (char.IsDigit(inputString.ToCharArray()[0])) inputString = "_" + inputString;
-            return inputString;
-        }
-
-        // ö => oe etc.
-        public static string RemoveDiacritics(string s)
-        {
-            var normalizedString = s.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-            foreach (var c in normalizedString)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                    stringBuilder.Append(c);
-            }
-
-            return stringBuilder.ToString();
-        }
     }
 
     public enum Language

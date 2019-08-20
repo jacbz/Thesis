@@ -19,7 +19,7 @@ namespace Thesis.Views
     /// <summary>
     ///     Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : MetroWindow
+    public partial class MainWindow
     {
         private Generator generator;
         private FoldingManager foldingManager;
@@ -117,7 +117,7 @@ namespace Thesis.Views
             spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
 
             var vertex = generator.Graph.Vertices
-                .FirstOrDefault(v => v.CellIndex[0] == e.Cell.RowIndex && v.CellIndex[1] == e.Cell.ColumnIndex);
+                .FirstOrDefault(v => v.Address.row == e.Cell.RowIndex && v.Address.col == e.Cell.ColumnIndex);
 
             if (vertex != null && vertex.NodeType == NodeType.OutputField)
             {
@@ -204,7 +204,7 @@ namespace Thesis.Views
 
         private void SpreadsheetSelectVertex(Vertex vertex)
         {
-            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.CellIndex[0], vertex.CellIndex[1]);
+            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.Address.row, vertex.Address.col);
         }
 
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
@@ -212,8 +212,8 @@ namespace Thesis.Views
             if (e.ActivationTrigger == ActivationTrigger.Program) return;
             var vertex = generator.Graph.Vertices
                 .FirstOrDefault(v =>
-                    v.CellIndex[0] == e.CurrentRowColumnIndex.RowIndex &&
-                    v.CellIndex[1] == e.CurrentRowColumnIndex.ColumnIndex);
+                    v.Address.row == e.CurrentRowColumnIndex.RowIndex &&
+                    v.Address.col == e.CurrentRowColumnIndex.ColumnIndex);
             if (vertex != null)
             {
                 DiagramSelectVertex(vertex);
@@ -232,8 +232,8 @@ namespace Thesis.Views
             foreach (var node in (DiagramCollection<NodeViewModel>) diagram.Nodes)
                 if (node.Content is Vertex nodeVertex)
                 {
-                    if (nodeVertex.CellIndex[0] == vertex.CellIndex[0] &&
-                        nodeVertex.CellIndex[1] == vertex.CellIndex[1])
+                    if (nodeVertex.Address.row == vertex.Address.row &&
+                        nodeVertex.Address.col == vertex.Address.col)
                     {
                         node.IsSelected = true;
                         (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
@@ -250,8 +250,8 @@ namespace Thesis.Views
             foreach (var node in (ObservableCollection<NodeViewModel>) group.Nodes)
                 if (node.Content is Vertex nodeVertex)
                 {
-                    if (nodeVertex.CellIndex[0] == vertex.CellIndex[0] &&
-                        nodeVertex.CellIndex[1] == vertex.CellIndex[1])
+                    if (nodeVertex.Address.row == vertex.Address.row &&
+                        nodeVertex.Address.col == vertex.Address.col)
                     {
                         node.IsSelected = true;
                         (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);

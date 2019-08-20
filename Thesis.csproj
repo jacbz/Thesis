@@ -71,35 +71,35 @@
     <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.Compression.Base, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.Compression.Base.17.2.0.35\lib\net46\Syncfusion.Compression.Base.dll</HintPath>
+    <Reference Include="Syncfusion.Compression.Base, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.Compression.Base.17.2.0.41\lib\net46\Syncfusion.Compression.Base.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.Licensing, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=632609b4d040f6b4, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.Licensing.17.2.0.35\lib\net46\Syncfusion.Licensing.dll</HintPath>
+    <Reference Include="Syncfusion.Licensing, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=632609b4d040f6b4, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.Licensing.17.2.0.41\lib\net46\Syncfusion.Licensing.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.SfCellGrid.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.SfCellGrid.WPF.17.2.0.35\lib\net46\Syncfusion.SfCellGrid.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.SfCellGrid.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.SfCellGrid.WPF.17.2.0.41\lib\net46\Syncfusion.SfCellGrid.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.SfDiagram.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.SfDiagram.WPF.17.2.0.35\lib\net46\Syncfusion.SfDiagram.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.SfDiagram.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.SfDiagram.WPF.17.2.0.41\lib\net46\Syncfusion.SfDiagram.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.SfGridCommon.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.SfGridCommon.WPF.17.2.0.35\lib\net46\Syncfusion.SfGridCommon.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.SfGridCommon.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.SfGridCommon.WPF.17.2.0.41\lib\net46\Syncfusion.SfGridCommon.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.SfShared.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.SfShared.WPF.17.2.0.35\lib\net46\Syncfusion.SfShared.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.SfShared.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.SfShared.WPF.17.2.0.41\lib\net46\Syncfusion.SfShared.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.SfSpreadsheet.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.SfSpreadsheet.WPF.17.2.0.35\lib\net46\Syncfusion.SfSpreadsheet.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.SfSpreadsheet.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.SfSpreadsheet.WPF.17.2.0.41\lib\net46\Syncfusion.SfSpreadsheet.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.Shared.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.Shared.WPF.17.2.0.35\lib\net46\Syncfusion.Shared.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.Shared.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.Shared.WPF.17.2.0.41\lib\net46\Syncfusion.Shared.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.Tools.WPF, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.Tools.WPF.17.2.0.35\lib\net46\Syncfusion.Tools.WPF.dll</HintPath>
+    <Reference Include="Syncfusion.Tools.WPF, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.Tools.WPF.17.2.0.41\lib\net46\Syncfusion.Tools.WPF.dll</HintPath>
     </Reference>
-    <Reference Include="Syncfusion.XlsIO.Base, Version=17.2460.0.35, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
-      <HintPath>packages\Syncfusion.XlsIO.Wpf.17.2.0.35\lib\net46\Syncfusion.XlsIO.Base.dll</HintPath>
+    <Reference Include="Syncfusion.XlsIO.Base, Version=17.2460.0.41, Culture=neutral, PublicKeyToken=3d67ed1f87d44c89, processorArchitecture=MSIL">
+      <HintPath>packages\Syncfusion.XlsIO.Wpf.17.2.0.41\lib\net46\Syncfusion.XlsIO.Base.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -132,12 +132,13 @@
     <Compile Include="Models\CodeGenerators\CSharpGenerator.cs" />
     <Compile Include="Models\GeneratedClass.cs" />
     <Compile Include="Models\Graph.cs" />
+    <Compile Include="Models\Label.cs" />
     <Compile Include="Models\LogItem.cs" />
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Models\Vertex.cs" />
     <Compile Include="Views\BraceFoldingStrategy.cs" />
-    <Compile Include="Views\Window2.xaml.cs">
-      <DependentUpon>Window2.xaml</DependentUpon>
+    <Compile Include="Views\TestWindow.xaml.cs">
+      <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>
     <Page Include="Views\LogControl.xaml">
       <SubType>Designer</SubType>
@@ -161,7 +162,7 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Views\Window2.xaml">
+    <Page Include="Views\TestWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

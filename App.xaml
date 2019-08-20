@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Thesis"
-             StartupUri="Views/MainWindow.xaml"
+             StartupUri="Views/TestWindow.xaml"
              xmlns:fa5="http://schemas.fontawesome.com/icons/">
     <Application.Resources>
 
@@ -17,10 +17,17 @@
             <Color x:Key="FormulaColor">#8e44ad</Color>
             <Color x:Key="OutputColor">#e74c3c</Color>
             <Color x:Key="ConstantColor">#2980b9</Color>
-
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
             <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
+
+            <Color x:Key="HeaderColor">#aaaaaa</Color>
+            <Color x:Key="AttributeColor">#83d0c9</Color>
+            <Color x:Key="DataColor">#b3cde0</Color>
+            <SolidColorBrush x:Key="HeaderColorBrush" Color="{DynamicResource HeaderColor}" />
+            <SolidColorBrush x:Key="AttributeColorBrush" Color="{DynamicResource AttributeColor}" />
+            <SolidColorBrush x:Key="DataColorBrush" Color="{DynamicResource DataColor}" />
+
             <SolidColorBrush x:Key="InfoColor" Color="#00529B" />
             <SolidColorBrush x:Key="InfoBackground" Color="#BDE5F8" />
             <SolidColorBrush x:Key="SuccessColor" Color="#4F8A10" />

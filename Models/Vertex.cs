@@ -22,7 +22,8 @@ namespace Thesis
     {
         Formula,
         OutputField,
-        Constant
+        Constant,
+        None
     }
 
     public class Vertex : INotifyPropertyChanged
@@ -31,10 +32,10 @@ namespace Thesis
 
         public object Value { get; set; }
         public string Formula { get; set; }
-        public string Label { get; set; }
+        public Label Label { get; set; }
         public CellType Type { get; set; }
-        public int[] CellIndex { get; set; }
-        public string Address { get; }
+        public (int row, int col) Address { get; set; }
+        public string StringAddress { get; }
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
         public ParseTreeNode ParseTree { get; set; }
@@ -49,14 +50,17 @@ namespace Thesis
             }
         }
 
-        public NodeType NodeType => ParseTree != null ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) : NodeType.Constant;
+        public NodeType NodeType => ParseTree != null 
+            ? (Parents.Count == 0 ? NodeType.OutputField : NodeType.Formula) 
+            : (string)Value != "" 
+                ? NodeType.Constant 
+                : NodeType.None;
 
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
         // ReSharper disable once UnusedMember.Global
         public string CellTypeString => Type.ToString();
-        public bool HasLabel => !string.IsNullOrEmpty(Label);
-        public string NameInCode => Label + "_" + Address;
+        public string NameInCode => Label.VariableName;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -65,8 +69,8 @@ namespace Thesis
             Type = GetCellType(cell);
             Value = cell.DisplayText;
             Formula = cell.HasFormula ? FormatFormula(cell.Formula) : null;
-            CellIndex = new[] { cell.Row, cell.Column };
-            Address = cell.AddressLocal;
+            Address = (cell.Row, cell.Column);
+            StringAddress = cell.AddressLocal;
             Parents = new HashSet<Vertex>();
             Children = new HashSet<Vertex>();
             Include = true;
@@ -86,6 +90,7 @@ namespace Thesis
         
         private string FormatFormula(string formula)
         {
+            // for German formulas
             return formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
         }
 
@@ -98,12 +103,12 @@ namespace Thesis
 
         public override string ToString()
         {
-            return $"{Address},{Type.ToString()}: {Value}";
+            return $"{StringAddress},{Type.ToString()}: {Value}";
         }
 
         public override int GetHashCode()
         {
-            return Address.GetHashCode();
+            return StringAddress.GetHashCode();
         }
 
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)

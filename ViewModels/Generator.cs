@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Windows;
+using System.Windows.Navigation;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
@@ -41,7 +43,7 @@ namespace Thesis.ViewModels
             Graph = new Graph(allCells);
             logItem.AppendTime(stopwatch.ElapsedMilliseconds);
 
-            Graph.GenerateLabels(_window.spreadsheet.ActiveSheet);
+            //Graph.GenerateLabels(_window.spreadsheet.ActiveSheet);
 
             OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
             _window.outputFieldsListView.ItemsSource = OutputVertices;
@@ -63,13 +65,13 @@ namespace Thesis.ViewModels
             if (App.Settings.SelectedOutputFields != null &&
                 App.Settings.SelectedOutputFields.Count > 0 &&
                 OutputVertices.Count > 0 && 
-                !OutputVertices.Where(v => v.Include).Select(v => v.Address).ToList()
+                !OutputVertices.Where(v => v.Include).Select(v => v.StringAddress).ToList()
                     .SequenceEqual(App.Settings.SelectedOutputFields))
             {
                 Logger.Log(LogItemType.Info, "Loading selected output fields from user settings");
                 UnselectAllOutputFields();
                 foreach (var v in OutputVertices)
-                    if (App.Settings.SelectedOutputFields.Contains(v.Address))
+                    if (App.Settings.SelectedOutputFields.Contains(v.StringAddress))
                         v.Include = true;
                 _window.outputFieldsListView.ScrollIntoView(OutputVertices.First(v => v.Include));
                 LoadDataIntoGraphAndSpreadsheet();
@@ -88,13 +90,13 @@ namespace Thesis.ViewModels
 
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
             Logger.Log(LogItemType.Info,
-                $"Including selected output fields {string.Join(", ", includedVertices.Select(v => v.Address))}");
+                $"Including selected output fields {string.Join(", ", includedVertices.Select(v => v.StringAddress))}");
             Graph.TransitiveFilter(includedVertices);
             LayoutGraph();
             ColorSpreadsheetCells();
             Logger.Log(LogItemType.Success, "Done.");
 
-            App.Settings.SelectedOutputFields = includedVertices.Select(v => v.Address).ToList();
+            App.Settings.SelectedOutputFields = includedVertices.Select(v => v.StringAddress).ToList();
             App.Settings.Save();
         }
 
@@ -145,7 +147,21 @@ namespace Thesis.ViewModels
         private void ColorSpreadsheetCells()
         {
             ResetSpreadsheetColors();
-            ColorSpreadsheetCellsInner(Graph.Vertices, v => Color.White);
+            //ColorSpreadsheetCellsInner(Graph.Vertices, v => Color.White);
+            ColorSpreadsheetCellsInner(Graph.AllVertices, v =>
+            {
+                switch (v.Label.Type)
+                {
+                    case LabelType.Attribute:
+                        return ((System.Windows.Media.Color)Application.Current.Resources["AttributeColor"]).ToDColor();
+                    case LabelType.Data:
+                        return ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
+                    case LabelType.Header:
+                        return ((System.Windows.Media.Color)Application.Current.Resources["HeaderColor"]).ToDColor();
+                    default:
+                        return Color.Transparent;
+                }
+            });
             _window.spreadsheet.ActiveGrid.InvalidateCells();
         }
 
@@ -153,14 +169,20 @@ namespace Thesis.ViewModels
         {
             foreach (var v in vertices)
             {
-                var range = _window.spreadsheet.ActiveSheet.Range[v.Address];
+                var range = _window.spreadsheet.ActiveSheet.Range[v.StringAddress];
                 range.CellStyle.Color = cellColorFunc(v);
                 range.CellStyle.Font.RGBColor = cellColorFunc(v).GetTextColor();
-                range.Borders.ColorRGB = v.GetColor();
-                range.Borders.LineStyle = ExcelLineStyle.Thick;
-
-                _window.spreadsheet.ActiveGrid.InvalidateCell(range.Row, range.Column);
+                if (!Graph.Vertices.Contains(v))
+                {
+                    range.Borders.LineStyle = ExcelLineStyle.None;
+                }
+                else
+                {
+                    range.Borders.ColorRGB = v.GetNodeTypeColor();
+                    range.Borders.LineStyle = ExcelLineStyle.Thick;
+                }
             }
+            _window.spreadsheet.ActiveGrid.InvalidateCells();
         }
 
         private void ResetSpreadsheetColors()
@@ -170,6 +192,7 @@ namespace Thesis.ViewModels
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, _window.spreadsheet.ActiveSheet.Rows.Length,
                 _window.spreadsheet.ActiveSheet.Columns.Length];
             allCells.CellStyle.Color = Color.Transparent;
+            allCells.CellStyle.Font.RGBColor = Color.Black;
             allCells.Borders.LineStyle = ExcelLineStyle.None;
         }
 
@@ -208,7 +231,7 @@ namespace Thesis.ViewModels
             _window.codeTextBox.Text = "";
             var stopwatch = Stopwatch.StartNew();
 
-            var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.Address, v => v);
+            var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.StringAddress, v => v);
             CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {

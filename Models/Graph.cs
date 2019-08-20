@@ -32,7 +32,7 @@ namespace Thesis
             {
                 var vertex = new Vertex(cell);
 
-                verticesDict.Add(vertex.Address, vertex);
+                verticesDict.Add(vertex.StringAddress, vertex);
                 Vertices.Add(vertex);
             }
 
@@ -40,11 +40,10 @@ namespace Thesis
 
             foreach (var vertex in Vertices)
             {
-                if (vertex.NodeType == NodeType.Constant) continue;
-
+                if (vertex.NodeType != NodeType.Formula && vertex.NodeType != NodeType.OutputField) continue;
                 try
                 {
-                    var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.Address, vertex.ParseTree);
+                    var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
                     foreach (var cell in referencedCells)
                     {
                         vertex.Children.Add(verticesDict[cell]);
@@ -56,15 +55,127 @@ namespace Thesis
                 catch (Exception ex)
                 {
                     Logger.Log(LogItemType.Error,
-                        $"Error processing formula in {vertex.Address} ({vertex.Formula}): {ex.Message}");
+                        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.Message}");
                 }
             }
+
+            GenerateLabels();
+
+            AllVertices = Vertices.ToList();
 
             TransitiveFilter(GetOutputFields());
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
 
-            AllVertices = Vertices.ToList();
+        }
+
+        private void GenerateLabels()
+        {
+            // Create labels
+            Dictionary<(int row, int col), Label> Labels = new Dictionary<(int row, int col), Label>();
+            foreach (var vertex in Vertices)
+            {
+                Label label = new Label();
+                if (vertex.Type == CellType.Unknown)
+                {
+                    label.Type = LabelType.None;
+                }
+                else if (vertex.Children.Count == 0 && vertex.Parents.Count == 0 && vertex.Type == CellType.Text)
+                {
+                    if (Labels.TryGetValue((vertex.Address.row - 1, vertex.Address.col), out Label labelAbove)
+                        && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
+                    {
+                        label.Type = LabelType.Attribute;
+                        label.Text = (string) vertex.Value;
+                        labelAbove.Type = LabelType.Attribute;
+                    }
+                    else
+                    {
+                        label.Type = LabelType.Header;
+                        label.Text = (string) vertex.Value;
+                    }
+                }
+                else
+                {
+                    label.Type = LabelType.Data;
+                }
+
+                vertex.Label = label;
+                Labels.Add((vertex.Address.row, vertex.Address.col), label);
+            }
+
+            // assign attributes and headers for each data type
+            foreach (var vertex in Vertices)
+            {
+                if (vertex.Label.Type != LabelType.Data) continue;
+
+                (int row, int col) currentPos = vertex.Address;
+
+                // add attributes
+                bool foundAttribute = false;
+                int distanceToAttribute = 0;
+                // a list that stores how far all attributes are to the vertex. e.g. attribute in 2,3, vertex in 8: [5,6]
+                List<int> distancesToAttribute = new List<int>();
+                while (currentPos.col-- > 1)
+                {
+                    var currentLabel = Labels[currentPos];
+                    if (foundAttribute && currentLabel.Type != LabelType.Attribute) break;
+
+                    distanceToAttribute++;
+                    if (currentLabel.Type == LabelType.Attribute)
+                    {
+                        foundAttribute = true;
+                        vertex.Label.Attributes.Add(currentLabel);
+                        distancesToAttribute.Add(distanceToAttribute);
+                    }
+                }
+
+                // add headers
+                currentPos = vertex.Address;
+                if (!foundAttribute)
+                {
+                    // no attributes, use first header on the top
+                    while (currentPos.row-- > 1)
+                    {
+                        var currentLabel = Labels[currentPos];
+                        if (currentLabel.Type == LabelType.Header)
+                        {
+                            vertex.Label.Headers.Add(currentLabel);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    // keep adding headers, until there is no attribute to the left or left bottom with the exact distance
+                    bool foundHeader = false;
+                    while (currentPos.row-- > 1)
+                    {
+                        var currentLabel = Labels[currentPos];
+
+                        bool anyAttributeDistanceMatch = false;
+                        foreach (int dist in distancesToAttribute)
+                        {
+                            if (Labels[(currentPos.row, currentPos.col - dist)].Type == LabelType.Attribute ||
+                                Labels[(currentPos.row + 1, currentPos.col - dist)].Type == LabelType.Attribute)
+                                anyAttributeDistanceMatch = true;
+                        }
+
+                        if (!anyAttributeDistanceMatch)
+                            break;
+                        if (foundHeader && currentLabel.Type != LabelType.Header)
+                            break;
+
+                        if (currentLabel.Type == LabelType.Header)
+                        {
+                            foundHeader = true;
+                            vertex.Label.Headers.Add(currentLabel);
+                        }
+                    }
+                }
+
+                vertex.Label.GenerateVariableName();
+            }
         }
 
         // recursively gets list of referenced cells from parse tree using DFS
@@ -158,28 +269,10 @@ namespace Thesis
         {
             Vertices = vertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
 
-            PopulatedRows = Vertices.Select(v => v.CellIndex[0]).Distinct().ToList();
+            PopulatedRows = Vertices.Select(v => v.Address.row).Distinct().ToList();
             PopulatedRows.Sort();
-            PopulatedColumns = Vertices.Select(v => v.CellIndex[1]).Distinct().ToList();
+            PopulatedColumns = Vertices.Select(v => v.Address.col).Distinct().ToList();
             PopulatedColumns.Sort();
-        }
-
-        public void GenerateLabels(IWorksheet worksheet)
-        {
-            foreach (var vertex in Vertices)
-            {
-                // go to the left until
-                var row = vertex.CellIndex[0];
-                var column = vertex.CellIndex[1] - 1;
-                while (column > 0 && !vertex.HasLabel)
-                {
-                    var cell = worksheet.Range[row, column];
-                    if (Vertices.Any(v => v.Address == cell.Address)) continue;
-                    if (!cell.HasFormula && !string.IsNullOrWhiteSpace(cell.DisplayText))
-                        vertex.Label = CodeGenerator.ToCamelCase(cell.DisplayText);
-                    column--;
-                }
-            }
         }
 
         public List<GeneratedClass> GenerateClasses()
@@ -192,7 +285,7 @@ namespace Thesis
             {
                 var reachableVertices = vertex.GetReachableVertices();
                 foreach (var v in reachableVertices) vertexToOutputFieldVertices[v].Add(vertex);
-                var newClass = new GeneratedClass($"Class{vertex.Address}", vertex, reachableVertices.ToList(), rnd);
+                var newClass = new GeneratedClass($"Class{vertex.StringAddress}", vertex, reachableVertices.ToList(), rnd);
                 classesList.Add(newClass);
             }
 
