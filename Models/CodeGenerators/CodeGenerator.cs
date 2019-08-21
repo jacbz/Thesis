@@ -13,8 +13,7 @@ namespace Thesis.Models.CodeGenerators
         private protected List<GeneratedClass> generatedClasses;
         private protected Dictionary<string, Vertex> addressToVertexDictionary;
 
-        private protected abstract string GetMainClass();
-        private protected abstract string ClassToCode(GeneratedClass generatedClass);
+        public abstract string GenerateCode();
 
         protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
         {
@@ -22,10 +21,24 @@ namespace Thesis.Models.CodeGenerators
             this.addressToVertexDictionary = addressToVertexDictionary;
         }
 
-        public string GetCode()
+        /// <summary>
+        /// var -> var2, var2 -> var3 etc.
+        /// </summary>
+        protected static string GenerateNonDuplicateName(HashSet<string> usedVariableNames, string variableName)
         {
-            return GetMainClass() + "\n\n" + string.Join("\n\n", generatedClasses.Select(ClassToCode));
+            while (usedVariableNames.Contains(variableName))
+            {
+                var pattern = @"\d+$";
+                var matchNumberAtEnd = Regex.Match(variableName, pattern);
+                if (matchNumberAtEnd.Success)
+                    variableName = Regex.Replace(variableName, pattern,
+                        (Convert.ToInt32(matchNumberAtEnd.Value) + 1).ToString());
+                else
+                    variableName += "2";
+            }
+            return variableName;
         }
+
     }
 
     public enum Language

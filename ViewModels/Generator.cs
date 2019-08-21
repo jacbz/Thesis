@@ -204,7 +204,7 @@ namespace Thesis.ViewModels
                     codeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
                     break;
             }
-            string code = codeGenerator.GetCode();
+            string code = codeGenerator.GenerateCode();
             logItem.AppendElapsedTime();
 
             _window.codeTextBox.Text = code;

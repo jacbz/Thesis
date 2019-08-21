@@ -15,13 +15,18 @@ namespace Thesis.Models
             Name = name;
             OutputVertex = outputVertex;
             Vertices = vertices;
-            Vertices.ForEach(v => v.Class = this);
+            Vertices.ForEach(v =>
+            {
+                v.VariableName = string.IsNullOrWhiteSpace(v.VariableName) ? "_" + v.StringAddress : v.VariableName;
+                v.Class = this;
+            });
             Color = outputVertex == null
                 ? _sharedColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
 
         public string Name { get; set; }
+        public bool IsSharedClass => OutputVertex == null;
         public Vertex OutputVertex { get; set; }
         public List<Vertex> Vertices { get; set; }
         public Color Color { get; set; }

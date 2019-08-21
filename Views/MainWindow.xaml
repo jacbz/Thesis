@@ -160,7 +160,7 @@
 
         <!-- Right -->
         <TabControl Grid.Column="2" controls:ControlsHelper.HeaderFontSize="18" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
-            <TabItem Header="1. Generate graph" >
+            <TabItem x:Name="generateGraphTab" Header="1. Generate graph" >
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="170" />
@@ -235,7 +235,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem Header="2. Generate classes" >
+            <TabItem x:Name="generateClassesTab" Header="2. Generate classes" >
                 <DockPanel>
                     <Border Padding="2" DockPanel.Dock="Top">
                         <Border.Background>
@@ -261,7 +261,7 @@
                 </DockPanel>
             </TabItem>
 
-            <TabItem Header="3. Generate code" >
+            <TabItem x:Name="generateCodeTab" Header="3. Generate code" >
 
                 <DockPanel>
                     <Border Padding="2" DockPanel.Dock="Top">

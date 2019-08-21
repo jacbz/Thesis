@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Irony.Parsing;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Syncfusion.XlsIO;
 using XLParser;
 
@@ -16,102 +20,108 @@ namespace Thesis.Models.CodeGenerators
         {
         }
 
-        private protected override string GetMainClass()
+        public override string GenerateCode()
         {
-            var output = new List<string>();
-            output.Add("using System;\n");
-            output.Add($"public class ThesisResult");
-            output.Add("{");
-            output.Add(FormatLine("static void Main(string[] args)", 1));
-            output.Add(FormatLine("{", 1));
+            // namespace Thesis
+            var @namespace = SyntaxFactory.NamespaceDeclaration(SyntaxFactory.ParseName("Thesis")).NormalizeWhitespace();
+            // using System;
+            @namespace = @namespace.AddUsings(SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")));
 
-            output.AddRange(FormatLines(generatedClasses.Where(c => c.OutputVertex == null).Select(c => $"{c.Name} {c.Name.ToLower()} = new {c.Name}();"), 2));
-            output.AddRange(FormatLines(generatedClasses.Where(c => c.OutputVertex != null).Select(c => $"{CellTypeToTypeString(c.OutputVertex.CellType)} {c.OutputVertex.VariableName} = {c.Name}.Calculate();"), 2));
+            // public class ThesisResult (Main class)
+            var resultClass = SyntaxFactory
+                .ClassDeclaration("Result")
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
+            var syntax = SyntaxFactory.ParseStatement("// TBD");
+            var mainMethod = SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Main")
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+                .AddParameterListParameters(SyntaxFactory
+                    .Parameter(SyntaxFactory.Identifier("args"))
+                    .WithType(SyntaxFactory.ParseTypeName("string[]")))
+                .WithBody(SyntaxFactory.Block(syntax));
+            resultClass = resultClass.AddMembers(mainMethod);
+            @namespace = @namespace.AddMembers(resultClass);
 
-            output.Add(FormatLine("}", 1));
-
-            output.Add("}");
-            return string.Join("\n", output);
-        }
-
-        private protected override string ClassToCode(GeneratedClass generatedClass)
-        {
-            var output = new List<string>();
-            output.Add($"public class {generatedClass.Name}");
-            output.Add("{");
-
-            var properties = new List<string>();
-            var method = new List<string>();
-
-            var outputVertex = generatedClass.OutputVertex;
-
-            for (int i = generatedClass.Vertices.Count - 1; i >= 0; i--)
+            foreach(var generatedClass in generatedClasses)
             {
-                var vertex = generatedClass.Vertices[i];
-                if (vertex.NodeType == NodeType.Constant)
+                var vertices = generatedClass.Vertices.ToList();
+                vertices.Reverse(); // as topological resulted in the output field being at the bottom
+                var usedVariableNames = new HashSet<string>();
+
+                // public class {generatedClass.Name}
+                var newClass = SyntaxFactory
+                    .ClassDeclaration(generatedClass.Name)
+                    .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
+
+
+                // add fields
+                var lookup = vertices.ToLookup(v => v.NodeType == NodeType.Constant); // split list into two
+                var constants = lookup[true].ToList();
+                var formulas = lookup[false].ToList();
+
+                foreach (var vertex in constants)
                 {
-                    properties.Add(VertexToCode(vertex, generatedClass));
+                    var variableName = vertex.VariableName;
+                    variableName = GenerateNonDuplicateName(usedVariableNames, variableName);
+                    usedVariableNames.Add(variableName);
+
+                    // {type} {variableName} = {value};
+                    var field =
+                        SyntaxFactory.FieldDeclaration(
+                                SyntaxFactory.VariableDeclaration(
+                                        SyntaxFactory.ParseTypeName(GetTypeString(vertex)))
+                                    .AddVariables(SyntaxFactory
+                                        .VariableDeclarator(variableName)
+                                        .WithInitializer(SyntaxFactory
+                                            .EqualsValueClause(SyntaxFactory
+                                                .ParseExpression(FormatVertexValue(vertex.CellType, vertex.Value))))))
+                            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PrivateKeyword));
+                    newClass = newClass.AddMembers(field);
+                }
+
+                var statements = new List<StatementSyntax>();
+                if (generatedClass.IsSharedClass)
+                {
+
                 }
                 else
                 {
-                    if (outputVertex == null)
+                    foreach (var vertex in formulas)
                     {
-                        properties.Add($"public static {CellTypeToTypeString(vertex.CellType)} {vertex.VariableName};");
+
                     }
-                    method.Add(VertexToCode(vertex, generatedClass));
+
+                    // public static {type} Calculate()
+                    var outputField = generatedClass.OutputVertex;
+                    var calculateMethod = SyntaxFactory
+                        .MethodDeclaration(SyntaxFactory
+                            .ParseTypeName(GetTypeString(outputField)), "Calculate")
+                        .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                        .AddModifiers(SyntaxFactory.Token(SyntaxKind.StaticKeyword))
+                        .WithBody(SyntaxFactory.Block(statements));
+                    newClass = newClass.AddMembers(calculateMethod);
                 }
+
+
+                @namespace = @namespace.AddMembers(newClass);
             }
 
-            output.AddRange(FormatLines(properties, 1));
-            output.Add("");
-
-            output.Add(FormatLine($"public {(generatedClass.OutputVertex == null ? generatedClass.Name : "static " + CellTypeToTypeString(outputVertex.CellType) + " Calculate")}()", 1));
-            output.Add(FormatLine("{", 1));
-            output.AddRange(FormatLines(method, 2));
-            if (outputVertex != null)
-                output.Add(FormatLine($"return {outputVertex.VariableName};", 2));
-            output.Add(FormatLine( "}", 1));
-            output.Add("}");
-            return string.Join("\n", output);
+            var code = @namespace
+                .NormalizeWhitespace()
+                .ToFullString();
+            return code;
         }
 
-        public string VertexToCode(Vertex vertex, GeneratedClass generatedClass)
+        private string GetTypeString(Vertex vertex)
         {
-            if (vertex.NodeType == NodeType.Constant)
-            {
-                string accessModifier = generatedClass.OutputVertex != null ? "static " : "public static ";
-                switch (vertex.CellType)
-                {
-                    case CellType.Bool:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {vertex.Value};";
-                    case CellType.Number:
-                        string value = vertex.Value.ToString().Replace(",", ".");
-                        if (value.Contains("%")) value = value.Replace("%", " * 0.01");
-                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {value};";
-                    case CellType.Text:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = \"{vertex.Value}\";";
-                    case CellType.Date:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = DateTime.Parse({vertex.Value});";
-                    case CellType.Unknown:
-                        return accessModifier + $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = null;";
-                    default:
-                        return "";
-                }
-            }
-
-            return $"{CellTypeToTypeString(vertex.CellType)} {vertex.VariableName} = {TreeNodeToCode(vertex.ParseTree, vertex, 0)};";
-        }
-
-        public static string CellTypeToTypeString(CellType cellType)
-        {
-            switch (cellType)
+            switch (vertex.CellType)
             {
                 case CellType.Bool:
                     return "bool";
                 case CellType.Date:
                     return "DateTime";
                 case CellType.Number:
-                    return "decimal";
+                    return "double";
                 case CellType.Text:
                     return "string";
                 case CellType.Unknown:
@@ -120,196 +130,25 @@ namespace Thesis.Models.CodeGenerators
                     return "";
             }
         }
-        public static string CellTypeToNullValue(CellType cellType)
+
+        private string FormatVertexValue(CellType cellType, object vertexValue)
         {
             switch (cellType)
             {
                 case CellType.Bool:
-                    return "false";
-                case CellType.Unknown:
-                case CellType.Date:
-                    return "null";
-                case CellType.Number:
-                    return "0";
+                    return vertexValue.ToString();
                 case CellType.Text:
+                    return $"\"{vertexValue}\"";
+                case CellType.Number:
+                    string value = vertexValue.ToString().Replace(",", ".");
+                    if (value.Contains("%")) value = value.Replace("%", " * 0.01");
+                    return value;
+                case CellType.Date:
+                    return $"DateTime.Parse({vertexValue});";
+                case CellType.Unknown:
                 default:
-                    return "";
+                    return "null";
             }
-        }
-
-        private string FormatAddress(string address, Vertex vertex)
-        {
-            if (addressToVertexDictionary.TryGetValue(address, out var v))
-                return vertex.Class == v.Class ? v.VariableName: $"{v.Class.Name}.{v.VariableName}";
-
-            return $"/* Error: {address} not found */";
-        }
-
-        private string TreeNodeToCode(ParseTreeNode node, Vertex vertex, int depth)
-        {
-            // Non-Terminals
-            if (node.Term is NonTerminal nt)
-            {
-                switch (node.Term.Name)
-                {
-                    case "Cell":
-                        return FormatAddress(node.FindTokenAndGetText(), vertex);
-                    case "Constant":
-                        return node.FindTokenAndGetText();
-                    case "FormulaWithEq":
-                        return TreeNodeToCode(node.ChildNodes[1], vertex, depth);
-                    case "Formula":
-                        depth++;
-                        // for rule OpenParen + Formula + CloseParen
-                        return TreeNodeToCode(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], vertex, depth);
-                    case "FunctionCall":
-                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), vertex, depth);
-                    case "Reference":
-                        depth++;
-                        if (node.ChildNodes.Count == 1)
-                            return TreeNodeToCode(node.ChildNodes[0], vertex, depth);
-                        if (node.ChildNodes.Count == 2)
-                        {
-                            var prefix = node.ChildNodes[0];
-                            var refName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            return $"ExternalRef(\"[{refName}\", {TreeNodeToCode(node.ChildNodes[1], vertex, depth)})";
-                        }
-                        return RuleNotImplemented(nt);
-                    case "ReferenceItem":
-                        return node.ChildNodes.Count == 1 ? TreeNodeToCode(node.ChildNodes[0], vertex, depth) : RuleNotImplemented(nt);
-                    case "ReferenceFunctionCall":
-                        return ParseFunction(node.GetFunction(), node.GetFunctionArguments().ToArray(), vertex, depth);
-                    case "UDFunctionCall":
-                        return $"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToCode(a, vertex, depth)))})";
-                    // Not implemented
-                    default:
-                        return $"/* Parse token {node.Term.Name} is not implemented yet! {node} */";
-                }
-            }
-
-            // Terminals
-            switch (node.Term.Name)
-            {
-                // Not implemented
-                default:
-                    return $"/* Terminal {node.Term.Name} is not implemented yet! */";
-            }
-
-        }
-
-        private string RuleNotImplemented(NonTerminal nt)
-        {
-            return $"/* Rule {nt.Rule} is not implemented for {nt.Name}! */";
-        }
-
-        private string ParseFunction(string functionName, ParseTreeNode[] arguments, Vertex vertex, int depth)
-        {
-            depth++;
-            switch (functionName)
-            {
-                // arithmetic
-                case "+":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], vertex, depth) + " + " + TreeNodeToCode(arguments[1], vertex, depth);
-                case "-":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], vertex, depth) + " - " + TreeNodeToCode(arguments[1], vertex, depth);
-                case "*":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], vertex, depth) + " * " + TreeNodeToCode(arguments[1], vertex, depth);
-                case "/":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], vertex, depth) + " / " + TreeNodeToCode(arguments[1], vertex, depth);
-                case "%":
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return TreeNodeToCode(arguments[0], vertex, depth) + " * 0.01";
-                case "^":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"Math.Pow({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)})";
-                case "ROUND":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"Math.Round({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)}, MidpointRounding.AwayFromZero)";
-                case "SUM":
-                    return string.Join(".Concat(", arguments.Select(a => TreeNodeToCode(a, vertex, depth))) 
-                           + (arguments.Length > 1 ? ")" : "") + ".Sum()";
-
-                // conditionals
-                case "IF":
-                    if (arguments.Length == 2)
-                        return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
-                               FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +
-                               FormatLine($": {CellTypeToNullValue(vertex.CellType)})", depth / 2);
-                    if (arguments.Length == 3)
-                        return $"(({TreeNodeToCode(arguments[0], vertex, depth)})\n" +
-                               FormatLine($"? {TreeNodeToCode(arguments[1], vertex, depth)}\n", depth / 2) +
-                               FormatLine($": {TreeNodeToCode(arguments[2], vertex, depth)})", depth / 2);
-                    return FunctionError(functionName, arguments);
-                case "=":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} == {TreeNodeToCode(arguments[1], vertex, depth)}";
-                case "<>":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} != {TreeNodeToCode(arguments[1], vertex, depth)}";
-                case "<":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} < {TreeNodeToCode(arguments[1], vertex, depth)}";
-                case "<=":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} <= {TreeNodeToCode(arguments[1], vertex, depth)}";
-                case ">=":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} >= {TreeNodeToCode(arguments[1], vertex, depth)}";
-                case ">":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"{TreeNodeToCode(arguments[0], vertex, depth)} > {TreeNodeToCode(arguments[1], vertex, depth)}";
-
-                // strings
-                case "&":
-                case "CONCATENATE":
-                    if (arguments.Length < 2 ) return FunctionError(functionName, arguments);
-                    return string.Join(" + ", arguments.Select(a => TreeNodeToCode(a, vertex, depth)));
-
-                // ranges
-                case ":":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return $"GetRange({TreeNodeToCode(arguments[0], vertex, depth)}, {TreeNodeToCode(arguments[1], vertex, depth)})";
-
-                // other
-                case "TODAY":
-                    return "DateTime.Now";
-                case "SECOND":
-                case "MINUTE":
-                case "HOUR":
-                case "DAY":
-                case "MONTH":
-                case "YEAR":
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return $"DateTime.Parse({TreeNodeToCode(arguments[0], vertex, depth)})." + functionName.Substring(0,1) + functionName.Substring(1).ToLower();
-
-                default:
-                    return $"/* Function {functionName} not implemented yet! Args: \n " +
-                           $"{string.Join("\n", arguments.Select(a => TreeNodeToCode(a, vertex, depth)))} */";
-            }
-        }
-
-        private string FunctionError(string functionName, ParseTreeNode[] arguments)
-        {
-            return "Error in " + functionName;
-        }
-
-        public static string FormatLine(string s, int indentLevel = 1)
-        {
-            return Indent(indentLevel) + s;
-        }
-
-        public static IEnumerable<string> FormatLines(IEnumerable<string> list, int indentLevel)
-        {
-            return list.Select(i => FormatLine(i.Replace("\n", "\n".PadRight(indentLevel * 4)), indentLevel));
-        }
-
-        public static string Indent(int level)
-        {
-            return "".PadLeft(level * 4);
         }
     }
 }

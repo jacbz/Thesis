@@ -5,6 +5,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
 using ICSharpCode.AvalonEdit.Folding;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
