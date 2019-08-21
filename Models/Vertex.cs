@@ -9,7 +9,8 @@ namespace Thesis.Models
 {
     public class Vertex : INotifyPropertyChanged
     {
-        public object Value { get; set; }
+        public dynamic Value { get; set; }
+        public string DisplayValue { get; set; }
         public string Formula { get; set; }
         public Label Label { get; set; }
         public string VariableName { get; set; }
@@ -51,7 +52,8 @@ namespace Thesis.Models
         public Vertex(IRange cell)
         {
             CellType = GetCellType(cell);
-            Value = cell.DisplayText;
+            Value = GetCellValue(cell);
+            DisplayValue = cell.DisplayText;
             Formula = cell.HasFormula ? FormatFormula(cell.Formula) : null;
             Address = (cell.Row, cell.Column);
             StringAddress = cell.AddressLocal;
@@ -67,9 +69,26 @@ namespace Thesis.Models
         {
             if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;
             if (cell.HasNumber || cell.HasFormulaNumberValue) return CellType.Number;
-            if (cell.HasDateTime || cell.HasFormulaBoolValue) return CellType.Date;
+            if (cell.HasDateTime || cell.HasFormulaDateTime) return CellType.Date;
             if (cell.HasString || cell.HasFormulaStringValue) return CellType.Text;
             return CellType.Unknown;
+        }
+
+        public object GetCellValue(IRange cell)
+        {
+            if (cell.HasBoolean)
+                return cell.Boolean;
+            if (cell.HasFormulaBoolValue)
+                return cell.FormulaBoolValue;
+            if (cell.HasNumber)
+                return cell.Number;
+            if (cell.HasFormulaNumberValue)
+                return cell.FormulaNumberValue;
+            if (cell.HasDateTime)
+                return cell.DateTime;
+            if (cell.HasFormulaDateTime)
+                return cell.FormulaDateTime;
+            return cell.DisplayText;
         }
         
         private string FormatFormula(string formula)
@@ -87,7 +106,7 @@ namespace Thesis.Models
 
         public override string ToString()
         {
-            return $"{StringAddress},{CellType.ToString()}: {Value}";
+            return $"{StringAddress},{CellType.ToString()}: {DisplayValue}";
         }
 
         public override int GetHashCode()

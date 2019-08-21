@@ -83,13 +83,13 @@ namespace Thesis.Models
                         && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
                     {
                         label.Type = LabelType.Attribute;
-                        label.Text = (string) vertex.Value;
+                        label.Text = vertex.DisplayValue;
                         labelAbove.Type = LabelType.Attribute;
                     }
                     else
                     {
                         label.Type = LabelType.Header;
-                        label.Text = (string) vertex.Value;
+                        label.Text = vertex.DisplayValue;
                     }
                 }
                 else
