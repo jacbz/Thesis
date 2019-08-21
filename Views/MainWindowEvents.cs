@@ -187,5 +187,14 @@ namespace Thesis.Views
         {
             _foldingStrategy.UpdateFoldings(_foldingManager, codeTextBox.Document);
         }
+
+        private void CodeTextBoxSelectionChanged(object sender, EventArgs e)
+        {
+            if (_generator.CodeGenerator?.VariableNameToVertexDictionary == null) return;
+
+            var selection = codeTextBox.SelectedText;
+            if (_generator.CodeGenerator.VariableNameToVertexDictionary.TryGetValue(selection, out var vertex))
+                SelectVertexInSpreadsheet(vertex);
+        }
     }
 }

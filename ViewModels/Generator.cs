@@ -24,6 +24,7 @@ namespace Thesis.ViewModels
         public List<GeneratedClass> GeneratedClasses { get; set; }
         public ObservableCollection<Vertex> OutputVertices { get; set; }
         public string ActiveWorksheet { get; set; }
+        public CodeGenerator CodeGenerator { get; set; }
 
         public Generator(MainWindow mainWindow)
         {
@@ -196,15 +197,14 @@ namespace Thesis.ViewModels
             _window.codeTextBox.Text = "";
 
             var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.StringAddress, v => v);
-            CodeGenerator codeGenerator;
             // implement different languages here
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    codeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
+                    CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
                     break;
             }
-            string code = codeGenerator.GenerateCode();
+            string code = CodeGenerator.GenerateCode();
             logItem.AppendElapsedTime();
 
             _window.codeTextBox.Text = code;

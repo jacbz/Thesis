@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Syncfusion.UI.Xaml.Diagram;
@@ -43,6 +44,21 @@ namespace Thesis.Views
         {
             spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
             spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.Address.row, vertex.Address.col);
+
+            // highlight selected vertex yellow for one second
+            var cell = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
+            var originalBgColor = cell.CellStyle.Color;
+            if (spreadsheet.Tag != null) return;
+            spreadsheet.Tag = true;
+            cell.CellStyle.Color = Color.Yellow;
+            spreadsheet.ActiveGrid.InvalidateCell(vertex.Address.row, vertex.Address.col);
+            Task.Factory.StartNew(() => Thread.Sleep(1000))
+                .ContinueWith((t) =>
+                {
+                    cell.CellStyle.Color = originalBgColor;
+                    spreadsheet.ActiveGrid.InvalidateCell(vertex.Address.row, vertex.Address.col);
+                    spreadsheet.Tag = null;
+                }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void SelectVertexInDiagrams(Vertex vertex)

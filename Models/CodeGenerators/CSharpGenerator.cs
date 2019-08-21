@@ -16,7 +16,6 @@ namespace Thesis.Models.CodeGenerators
     public class CSharpGenerator : CodeGenerator
     {
         private HashSet<string> _usedVariableNames;
-        private Dictionary<string, Vertex> VariableNameToVertexDictionary;
 
         public CSharpGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
             : base(generatedClasses, addressToVertexDictionary)

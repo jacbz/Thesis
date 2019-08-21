@@ -13,6 +13,7 @@ namespace Thesis.Models.CodeGenerators
     {
         private protected List<GeneratedClass> GeneratedClasses;
         private protected Dictionary<string, Vertex> AddressToVertexDictionary;
+        public Dictionary<string, Vertex> VariableNameToVertexDictionary { get; set; }
 
         public abstract string GenerateCode();
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -39,6 +40,7 @@ namespace Thesis.Views
             // enable folding in code text box
             _foldingManager = FoldingManager.Install(codeTextBox.TextArea);
             _foldingStrategy = new BraceFoldingStrategy();
+            codeTextBox.TextArea.SelectionChanged += CodeTextBoxSelectionChanged;
 
             // disable pasting in spreadsheet
             spreadsheet.HistoryManager.Enabled = false;
