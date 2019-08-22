@@ -56,6 +56,9 @@ namespace Thesis.Models
 
             if (edges.Count != 0)
                 Logger.Log(LogItemType.Error, "Error during topological sort. Graph has at least one cycle?");
+
+            // reverse order
+            sortedVertices.Reverse();
             Vertices = sortedVertices;
         }
     }

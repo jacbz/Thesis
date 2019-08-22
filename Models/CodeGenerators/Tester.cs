@@ -13,36 +13,56 @@ namespace Thesis.Models.CodeGenerators
         public Dictionary<string, TestResult> VariableToTestResultDictionary { get; set; }
         public abstract Task PerformTestAsync();
 
+        public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int || o is long || o is float || o is double || o is decimal;
+
         public TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary)
         {
             Logger.DispatcherLog(LogItemType.Info, "Generating test report...");
 
-            int passCount = 0, valueMismatchCount = 0, typeMismatchCount = 0;
-            foreach (var testResult in VariableToTestResultDictionary.Values)
+            int passCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
+
+            foreach (var keyValuePair in variableNameToVertexDictionary)
             {
-                var vertex = variableNameToVertexDictionary[testResult.VariableName];
+                var variableName = keyValuePair.Key;
+                var vertex = keyValuePair.Value;
+
                 if (vertex.NodeType == NodeType.Constant) continue;
 
-                testResult.ExpectedValue = vertex.Value;
-
-                if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType())
+                if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {
-                    testResult.TestResultType = TestResultType.TypeMismatch;
-                    typeMismatchCount++;
-                }
-                else if (testResult.ExpectedValue != testResult.ActualValue)
-                {
-                    testResult.TestResultType = TestResultType.ValueMismatch;
-                    valueMismatchCount++;
+                    testResult.ExpectedValue = vertex.Value;
+                    // two different numeric types are to be treated as equal
+                    if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
+                        !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
+                    {
+                        testResult.TestResultType = TestResultType.TypeMismatch;
+                        typeMismatchCount++;
+                    }
+                    else if (testResult.ExpectedValue != testResult.ActualValue)
+                    {
+                        testResult.TestResultType = TestResultType.ValueMismatch;
+                        valueMismatchCount++;
+                    }
+                    else
+                    {
+                        testResult.TestResultType = TestResultType.Pass;
+                        passCount++;
+                    }
                 }
                 else
                 {
-                    testResult.TestResultType = TestResultType.Pass;
-                    passCount++;
+                    VariableToTestResultDictionary.Add(variableName,
+                        new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
+                    {
+                        ExpectedValue = vertex.Value,
+                        TestResultType = TestResultType.Skipped
+                    });
+                    skippedCount++;
+
                 }
             }
 
-            return new TestReport(passCount, valueMismatchCount, typeMismatchCount);
+            return new TestReport(passCount, valueMismatchCount, typeMismatchCount, skippedCount);
         }
 
         protected Tester()
@@ -57,17 +77,19 @@ namespace Thesis.Models.CodeGenerators
         public int PassCount { get; }
         public int ValueMismatchCount { get; }
         public int TypeMismatchCount { get; }
+        public int SkippedCount { get; }
 
-        public TestReport(int passCount, int valueMismatchCount, int typeMismatchCount)
+        public TestReport(int passCount, int valueMismatchCount, int typeMismatchCount, int skippedCount)
         {
             PassCount = passCount;
             ValueMismatchCount = valueMismatchCount;
             TypeMismatchCount = typeMismatchCount;
+            SkippedCount = skippedCount;
         }
 
         public override string ToString()
         {
-            return $"Test results: {PassCount} Pass, {ValueMismatchCount} Value Mismatch, {TypeMismatchCount} Type Mismatch";
+            return $"Test results: {PassCount} Pass, {ValueMismatchCount} Value Mismatch, {TypeMismatchCount} Type Mismatch, {SkippedCount} Skipped";
         }
     }
 
@@ -75,7 +97,8 @@ namespace Thesis.Models.CodeGenerators
     {
         Pass,
         TypeMismatch,
-        ValueMismatch
+        ValueMismatch,
+        Skipped
     }
 
     public class ClassCode
@@ -124,6 +147,8 @@ namespace Thesis.Models.CodeGenerators
                            $"Actual: {ActualValue} ({ActualValue.GetType().Name})";
                 case TestResultType.ValueMismatch:
                     return $"//  FAIL  Expected: {ExpectedValue}, Actual: {ActualValue}";
+                case TestResultType.Skipped:
+                    return $"//  SKIPPED  Expected: {ExpectedValue}";
                 default:
                     return "// Error";
             }

@@ -115,7 +115,7 @@ namespace Thesis.Views
         /// </summary>
         /// <param name="allVertices"></param>
         /// <param name="filteredVertices"></param>
-        public void ResetAndColorAllCells(List<Vertex> allVertices, List<Vertex> filteredVertices)
+        public void ResetAndColorAllCells(List<Vertex> allVertices)
         {
             ResetSpreadsheetColors();
             ColorSpreadsheetCells(allVertices, StyleCellByLabelType, StyleBorderByNodeType);

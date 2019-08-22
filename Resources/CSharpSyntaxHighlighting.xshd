@@ -49,6 +49,7 @@
 		</Keywords>
 		<Keywords fontWeight="bold" background="#c0392b" foreground="#FFFFFF">
 			<Word> FAIL </Word>
+			<Word> SKIPPED </Word>
 		</Keywords>
 		<Keywords fontStyle="italic" foreground="#c0392b">
 			<Word>Actual</Word>

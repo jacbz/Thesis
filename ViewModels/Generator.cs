@@ -103,7 +103,7 @@ namespace Thesis.ViewModels
 
             LayoutGraph();
 
-            _window.ResetAndColorAllCells(Graph.AllVertices, Graph.Vertices);
+            _window.ResetAndColorAllCells(Graph.AllVertices);
 
             Logger.Log(LogItemType.Success, "Graph generation complete.");
         }

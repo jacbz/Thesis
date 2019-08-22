@@ -24,44 +24,52 @@ namespace Thesis.Models.CodeGenerators
 
             Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
-            // create a state with all shared classes initiated
-            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
 
-            // test each shared class separately
-            foreach (var sharedClass in sharedClasses)
+            try
             {
-                var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
-                var testSharedClass = CSharpScript
-                    .Create(sharedClass.FieldsCode, _scriptOptions)
-                    .ContinueWith(sharedClass.MethodBodyCode);
+                // create a state with all shared classes initiated
+                ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
 
-                var testSharedClassState = await testSharedClass.RunAsync();
-                foreach (var testResult in VariablesToTestResults(sharedClass.ClassName, testSharedClassState))
+                // test each shared class separately
+                foreach (var sharedClass in sharedClasses)
                 {
-                    testResults.Add(testResult.VariableName, testResult);
-                }
-                logItem2.DispatcherAppendElapsedTime();
+                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
+                    var testSharedClass = CSharpScript
+                        .Create(sharedClass.FieldsCode, _scriptOptions)
+                        .ContinueWith(sharedClass.MethodBodyCode);
 
-                // initialize the shared classes state
-                withSharedClassesInitialized =
-                    await withSharedClassesInitialized.ContinueWithAsync(sharedClass.Code);
-                withSharedClassesInitialized =
-                    await withSharedClassesInitialized.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+                    var testSharedClassState = await testSharedClass.RunAsync();
+                    foreach (var testResult in VariablesToTestResults(sharedClass.ClassName, testSharedClassState))
+                    {
+                        testResults.Add(testResult.VariableName, testResult);
+                    }
+                    logItem2.DispatcherAppendElapsedTime();
+
+                    // initialize the shared classes state
+                    withSharedClassesInitialized =
+                        await withSharedClassesInitialized.ContinueWithAsync(sharedClass.Code);
+                    withSharedClassesInitialized =
+                        await withSharedClassesInitialized.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+                }
+
+                // test all normal classes on this state, separately
+                foreach (var normalClass in normalClasses)
+                {
+                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
+                    var testNormalClassState =
+                        await withSharedClassesInitialized.ContinueWithAsync(normalClass.FieldsCode);
+                    testNormalClassState =
+                        await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
+                    foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
+                    {
+                        testResults.Add(testResult.VariableName, testResult);
+                    }
+                    logItem2.DispatcherAppendElapsedTime();
+                }
             }
-
-            // test all normal classes on this state, separately
-            foreach (var normalClass in normalClasses)
+            catch (Exception ex)
             {
-                var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
-                var testNormalClassState =
-                    await withSharedClassesInitialized.ContinueWithAsync(normalClass.FieldsCode);
-                testNormalClassState =
-                    await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
-                foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
-                {
-                    testResults.Add(testResult.VariableName, testResult);
-                }
-                logItem2.DispatcherAppendElapsedTime();
+                Logger.DispatcherLog(LogItemType.Error, ex.GetType().Name + ": " + ex.Message);
             }
 
             VariableToTestResultDictionary = testResults;

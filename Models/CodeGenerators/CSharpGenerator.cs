@@ -74,9 +74,6 @@ namespace Thesis.Models.CodeGenerators
 
         private ClassDeclarationSyntax GenerateClass(GeneratedClass generatedClass, Dictionary<string, TestResult> testResults = null)
         {
-            var vertices = generatedClass.Vertices.ToList();
-            vertices.Reverse(); // as topological sort resulted in the output field being at the bottom
-
             // public class {generatedClass.Name}
             var newClass = ClassDeclaration(generatedClass.Name)
                 .AddModifiers(Token(SyntaxKind.PublicKeyword));
@@ -85,7 +82,7 @@ namespace Thesis.Models.CodeGenerators
                 newClass = newClass.AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             // split vertex list into two
-            var lookup = vertices.ToLookup(v => v.NodeType == NodeType.Constant);
+            var lookup = generatedClass.Vertices.ToLookup(v => v.NodeType == NodeType.Constant);
             var constants = lookup[true].ToList();
             var formulas = lookup[false].ToList();
 
@@ -168,7 +165,7 @@ namespace Thesis.Models.CodeGenerators
             }
 
             // generate Calculate/Init method
-            var method = GenerateMethod(generatedClass, formulas, statements);
+            var method = GenerateMethod(generatedClass, statements);
 
             // add fields and method to class
             newClass = newClass.AddMembers(fields.ToArray()).AddMembers(method);
@@ -200,7 +197,7 @@ namespace Thesis.Models.CodeGenerators
                     TriviaList()));
         }
 
-        private MemberDeclarationSyntax GenerateMethod(GeneratedClass generatedClass, List<Vertex> formulas, List<StatementSyntax> statements)
+        private MemberDeclarationSyntax GenerateMethod(GeneratedClass generatedClass, List<StatementSyntax> statements)
         {
             if (generatedClass.IsSharedClass)
             {
@@ -291,9 +288,7 @@ namespace Thesis.Models.CodeGenerators
             {
                 generatedClass.Name = GenerateUniqueName(generatedClass.Name, _usedVariableNames);
 
-                var vertices = generatedClass.Vertices.ToList();
-                vertices.Reverse(); // as topological sort resulted in the output field being at the bottom
-                foreach (var vertex in vertices)
+                foreach (var vertex in generatedClass.Vertices)
                 {
                     vertex.VariableName = GenerateUniqueName(vertex.VariableName, _usedVariableNames);
                 }
@@ -501,7 +496,7 @@ namespace Thesis.Models.CodeGenerators
 
         private ExpressionSyntax FunctionError(string functionName, ParseTreeNode[] arguments)
         {
-            return CommentExpression("Function " + functionName + "has incorrect number of arguments", true);
+            return CommentExpression($"Function {functionName} has incorrect number of arguments ({arguments.Length})", true);
         }
 
 

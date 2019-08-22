@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CSharp;
+using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
 {
@@ -23,6 +24,7 @@ namespace Thesis.Models.CodeGenerators
         {
             await Tester.PerformTestAsync();
             var testReport = Tester.GenerateTestReport(VariableNameToVertexDictionary);
+            Logger.DispatcherLog(LogItemType.Info, "Generating code with test results as comments...");
             testReport.Code = await GenerateCodeAsync(Tester.VariableToTestResultDictionary);
             return testReport;
         }
