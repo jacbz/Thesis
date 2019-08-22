@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace Thesis.ViewModels
 {
@@ -43,6 +44,11 @@ namespace Thesis.ViewModels
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public void DispatcherAppendElapsedTime()
+        {
+            Application.Current.Dispatcher.Invoke(AppendElapsedTime);
+        }
 
         public void AppendElapsedTime()
         {

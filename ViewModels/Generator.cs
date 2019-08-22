@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Navigation;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
@@ -190,7 +191,7 @@ namespace Thesis.ViewModels
             Logger.Log(LogItemType.Success, $"Generated {GeneratedClasses.Count} classes.");
         }
 
-        public void GenerateCode()
+        public async Task GenerateCode()
         {
             var logItem = Logger.Log(LogItemType.Info, $"Generating code...", true);
 
@@ -204,20 +205,21 @@ namespace Thesis.ViewModels
                     CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
                     break;
             }
-            var code = CodeGenerator.GenerateCode();
+            var code = await CodeGenerator.GenerateCodeAsync();
             logItem.AppendElapsedTime();
 
             _window.codeTextBox.Text = code;
             Logger.Log(LogItemType.Success, $"Successfully generated code.");
         }
 
-        public void TestCode()
+        public async Task TestCode()
         {
             Logger.Log(LogItemType.Info, $"Testing code...");
 
             if (CodeGenerator != null)
             {
-                var report = CodeGenerator.GenerateTestReport();
+                var report = await Task.Run(() => CodeGenerator.GenerateTestReportAsync());
+
                 _window.codeTextBox.Text = report.Code;
                 Logger.Log(report.TypeMismatchCount == 0 && report.ValueMismatchCount == 0
                         ? LogItemType.Success
@@ -229,7 +231,6 @@ namespace Thesis.ViewModels
             else
             {
                 Logger.Log(LogItemType.Error, $"Code generator was not initialized.");
-
             }
         }
     }

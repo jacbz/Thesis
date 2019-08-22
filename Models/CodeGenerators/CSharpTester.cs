@@ -14,12 +14,7 @@ namespace Thesis.Models.CodeGenerators
     {
         private readonly ScriptOptions _scriptOptions = ScriptOptions.Default.WithImports("System");
 
-        public override void PerformTest()
-        {
-            VariableToTestResultDictionary = Task.Run(async () => await PerformTestAsync()).Result;
-        }
-
-        public async Task<Dictionary<string, TestResult>> PerformTestAsync()
+        public override async Task PerformTestAsync()
         {
             var testResults = new Dictionary<string, TestResult>();
 
@@ -27,15 +22,15 @@ namespace Thesis.Models.CodeGenerators
             var sharedClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            var logItem = Logger.Log(LogItemType.Info, "Testing code inside Roslyn CSharp scripting engine...", true);
+            var logItem = Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
             // create a state with all shared classes initiated
             ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
 
             // test each shared class separately
-            foreach(var sharedClass in sharedClasses)
+            foreach (var sharedClass in sharedClasses)
             {
-                var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
+                var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
                 var testSharedClass = CSharpScript
                     .Create(sharedClass.FieldsCode, _scriptOptions)
                     .ContinueWith(sharedClass.MethodBodyCode);
@@ -45,7 +40,7 @@ namespace Thesis.Models.CodeGenerators
                 {
                     testResults.Add(testResult.VariableName, testResult);
                 }
-                logItem2.AppendElapsedTime();
+                logItem2.DispatcherAppendElapsedTime();
 
                 // initialize the shared classes state
                 withSharedClassesInitialized =
@@ -57,7 +52,7 @@ namespace Thesis.Models.CodeGenerators
             // test all normal classes on this state, separately
             foreach (var normalClass in normalClasses)
             {
-                var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
+                var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
                 var testNormalClassState =
                     await withSharedClassesInitialized.ContinueWithAsync(normalClass.FieldsCode);
                 testNormalClassState =
@@ -66,12 +61,12 @@ namespace Thesis.Models.CodeGenerators
                 {
                     testResults.Add(testResult.VariableName, testResult);
                 }
-                logItem2.AppendElapsedTime();
+                logItem2.DispatcherAppendElapsedTime();
             }
 
-            logItem.AppendElapsedTime();
+            logItem.DispatcherAppendElapsedTime();
 
-            return testResults;
+            VariableToTestResultDictionary = testResults;
         }
 
         public IEnumerable<TestResult> VariablesToTestResults(string className, ScriptState state)

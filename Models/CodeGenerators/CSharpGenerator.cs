@@ -25,7 +25,12 @@ namespace Thesis.Models.CodeGenerators
             _usedVariableNames = new HashSet<string>();
         }
 
-        public override string GenerateCode(Dictionary<string, TestResult> testResults = null)
+        public override async Task<string> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null)
+        {
+            return await Task.Run(() => GenerateCode(testResults));
+        }
+
+        public string GenerateCode(Dictionary<string, TestResult> testResults = null)
         {
             Tester = new CSharpTester();
 

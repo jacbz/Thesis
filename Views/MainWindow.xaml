@@ -214,7 +214,7 @@
                             </ListView.View>
                         </ListView>
                         <Border Grid.Row="2" Padding="6,6,6,0" >
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                                 <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" >
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
@@ -280,12 +280,14 @@
                                     </StackPanel>
                                 </Button>
 
-                                <Button x:Name="testCodeButton" IsEnabled="False" Click="TestCodeButton_Click">
+                                <Button x:Name="testCodeButton" IsEnabled="False" Click="TestCodeButton_Click" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal">
-                                        <fa5:SvgAwesome Icon="Solid_Cogs"/>
+                                        <fa5:SvgAwesome Icon="Solid_Play" Width="12" Height="12" />
                                         <TextBlock><Run Text="Test code"/></TextBlock>
                                     </StackPanel>
                                 </Button>
+
+                                <controls:ProgressRing x:Name="codeGeneratorProgressRing" IsActive="False" Height="16" Width="16" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

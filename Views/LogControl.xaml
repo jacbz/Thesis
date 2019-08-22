@@ -60,7 +60,7 @@
                         </DataTemplate>
                     </GridViewColumn.CellTemplate>
                 </GridViewColumn>
-                <GridViewColumn Header="Message" Width="672" >
+                <GridViewColumn Header="Message" Width="670" >
                     <GridViewColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
@@ -134,15 +135,24 @@ namespace Thesis.Views
             (diagram2.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
         }
 
-        private void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
+        private async void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
         {
-            _generator.GenerateCode();
+            codeGeneratorProgressRing.IsActive = true;
+
+            await _generator.GenerateCode();
+
+            codeGeneratorProgressRing.IsActive = false;
             testCodeButton.IsEnabled = true;
         }
 
-        private void TestCodeButton_Click(object sender, RoutedEventArgs e)
+        private async void TestCodeButton_Click(object sender, RoutedEventArgs e)
         {
-            _generator.TestCode();
+            logTab.IsSelected = true;
+            codeGeneratorProgressRing.IsActive = true;
+
+            await _generator.TestCode();
+
+            codeGeneratorProgressRing.IsActive = false;
         }
 
         public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)

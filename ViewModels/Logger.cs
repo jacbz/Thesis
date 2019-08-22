@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using Thesis.Models;
 
@@ -35,6 +36,11 @@ namespace Thesis.ViewModels
             _logView.ScrollIntoView(_logView.SelectedItem);
 
             return logItem;
+        }
+
+        public static LogItem DispatcherLog(LogItemType type, string message, bool useStopwatch = false)
+        {
+            return Application.Current.Dispatcher.Invoke(() => Log(type, message, useStopwatch));
         }
     }
 }

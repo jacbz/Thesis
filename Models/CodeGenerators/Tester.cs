@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
 {
@@ -10,15 +11,19 @@ namespace Thesis.Models.CodeGenerators
     {
         public List<ClassCode> ClassesCode { get; set; }
         public Dictionary<string, TestResult> VariableToTestResultDictionary { get; set; }
-        public abstract void PerformTest();
-        public TestReport Report { get; set; }
+        public abstract Task PerformTestAsync();
 
-        public void EvaluateResults(Dictionary<string, Vertex> VariableNameToVertexDictionary)
+        public TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary)
         {
+            Logger.DispatcherLog(LogItemType.Info, "Generating test report...");
+
             int passCount = 0, valueMismatchCount = 0, typeMismatchCount = 0;
             foreach (var testResult in VariableToTestResultDictionary.Values)
             {
-                testResult.ExpectedValue = VariableNameToVertexDictionary[testResult.VariableName].Value;
+                var vertex = variableNameToVertexDictionary[testResult.VariableName];
+                if (vertex.NodeType == NodeType.Constant) continue;
+
+                testResult.ExpectedValue = vertex.Value;
 
                 if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType())
                 {
@@ -37,7 +42,7 @@ namespace Thesis.Models.CodeGenerators
                 }
             }
 
-            Report = new TestReport(passCount, valueMismatchCount, typeMismatchCount);
+            return new TestReport(passCount, valueMismatchCount, typeMismatchCount);
         }
 
         protected Tester()
