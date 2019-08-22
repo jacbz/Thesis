@@ -6,9 +6,13 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Xml;
 using ICSharpCode.AvalonEdit.Folding;
+using ICSharpCode.AvalonEdit.Highlighting;
+using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
 using Thesis.ViewModels;
@@ -41,6 +45,11 @@ namespace Thesis.Views
             _foldingManager = FoldingManager.Install(codeTextBox.TextArea);
             _foldingStrategy = new BraceFoldingStrategy();
             codeTextBox.TextArea.SelectionChanged += CodeTextBoxSelectionChanged;
+
+            // enable syntax highlighting
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(Properties.Resources.CSharpSyntaxHighlighting ?? "")))
+                using (XmlTextReader reader = new XmlTextReader(stream))
+                    codeTextBox.SyntaxHighlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
 
             // disable pasting in spreadsheet
             spreadsheet.HistoryManager.Enabled = false;

@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Irony.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Scripting;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using XLParser;
 
@@ -59,6 +61,7 @@ namespace Thesis.Models.CodeGenerators
             var code = @namespace
                 .NormalizeWhitespace()
                 .ToFullString();
+
             return code;
         }
 
@@ -88,6 +91,13 @@ namespace Thesis.Models.CodeGenerators
                 if (generatedClass.IsSharedClass)
                 {
                     // for shared classes: omit type name as already declared
+
+//                    IdentifierName(Identifier(
+//                        TriviaList(
+//                            Comment("// Comment")),
+//                        formula.VariableName,
+//                        TriviaList())),
+
                     var assignmentExpression = AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(formula.VariableName),

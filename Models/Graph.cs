@@ -46,7 +46,6 @@ namespace Thesis.Models
                         verticesDict[cell].Parents.Add(vertex);
                     }
                     // TODO: so something with external cells
-
                 }
                 catch (Exception ex)
                 {
@@ -54,7 +53,6 @@ namespace Thesis.Models
                         $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.Message}");
                 }
             }
-
             GenerateLabels();
 
             AllVertices = Vertices.ToList();

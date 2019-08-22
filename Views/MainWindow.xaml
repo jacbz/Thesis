@@ -287,11 +287,10 @@
                         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
                         x:Name="codeTextBox"
                         FontFamily="Consolas"
-                        SyntaxHighlighting="C#"
                         ShowLineNumbers="True"
-                        FontSize="9pt"
+                        FontSize="10pt"
                         TextChanged="CodeTextBox_TextChanged"
-                        WordWrap="True"/>
+                        WordWrap="True" IsReadOnly="True"/>
                 </DockPanel>
             </TabItem>
         </TabControl>

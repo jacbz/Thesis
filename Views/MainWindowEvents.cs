@@ -67,6 +67,11 @@ namespace Thesis.Views
                 _generator = new Generator(this);
                 _generator.GenerateGraph();
                 Logger.Log(LogItemType.Success, "Successfully generated graph.");
+
+                this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                generateCodeTab.IsSelected = true;
             }
         }
 
