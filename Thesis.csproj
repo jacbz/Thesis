@@ -190,6 +190,7 @@
     <Compile Include="Models\GeneratedClass.cs" />
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\Label.cs" />
+    <Compile Include="Models\Utility.cs" />
     <Compile Include="ViewModels\LogItem.cs" />
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Models\Vertex.cs" />

@@ -453,7 +453,7 @@ namespace Thesis.Models.CodeGenerators
             var leftAddress = leftChild.FindTokenAndGetText();
             var rightAddress = rightChild.FindTokenAndGetText();
 
-            foreach (var address in AddressesInRange(leftAddress, rightAddress))
+            foreach (var address in Utility.AddressesInRange(leftAddress, rightAddress))
             {
                 if (AddressToVertexDictionary.TryGetValue(address, out var vertex))
                 {

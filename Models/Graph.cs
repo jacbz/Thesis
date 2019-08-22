@@ -37,8 +37,8 @@ namespace Thesis.Models
             foreach (var vertex in Vertices)
             {
                 if (vertex.ParseTree == null) continue;
-                try
-                {
+                //try
+                //{
                     var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
                     foreach (var cell in referencedCells)
                     {
@@ -46,12 +46,12 @@ namespace Thesis.Models
                         verticesDict[cell].Parents.Add(vertex);
                     }
                     // TODO: so something with external cells
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log(LogItemType.Error,
-                        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.Message}");
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Logger.Log(LogItemType.Error,
+                //        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.GetType().Name} ({ex.Message})");
+                //}
             }
             GenerateLabels();
 
@@ -195,6 +195,24 @@ namespace Thesis.Models
 
                 switch (node.Term.Name)
                 {
+                    case "ReferenceFunctionCall":
+                        // ranges
+                        if (node.ChildNodes.Count == 3 && node.GetFunction() == ":")
+                        {
+                            var leftChild = node.ChildNodes[0].ChildNodes[0];
+                            var rightChild = node.ChildNodes[2].ChildNodes[0];
+                            if (leftChild.Term.Name == "Cell" && rightChild.Term.Name == "Cell")
+                            {
+                                var leftAddress = leftChild.FindTokenAndGetText();
+                                var rightAddress = rightChild.FindTokenAndGetText();
+
+                                var addressesInRange = Utility.AddressesInRange(leftAddress, rightAddress).ToArray();
+                                Logger.Log(LogItemType.Info,
+                                    $"Found range in {address}: Adding {string.Join(", ", addressesInRange)}");
+                                referencedCells.AddRange(addressesInRange);
+                            }
+                        }
+                        break;
                     case "Cell":
                         var externalMatch = external.FirstOrDefault(e => e.Item1 == node);
                         if (!externalMatch.Equals(default))

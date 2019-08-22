@@ -27,13 +27,13 @@ namespace Thesis.Models.CodeGenerators
             Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
 
-            try
-            {
-                // create a state with all shared classes initiated
-                ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
+            // create a state with all shared classes initiated
+            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
 
-                // test each shared class separately
-                foreach (var sharedClass in sharedClasses)
+            // test each shared class separately
+            foreach (var sharedClass in sharedClasses)
+            {
+                try
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
                     var testSharedClass = CSharpScript
@@ -52,10 +52,18 @@ namespace Thesis.Models.CodeGenerators
                         await withSharedClassesInitialized.ContinueWithAsync(sharedClass.Code);
                     withSharedClassesInitialized =
                         await withSharedClassesInitialized.ContinueWithAsync(sharedClass.ClassName + ".Init();");
-                }
 
-                // test all normal classes on this state, separately
-                foreach (var normalClass in normalClasses)
+                }
+                catch (Exception ex)
+                {
+                    LogException(ex, sharedClass.ClassName);
+                }
+            }
+
+            // test all normal classes on this state, separately
+            foreach (var normalClass in normalClasses)
+            {
+                try
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
                     var testNormalClassState =
@@ -68,13 +76,18 @@ namespace Thesis.Models.CodeGenerators
                     }
                     logItem2.DispatcherAppendElapsedTime();
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.DispatcherLog(LogItemType.Error, ex.GetType().Name + ": " + ex.Message);
+                catch (Exception ex)
+                {
+                    LogException(ex, normalClass.ClassName);
+                }
             }
 
             VariableToTestResultDictionary = testResults;
+        }
+
+        private static void LogException(Exception ex, string className)
+        {
+            Logger.DispatcherLog(LogItemType.Error, ex.GetType().Name + " in " + className + ": " + ex.Message);
         }
 
         public IEnumerable<TestResult> VariablesToTestResults(string className, ScriptState state)

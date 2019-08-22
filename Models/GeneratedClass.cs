@@ -9,7 +9,7 @@ namespace Thesis.Models
 {
     public class GeneratedClass
     {
-        private static Color _sharedColor = ColorTranslator.FromHtml("#CFD8DC");
+        private static readonly Color _sharedColor = ColorTranslator.FromHtml("#CFD8DC");
         public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd)
         {
             Name = name;
