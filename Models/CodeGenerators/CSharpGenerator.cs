@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Irony.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.Formatting;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using XLParser;
 
@@ -65,9 +63,11 @@ namespace Thesis.Models.CodeGenerators
                 .AddMembers(sharedClasses.ToArray())
                 .AddMembers(normalClasses.ToArray());
 
-            var code = @namespace
-                .NormalizeWhitespace()
-                .ToFullString();
+            // format code and return as string
+            var workspace = new AdhocWorkspace();
+            var options = workspace.Options;
+            var node = Formatter.Format(@namespace, workspace, options);
+            var code = node.ToFullString();
 
             return code;
         }
@@ -167,7 +167,10 @@ namespace Thesis.Models.CodeGenerators
                 }
             }
 
-            var method = GenerateClassMethod(generatedClass, formulas, statements);
+            // generate Calculate/Init method
+            var method = GenerateMethod(generatedClass, formulas, statements);
+
+            // add fields and method to class
             newClass = newClass.AddMembers(fields.ToArray()).AddMembers(method);
 
             Tester.ClassesCode.Add(new ClassCode(
@@ -183,7 +186,7 @@ namespace Thesis.Models.CodeGenerators
         {
             return IdentifierName(
                 Identifier(
-                    TriviaList(Comment(comment)),
+                    TriviaList(Comment(comment), LineFeed),
                     typeString,
                     TriviaList()));
         }
@@ -192,13 +195,12 @@ namespace Thesis.Models.CodeGenerators
         {
             return IdentifierName(
                 Identifier(
-                    TriviaList(
-                        Comment(comment)),
+                    TriviaList(Comment(comment), LineFeed),
                     variableName,
                     TriviaList()));
         }
 
-        private MemberDeclarationSyntax GenerateClassMethod(GeneratedClass generatedClass, List<Vertex> formulas, List<StatementSyntax> statements)
+        private MemberDeclarationSyntax GenerateMethod(GeneratedClass generatedClass, List<Vertex> formulas, List<StatementSyntax> statements)
         {
             if (generatedClass.IsSharedClass)
             {

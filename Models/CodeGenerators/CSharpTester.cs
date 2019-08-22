@@ -22,7 +22,7 @@ namespace Thesis.Models.CodeGenerators
             var sharedClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            var logItem = Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
+            Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
             // create a state with all shared classes initiated
             ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
@@ -63,8 +63,6 @@ namespace Thesis.Models.CodeGenerators
                 }
                 logItem2.DispatcherAppendElapsedTime();
             }
-
-            logItem.DispatcherAppendElapsedTime();
 
             VariableToTestResultDictionary = testResults;
         }

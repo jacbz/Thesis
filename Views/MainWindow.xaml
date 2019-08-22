@@ -215,7 +215,7 @@
                         </ListView>
                         <Border Grid.Row="2" Padding="6,6,6,0" >
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" >
+                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" ToolTip="If output fields are changed, labels will be newly generated." >
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
                                         <TextBlock><Run Text="Filter by selected output fields and generate graph"/></TextBlock>

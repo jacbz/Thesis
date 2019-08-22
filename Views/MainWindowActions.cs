@@ -103,8 +103,10 @@ namespace Thesis.Views
         {
             if (vertex.NodeType == NodeType.OutputField)
             {
+                outputFieldsListView.Tag = true; // avoiding triggering OutputFieldsListView_SelectionChanged
                 outputFieldsListView.ScrollIntoView(vertex);
                 outputFieldsListView.SelectedItem = vertex;
+                outputFieldsListView.Tag = null;
             }
         }
 

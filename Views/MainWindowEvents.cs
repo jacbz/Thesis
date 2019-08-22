@@ -183,9 +183,7 @@ namespace Thesis.Views
             if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
             {
                 SelectVertexInSpreadsheet(vertex);
-                outputFieldsListView.Tag = true; // avoiding triggering OutputFieldsListView_SelectionChanged
                 SelectVertexInOutputListView(vertex);
-                outputFieldsListView.Tag = null;
                 InitiateToolbox(vertex);
             }
             else
