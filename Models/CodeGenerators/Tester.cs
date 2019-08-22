@@ -31,7 +31,7 @@ namespace Thesis.Models.CodeGenerators
                 if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {
                     testResult.ExpectedValue = vertex.Value;
-                    // two different numeric types are to be treated as equal
+                    // two different numeric types are to be treated as equal types
                     if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
                         !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
                     {

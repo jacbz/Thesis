@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Irony.Parsing;
 using Microsoft.CodeAnalysis;
@@ -39,7 +40,9 @@ namespace Thesis.Models.CodeGenerators
             // namespace Thesis
             var @namespace = NamespaceDeclaration(ParseName("Thesis")).NormalizeWhitespace();
             // using System;
-            @namespace = @namespace.AddUsings(UsingDirective(ParseName("System")));
+            @namespace = @namespace.AddUsings(
+                UsingDirective(ParseName("System")),
+                UsingDirective(ParseName("System.Linq")));
 
             // public class ThesisResult (Main class)
             var resultClass = GenerateResultClass(testResults);
@@ -409,10 +412,9 @@ namespace Thesis.Models.CodeGenerators
                     return ParseExpression(string.Join(" + ",
                         arguments.Select(a => TreeNodeToExpression(a, rootVertex, CellType.Text))));
 
-                // TODO: ranges
                 case ":":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ParseExpression($"GetRange({TreeNodeToExpression(arguments[0], rootVertex, type)}, {TreeNodeToExpression(arguments[1], rootVertex, type)})");
+                    return GetRangeExpression(arguments[0], arguments[1]);
 
                 // other
                 case "TODAY":
@@ -432,6 +434,44 @@ namespace Thesis.Models.CodeGenerators
                         $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, rootVertex, type)))}", true);
             }
         }
+        
+        // A1:B2 -> new[]{A1,A2,B1,B2}
+        private ExpressionSyntax GetRangeExpression(ParseTreeNode left, ParseTreeNode right)
+        {
+            if (left.ChildNodes.Count != 1 || right.ChildNodes.Count != 1)
+                return CommentExpression($"Error while parsing range");
+
+            var variables = new List<SyntaxNodeOrToken>();
+
+            var leftChild = left.ChildNodes[0];
+            var rightChild = right.ChildNodes[0];
+            if (leftChild.Term.Name != "Cell" || rightChild.Term.Name != "Cell")
+            {
+                return CommentExpression($"Range with more than 2 components not implemented yet!");
+            }
+
+            var leftAddress = leftChild.FindTokenAndGetText();
+            var rightAddress = rightChild.FindTokenAndGetText();
+
+            foreach (var address in AddressesInRange(leftAddress, rightAddress))
+            {
+                if (AddressToVertexDictionary.TryGetValue(address, out var vertex))
+                {
+                    variables.Add(IdentifierName(vertex.VariableName));
+                    variables.Add(Token(SyntaxKind.CommaToken));
+                }
+            }
+
+            // remove last comma
+            if (variables.Count > 0) variables.RemoveAt(variables.Count - 1);
+
+            return ImplicitArrayCreationExpression(
+                InitializerExpression(
+                    SyntaxKind.ArrayInitializerExpression,
+                    SeparatedList<ExpressionSyntax>(variables)));
+        }
+
+
 
         private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> operators 
             = new SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)>

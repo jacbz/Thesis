@@ -12,7 +12,9 @@ namespace Thesis.Models.CodeGenerators
 {
     public class CSharpTester : Tester
     {
-        private readonly ScriptOptions _scriptOptions = ScriptOptions.Default.WithImports("System");
+        private readonly ScriptOptions _scriptOptions = ScriptOptions.Default
+            .WithImports("System", "System.Linq")
+            .WithReferences(typeof(System.Linq.Enumerable).Assembly);
 
         public override async Task PerformTestAsync()
         {
