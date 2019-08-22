@@ -204,11 +204,33 @@ namespace Thesis.ViewModels
                     CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
                     break;
             }
-            string code = CodeGenerator.GenerateCode();
+            var code = CodeGenerator.GenerateCode();
             logItem.AppendElapsedTime();
 
             _window.codeTextBox.Text = code;
             Logger.Log(LogItemType.Success, $"Successfully generated code.");
+        }
+
+        public void TestCode()
+        {
+            Logger.Log(LogItemType.Info, $"Testing code...");
+
+            if (CodeGenerator != null)
+            {
+                var report = CodeGenerator.GenerateTestReport();
+                _window.codeTextBox.Text = report.Code;
+                Logger.Log(report.TypeMismatchCount == 0 && report.ValueMismatchCount == 0
+                        ? LogItemType.Success
+                        : report.PassCount == 0
+                            ? LogItemType.Error
+                            : LogItemType.Warning,
+                    report.ToString());
+            }
+            else
+            {
+                Logger.Log(LogItemType.Error, $"Code generator was not initialized.");
+
+            }
         }
     }
 }

@@ -11,12 +11,13 @@ namespace Thesis.ViewModels
         private DateTime _time;
         private Stopwatch _stopwatch;
 
-        public LogItem(LogItemType type, string message, Stopwatch stopwatch)
+        public LogItem(LogItemType type, string message, bool useStopwatch)
         {
             Type = type;
             Message = message;
             Time = DateTime.Now;
-            _stopwatch = stopwatch;
+            if (useStopwatch)
+                _stopwatch = Stopwatch.StartNew();
         }
 
         public LogItemType Type { get; }
@@ -45,6 +46,8 @@ namespace Thesis.ViewModels
 
         public void AppendElapsedTime()
         {
+            if (_stopwatch == null)
+                return;
             Message += $" (elapsed {_stopwatch.ElapsedMilliseconds} ms)";
             Time = DateTime.Now;
 

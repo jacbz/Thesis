@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <SyntaxDefinition name="C#" extensions=".cs" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
-	<!-- The named colors 'Comment' and 'String' are used in SharpDevelop to detect if a line is inside a multiline string/comment -->
+	<!-- The named colors 'Comment' and 'String' are used in SharpDevelop to detect if a line is inside a multiline string/comment -->	
 	<Color name="Comment" foreground="#008000" exampleText="// comment" />
 	<Color name="Class" foreground="#2B91AF" exampleText="class Test" />
 	<Color name="String" foreground="#A31515" exampleText="string text = &quot;Hello, World!&quot;"/>
@@ -40,6 +40,18 @@
 		<Keywords fontWeight="bold" foreground="#E0E000">
 			<Word>HACK</Word>
 			<Word>UNDONE</Word>
+		</Keywords>
+		<Keywords fontWeight="bold" background="#27ae60" foreground="#FFFFFF">
+			<Word> PASS </Word>
+		</Keywords>
+		<Keywords fontStyle="italic" foreground="#27ae60">
+			<Word>Expected</Word>
+		</Keywords>
+		<Keywords fontWeight="bold" background="#c0392b" foreground="#FFFFFF">
+			<Word> FAIL </Word>
+		</Keywords>
+		<Keywords fontStyle="italic" foreground="#c0392b">
+			<Word>Actual</Word>
 		</Keywords>
 	</RuleSet>
 	
@@ -282,8 +294,8 @@
 			<Word>null</Word>
 			<Word>value</Word>
 		</Keywords>
-
 		<Keywords color="SemanticKeywords">
+
 			<Word>nameof</Word>
 		</Keywords>
 

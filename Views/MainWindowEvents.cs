@@ -137,6 +137,12 @@ namespace Thesis.Views
         private void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
         {
             _generator.GenerateCode();
+            testCodeButton.IsEnabled = true;
+        }
+
+        private void TestCodeButton_Click(object sender, RoutedEventArgs e)
+        {
+            _generator.TestCode();
         }
 
         public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)
@@ -199,7 +205,10 @@ namespace Thesis.Views
 
             var selection = codeTextBox.SelectedText;
             if (_generator.CodeGenerator.VariableNameToVertexDictionary.TryGetValue(selection, out var vertex))
+            {
                 SelectVertexInSpreadsheet(vertex);
+                InitiateToolbox(vertex);
+            }
         }
     }
 }

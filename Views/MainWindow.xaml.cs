@@ -88,6 +88,7 @@ namespace Thesis.Views
         private void DisableCodeGenerationOptions()
         {
             generateCodeButton.IsEnabled = false;
+            testCodeButton.IsEnabled = false;
         }
 
         private void DisableDiagramNodeTools()

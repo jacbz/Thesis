@@ -25,8 +25,10 @@ namespace Thesis.Models.CodeGenerators
             _usedVariableNames = new HashSet<string>();
         }
 
-        public override string GenerateCode()
+        public override string GenerateCode(Dictionary<string, TestResult> testResults = null)
         {
+            Tester = new CSharpTester();
+
             // generate variable names for all
             GenerateVariableNamesForAll();
             VariableNameToVertexDictionary = GeneratedClasses.SelectMany(c => c.Vertices).ToDictionary(v => v.VariableName);
@@ -37,7 +39,7 @@ namespace Thesis.Models.CodeGenerators
             @namespace = @namespace.AddUsings(UsingDirective(ParseName("System")));
 
             // public class ThesisResult (Main class)
-            var resultClass = GenerateResultClass();
+            var resultClass = GenerateResultClass(testResults);
             @namespace = @namespace.AddMembers(resultClass);
 
             var normalClasses = new List<MemberDeclarationSyntax>();
@@ -45,7 +47,7 @@ namespace Thesis.Models.CodeGenerators
             // normal classes must be processed first, as they can infer some Unknown types in shared classes
             foreach (var generatedClass in GeneratedClasses.OrderBy(v => v.IsSharedClass))
             {
-                var newClass = GenerateClass(generatedClass);
+                var newClass = GenerateClass(generatedClass, testResults);
 
                 if (generatedClass.IsSharedClass)
                     sharedClasses.Add(newClass);
@@ -65,7 +67,7 @@ namespace Thesis.Models.CodeGenerators
             return code;
         }
 
-        private ClassDeclarationSyntax GenerateClass(GeneratedClass generatedClass)
+        private ClassDeclarationSyntax GenerateClass(GeneratedClass generatedClass, Dictionary<string, TestResult> testResults = null)
         {
             var vertices = generatedClass.Vertices.ToList();
             vertices.Reverse(); // as topological sort resulted in the output field being at the bottom
@@ -92,22 +94,26 @@ namespace Thesis.Models.CodeGenerators
                 {
                     // for shared classes: omit type name as already declared
 
-//                    IdentifierName(Identifier(
-//                        TriviaList(
-//                            Comment("// Comment")),
-//                        formula.VariableName,
-//                        TriviaList())),
+                    // test
+                    var identifier = testResults == null
+                        ? IdentifierName(formula.VariableName)
+                        : GenerateIdentifierWithComment(formula.VariableName,
+                            testResults[formula.VariableName].ToString());
 
                     var assignmentExpression = AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(formula.VariableName),
+                        identifier,
                         expression);
                     statements.Add(ExpressionStatement(assignmentExpression));
                 }
                 else
                 {
-                    var variableDeclaration = VariableDeclaration(
-                            ParseTypeName(GetTypeString(formula)))
+                    // test
+                    var type = testResults == null
+                        ? ParseTypeName(GetTypeString(formula))
+                        : GenerateTypeWithComment(GetTypeString(formula),
+                            testResults[formula.VariableName].ToString());
+                    var variableDeclaration = VariableDeclaration(type)
                         .AddVariables(VariableDeclarator(formula.VariableName)
                             .WithInitializer(
                                 EqualsValueClause(expression)));
@@ -118,6 +124,7 @@ namespace Thesis.Models.CodeGenerators
             // generate fields
             // this happens after assignments generation because assignments generation can infer types
             // e.g. dynamic x = null can become int x = 0
+            var fields = new List<MemberDeclarationSyntax>();
             foreach (var constant in constants)
             {
                 // {type} {variableName} = {value};
@@ -136,24 +143,10 @@ namespace Thesis.Models.CodeGenerators
                 else
                     field = field.AddModifiers(Token(SyntaxKind.PrivateKeyword));
 
-                newClass = newClass.AddMembers(field);
+                fields.Add(field);
             }
 
-            newClass = newClass.AddMembers(GenerateClassMethod(generatedClass, formulas, statements).ToArray());
-
-            return newClass;
-        }
-
-        /// <summary>
-        /// Generate a class method (Init() for shared classes, Calculate() for normal classes)
-        /// For shared classes, fields used in Init() are also generated
-        /// </summary>
-        /// <param name="generatedClass"></param>
-        /// <param name="formulas"></param>
-        /// <param name="statements"></param>
-        /// <returns></returns>
-        private IEnumerable<MemberDeclarationSyntax> GenerateClassMethod(GeneratedClass generatedClass, List<Vertex> formulas, List<StatementSyntax> statements)
-        {
+            // extra fields for shared classes
             if (generatedClass.IsSharedClass)
             {
                 // add formula fields
@@ -165,16 +158,52 @@ namespace Thesis.Models.CodeGenerators
                         .AddModifiers(
                             Token(SyntaxKind.PublicKeyword),
                             Token(SyntaxKind.StaticKeyword));
-                    yield return formulaField;
+                    fields.Add(formulaField);
                 }
+            }
 
+            var method = GenerateClassMethod(generatedClass, formulas, statements);
+            newClass = newClass.AddMembers(fields.ToArray()).AddMembers(method);
+
+            Tester.ClassesCode.Add(new ClassCode(
+                generatedClass.IsSharedClass,
+                generatedClass.Name,
+                newClass.NormalizeWhitespace().ToFullString(),
+                string.Join("\n", fields.Select(f => f.NormalizeWhitespace().ToFullString())),
+                string.Join("\n", statements.Select(f => f.NormalizeWhitespace().ToFullString()))));
+            return newClass;
+        }
+
+        private IdentifierNameSyntax GenerateTypeWithComment(string typeString, string comment)
+        {
+            return IdentifierName(
+                Identifier(
+                    TriviaList(Comment(comment)),
+                    typeString,
+                    TriviaList()));
+        }
+
+        private static IdentifierNameSyntax GenerateIdentifierWithComment(string variableName, string comment)
+        {
+            return IdentifierName(
+                Identifier(
+                    TriviaList(
+                        Comment(comment)),
+                    variableName,
+                    TriviaList()));
+        }
+
+        private MemberDeclarationSyntax GenerateClassMethod(GeneratedClass generatedClass, List<Vertex> formulas, List<StatementSyntax> statements)
+        {
+            if (generatedClass.IsSharedClass)
+            {
                 // public static void Init()
                 var initMethod = MethodDeclaration(ParseTypeName("void"), "Init")
                     .AddModifiers(
                         Token(SyntaxKind.PublicKeyword),
                         Token(SyntaxKind.StaticKeyword))
                     .WithBody(Block(statements));
-                yield return initMethod;
+                return initMethod;
             }
             else
             {
@@ -187,11 +216,11 @@ namespace Thesis.Models.CodeGenerators
                     .AddModifiers(
                         Token(SyntaxKind.PublicKeyword))
                     .WithBody(Block(statements));
-                yield return calculateMethod;
+                return calculateMethod;
             }
         }
 
-        private ClassDeclarationSyntax GenerateResultClass()
+        private ClassDeclarationSyntax GenerateResultClass(Dictionary<string, TestResult> testResults = null)
         {
             var resultClass = ClassDeclaration("Result")
                 .AddModifiers(Token(SyntaxKind.PublicKeyword));
@@ -220,9 +249,15 @@ namespace Thesis.Models.CodeGenerators
                 }
                 else
                 {
+                    // test
+                    var type = testResults == null
+                        ? ParseTypeName(GetTypeString(generatedClass.OutputVertex))
+                        : GenerateTypeWithComment(GetTypeString(generatedClass.OutputVertex),
+                            testResults[generatedClass.OutputVertex.VariableName].ToString());
+
                     // {type} {outputvertexname} = new {classname}().Calculate()
                     methodBody.Add(LocalDeclarationStatement(
-                        VariableDeclaration(ParseTypeName(GetTypeString(generatedClass.OutputVertex)))
+                        VariableDeclaration(type)
                             .AddVariables(VariableDeclarator(generatedClass.OutputVertex.VariableName)
                                 .WithInitializer(
                                     EqualsValueClause(

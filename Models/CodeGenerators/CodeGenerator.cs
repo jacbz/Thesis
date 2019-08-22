@@ -15,7 +15,18 @@ namespace Thesis.Models.CodeGenerators
         private protected Dictionary<string, Vertex> AddressToVertexDictionary;
         public Dictionary<string, Vertex> VariableNameToVertexDictionary { get; set; }
 
-        public abstract string GenerateCode();
+        private protected Tester Tester;
+
+        public abstract string GenerateCode(Dictionary<string, TestResult> testResults = null);
+
+        public TestReport GenerateTestReport()
+        {
+            Tester.PerformTest();
+            Tester.EvaluateResults(VariableNameToVertexDictionary);
+            Tester.Report.Code = GenerateCode(Tester.VariableToTestResultDictionary);
+
+            return Tester.Report;
+        }
 
         protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
         {

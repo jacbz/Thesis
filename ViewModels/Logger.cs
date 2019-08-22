@@ -11,7 +11,6 @@ namespace Thesis.ViewModels
         private static ObservableCollection<LogItem> _log;
         private static ListView _logView;
         private static Action _selectLogTab;
-        private static Stopwatch _stopwatch;
 
         public static void Instantiate(ListView logView, Action selectLogTab)
         {
@@ -19,7 +18,6 @@ namespace Thesis.ViewModels
             Logger._logView = logView;
             logView.ItemsSource = _log;
             Logger._selectLogTab = selectLogTab;
-            _stopwatch = new Stopwatch();
         }
 
         public static void Clear()
@@ -31,12 +29,10 @@ namespace Thesis.ViewModels
         {
             if (type == LogItemType.Error) _selectLogTab();
 
-            var logItem = new LogItem(type, message, _stopwatch);
+            var logItem = new LogItem(type, message, useStopwatch);
             _log.Add(logItem);
             _logView.SelectedIndex = _logView.Items.Count - 1;
             _logView.ScrollIntoView(_logView.SelectedItem);
-
-            if (useStopwatch) _stopwatch.Restart();
 
             return logItem;
         }

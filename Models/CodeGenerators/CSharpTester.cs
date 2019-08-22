@@ -6,44 +6,77 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
 {
     public class CSharpTester : Tester
     {
         private readonly ScriptOptions _scriptOptions = ScriptOptions.Default.WithImports("System");
-        public override List<TestResult> TestClasses(List<ClassCode> classesCode)
-        {
-            var testResults = new List<TestResult>();
 
-            var lookup = classesCode.ToLookup(c => c.IsSharedClass);
+        public override void PerformTest()
+        {
+            VariableToTestResultDictionary = Task.Run(async () => await PerformTestAsync()).Result;
+        }
+
+        public async Task<Dictionary<string, TestResult>> PerformTestAsync()
+        {
+            var testResults = new Dictionary<string, TestResult>();
+
+            var lookup = ClassesCode.ToLookup(c => c.IsSharedClass);
             var sharedClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            Task.Run(async () =>
+            var logItem = Logger.Log(LogItemType.Info, "Testing code inside Roslyn CSharp scripting engine...", true);
+
+            // create a state with all shared classes initiated
+            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
+
+            // test each shared class separately
+            foreach(var sharedClass in sharedClasses)
             {
-                // test each shared class separately
-                foreach(var sharedClass in sharedClasses)
+                var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
+                var testSharedClass = CSharpScript
+                    .Create(sharedClass.FieldsCode, _scriptOptions)
+                    .ContinueWith(sharedClass.MethodBodyCode);
+
+                var testSharedClassState = await testSharedClass.RunAsync();
+                foreach (var testResult in VariablesToTestResults(sharedClass.ClassName, testSharedClassState))
                 {
-                    var state = await CSharpScript.RunAsync(sharedClass.FieldsCode, _scriptOptions);
-                    state = await state.ContinueWithAsync(sharedClass.MethodCode);
-                    testResults.AddRange(VariablesToTestResults(sharedClass.ClassName, state));
+                    testResults.Add(testResult.VariableName, testResult);
                 }
+                logItem2.AppendElapsedTime();
 
-                // create a state with all shared classes initiated
+                // initialize the shared classes state
+                withSharedClassesInitialized =
+                    await withSharedClassesInitialized.ContinueWithAsync(sharedClass.Code);
+                withSharedClassesInitialized =
+                    await withSharedClassesInitialized.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+            }
 
-                // test all normal classes on this state, separately
-            });
+            // test all normal classes on this state, separately
+            foreach (var normalClass in normalClasses)
+            {
+                var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
+                var testNormalClassState =
+                    await withSharedClassesInitialized.ContinueWithAsync(normalClass.FieldsCode);
+                testNormalClassState =
+                    await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
+                foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
+                {
+                    testResults.Add(testResult.VariableName, testResult);
+                }
+                logItem2.AppendElapsedTime();
+            }
+
+            logItem.AppendElapsedTime();
 
             return testResults;
         }
 
         public IEnumerable<TestResult> VariablesToTestResults(string className, ScriptState state)
         {
-            foreach(var variable in state.Variables)
-            {
-                yield return new TestResult(className, variable.Name, variable.Value, variable.Type);
-            }
+            return state.Variables.Select(variable => new TestResult(className, variable.Name, variable.Value, variable.Type));
         }
     }
 }
