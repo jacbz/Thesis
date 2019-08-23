@@ -63,14 +63,24 @@ namespace Thesis.Properties {
         /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
         ///&lt;SyntaxDefinition name=&quot;C#&quot; extensions=&quot;.cs&quot; xmlns=&quot;http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008&quot;&gt;
-        ///	&lt;!-- The named colors &apos;Comment&apos; and &apos;String&apos; are used in SharpDevelop to detect if a line is inside a multiline string/comment --&gt;
-        ///	&lt;Color name=&quot;Comment&quot; foreground=&quot;Green&quot; exampleText=&quot;// comment&quot; /&gt;
-        ///	&lt;Color name=&quot;String&quot; foreground=&quot;Blue&quot; exampleText=&quot;string text = &amp;quot;Hello, World!&amp;quot;&quot;/&gt;
-        ///	&lt;Color name=&quot;StringInterpolation&quot; foreground=&quot;Black&quot; exampleText=&quot;string text = [rest of string was truncated]&quot;;.
+        ///	&lt;!-- The named colors &apos;Comment&apos; and &apos;String&apos; are used in SharpDevelop to detect if a line is inside a multiline string/comment --&gt;	
+        ///	&lt;Color name=&quot;Comment&quot; foreground=&quot;#008000&quot; exampleText=&quot;// comment&quot; /&gt;
+        ///	&lt;Color name=&quot;Class&quot; foreground=&quot;#2B91AF&quot; exampleText=&quot;class Test&quot; /&gt;
+        ///	&lt;Color name=&quot;String&quot; foreground=&quot;#A31515&quot; exampleText=&quot;string text = &amp;quot;Hello, World!&amp;quot;&quot;/&gt;
+        ///	&lt;Co [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CSharpSyntaxHighlighting {
             get {
                 return ResourceManager.GetString("CSharpSyntaxHighlighting", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string EmptyCell {
+            get {
+                return ResourceManager.GetString("EmptyCell", resourceCulture);
             }
         }
     }

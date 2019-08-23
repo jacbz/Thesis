@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CSharp.RuntimeBinder;
 using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
@@ -14,8 +16,9 @@ namespace Thesis.Models.CodeGenerators
     {
         private readonly ScriptOptions _scriptOptions = ScriptOptions.Default
             .WithImports("System", "System.Linq")
-            .WithReferences(typeof(System.Linq.Enumerable).Assembly);
-
+            .WithReferences(typeof(System.Linq.Enumerable).Assembly)
+            // required for dynamic
+            .WithReferences(typeof(RuntimeBinderException).GetTypeInfo().Assembly.Location);
         public override async Task PerformTestAsync()
         {
             var testResults = new Dictionary<string, TestResult>();
@@ -26,9 +29,11 @@ namespace Thesis.Models.CodeGenerators
 
             Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
+            // code for the EmptyCell
+            var emptyCellStructCode = Properties.Resources.EmptyCell;
 
             // create a state with all shared classes initiated
-            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync("", _scriptOptions);
+            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync(emptyCellStructCode, _scriptOptions);
 
             // test each shared class separately
             foreach (var sharedClass in sharedClasses)
@@ -37,7 +42,8 @@ namespace Thesis.Models.CodeGenerators
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
                     var testSharedClass = CSharpScript
-                        .Create(sharedClass.FieldsCode, _scriptOptions)
+                        .Create(emptyCellStructCode, _scriptOptions)
+                        .ContinueWith(sharedClass.FieldsCode)
                         .ContinueWith(sharedClass.MethodBodyCode);
 
                     var testSharedClassState = await testSharedClass.RunAsync();
@@ -92,7 +98,9 @@ namespace Thesis.Models.CodeGenerators
 
         public IEnumerable<TestResult> VariablesToTestResults(string className, ScriptState state)
         {
-            return state.Variables.Select(variable => new TestResult(className, variable.Name, variable.Value, variable.Type));
+            return state.Variables.Select(variable =>
+                new TestResult(className, variable.Name, variable.Value, variable.Type));
         }
+
     }
 }
