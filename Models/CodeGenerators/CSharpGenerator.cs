@@ -367,7 +367,7 @@ namespace Thesis.Models.CodeGenerators
                 case "-":
                 case "*":
                 case "/":
-                    return GetBinaryExpression(functionName, arguments, rootVertex);
+                    return GenerateBinaryExpression(functionName, arguments, rootVertex);
                 case "%":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     // arguments[0] * 0.01
@@ -397,12 +397,24 @@ namespace Thesis.Models.CodeGenerators
                                     : CellTypeToNullExpression(rootVertex.CellType));
 
                 case "=":
+                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
+                    var leftExpression = TreeNodeToExpression(arguments[0], rootVertex);
+                    var rightExpression = TreeNodeToExpression(arguments[1], rootVertex);
+
+                    // left.IsEqualTo(right)
+                    var equalsExpression = InvocationExpression(
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                leftExpression,
+                                IdentifierName("IsEqualTo")))
+                        .AddArgumentListArguments(Argument(rightExpression));
+                    return equalsExpression;
                 case "<>":
                 case "<":
                 case "<=":
                 case ">=":
                 case ">":
-                    return GetBinaryExpression(functionName, arguments, rootVertex);
+                    return GenerateBinaryExpression(functionName, arguments, rootVertex);
 
                 // strings
                 case "&":
@@ -470,14 +482,13 @@ namespace Thesis.Models.CodeGenerators
                     SeparatedList<ExpressionSyntax>(variables)));
         }
 
-        private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> operators 
+        private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> _operators 
             = new SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)>
         {
             {"+", (SyntaxKind.AddExpression, false)},
             {"-", (SyntaxKind.SubtractExpression, false)},
             {"/", (SyntaxKind.DivideExpression, true)},
             {"*", (SyntaxKind.MultiplyExpression, true)},
-            {"=", (SyntaxKind.EqualsExpression, false)},
             {"<>", (SyntaxKind.NotEqualsExpression, false)},
             {"<", (SyntaxKind.LessThanExpression, false)},
             {"<=", (SyntaxKind.LessThanOrEqualExpression, false)},
@@ -486,22 +497,22 @@ namespace Thesis.Models.CodeGenerators
 
         };
 
-        private ExpressionSyntax GetBinaryExpression(string functionName, ParseTreeNode[] arguments, Vertex vertex)
+        private ExpressionSyntax GenerateBinaryExpression(string functionName, ParseTreeNode[] arguments, Vertex vertex)
         {
             if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
-            SyntaxKind syntaxKind = operators[functionName].syntaxKind;
+            SyntaxKind syntaxKind = _operators[functionName].syntaxKind;
 
             var leftExpression = TreeNodeToExpression(arguments[0], vertex);
             var rightExpression = TreeNodeToExpression(arguments[1], vertex);
 
-            if (operators[functionName].parenthesize)
+            if (_operators[functionName].parenthesize)
             {
                 leftExpression = ParenthesizedExpression(leftExpression);
                 rightExpression = ParenthesizedExpression(rightExpression);
             }
 
-            return BinaryExpression( syntaxKind, leftExpression, rightExpression);
+            return BinaryExpression(syntaxKind, leftExpression, rightExpression);
         }
 
         private ExpressionSyntax FormatVariableReference(string address, Vertex rootVertex)

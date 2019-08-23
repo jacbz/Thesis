@@ -216,6 +216,8 @@ namespace Thesis.Views
             {
                 SelectVertexInSpreadsheet(vertex);
                 InitiateToolbox(vertex);
+                // restore focus to textbox so user can copy selected text
+                codeTextBox.Focus();
             }
         }
     }

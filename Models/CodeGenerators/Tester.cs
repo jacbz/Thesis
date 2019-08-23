@@ -31,16 +31,20 @@ namespace Thesis.Models.CodeGenerators
                 if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {
                     testResult.ExpectedValue = vertex.Value;
-                    // two different numeric types are to be treated as equal types
+
                     if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
+                        // two different numeric types are to be treated as equal types
                         !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
                     {
+                        if (variableName == "pferdbest_Dauerndeunbrauchbarkeitunfallkrankheit_TW2")
+                        {
+
+                        }
                         // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
                         if (vertex.CellType == CellType.Number &&
                             testResult.ExpectedValue is string percentNumber &&
                             percentNumber.Contains("%") &&
-                            double.TryParse(percentNumber.Replace("%", "").Replace(",", "."),
-                                out double number))
+                            double.TryParse(percentNumber.Replace("%", ""), out double number))
                         {
                             if (IsNumeric(testResult.ActualValue) && testResult.ActualValue == number * 0.01)
                             {

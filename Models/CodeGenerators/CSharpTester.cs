@@ -29,11 +29,11 @@ namespace Thesis.Models.CodeGenerators
 
             Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
-            // code for the EmptyCell
-            var emptyCellStructCode = Properties.Resources.EmptyCell;
+            // base code required for testing, such as the EmptyCell class
+            var baseCode = Properties.Resources.CSharpTestingBase;
 
             // create a state with all shared classes initiated
-            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync(emptyCellStructCode, _scriptOptions);
+            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync(baseCode, _scriptOptions);
 
             // test each shared class separately
             foreach (var sharedClass in sharedClasses)
@@ -42,7 +42,7 @@ namespace Thesis.Models.CodeGenerators
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
                     var testSharedClass = CSharpScript
-                        .Create(emptyCellStructCode, _scriptOptions)
+                        .Create(baseCode, _scriptOptions)
                         .ContinueWith(sharedClass.FieldsCode)
                         .ContinueWith(sharedClass.MethodBodyCode);
 
