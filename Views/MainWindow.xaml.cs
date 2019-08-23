@@ -61,6 +61,10 @@ namespace Thesis.Views
             diagram2.Tool = Tool.ZoomPan | Tool.MultipleSelect;
             ((IGraphInfo)diagram2.Info).AnnotationChanged += DiagramAnnotationChanged;
             ((IGraphInfo)diagram2.Info).ItemTappedEvent += DiagramItemClicked;
+
+            // improve diagram loading performance by virtualization
+            diagram.Constraints = diagram.Constraints | GraphConstraints.Virtualize;
+            diagram2.Constraints = diagram2.Constraints | GraphConstraints.Virtualize;
         }
 
         public void EnableGraphOptions()

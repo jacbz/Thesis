@@ -109,7 +109,7 @@ namespace Thesis.ViewModels
         public static (GroupViewModel group, double nextPosX) FormatClass(this GeneratedClass generatedClass,
             double posX)
         {
-            var graphLayout = LayoutGraph(generatedClass).Reverse().ToList();
+            var graphLayout = LayoutGraph(generatedClass).ToList();
             var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
             var group = new GroupViewModel
