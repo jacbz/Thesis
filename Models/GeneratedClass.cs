@@ -35,22 +35,28 @@ namespace Thesis.Models
         public void TopologicalSort()
         {
             var sortedVertices = new List<Vertex>();
-            var verticesWithNoParents = Vertices.Where(v => v.Parents.Count == 0).ToHashSet();
-            var edges = new HashSet<(Vertex from, Vertex to)>();
+            // only consider parents from the same class
+            var verticesWithNoParents = Vertices.Where(v => v.Parents.Count(p => p.Class == this) == 0).ToHashSet();
 
-            foreach (var (vertex, child) in Vertices.SelectMany(vertex =>
-                vertex.Children.Select(child => (vertex, child)))) edges.Add((vertex, child));
+            var edges = new HashSet<(Vertex from, Vertex to)>();
+            foreach (var (vertex, child) in Vertices
+                .SelectMany(vertex => vertex.Children.Select(child => (vertex, child))))
+                edges.Add((vertex, child));
 
             while (verticesWithNoParents.Count > 0)
             {
-                var n = verticesWithNoParents.OrderBy(v => v.Children.Count).First();
-                verticesWithNoParents.Remove(n);
+                // get first vertex that has the lowest number of children
+                var currentVertex = verticesWithNoParents.OrderBy(v => v.Children.Count).First();
+
+                verticesWithNoParents.Remove(currentVertex);
                 // do not re-add deleted vertices
-                if (Vertices.Contains(n)) sortedVertices.Add(n);
-                foreach (var m in n.Children)
+                if (Vertices.Contains(currentVertex)) sortedVertices.Add(currentVertex);
+
+                foreach (var childOfCurrentVertex in currentVertex.Children)
                 {
-                    edges.Remove((n, m));
-                    if (edges.Count(x => x.to == m) == 0) verticesWithNoParents.Add(m);
+                    edges.Remove((currentVertex, childOfCurrentVertex));
+                    if (edges.Count(x => x.to == childOfCurrentVertex) == 0)
+                        verticesWithNoParents.Add(childOfCurrentVertex);
                 }
             }
 

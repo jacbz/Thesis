@@ -319,7 +319,11 @@ namespace Thesis.Models
                 .ToList();
 
             if (sharedVertices.Count > 0)
-                classesList.Add(new GeneratedClass("Shared", null, sharedVertices, rnd));
+            {
+                var sharedClass = new GeneratedClass("Shared", null, sharedVertices, rnd);
+                sharedClass.TopologicalSort();
+                classesList.Add(sharedClass);
+            }
 
             if (Vertices.Count != classesList.Sum(l => l.Vertices.Count))
                 Logger.Log(LogItemType.Error, "Error creating classes; length mismatch");
