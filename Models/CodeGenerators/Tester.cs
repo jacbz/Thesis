@@ -35,6 +35,21 @@ namespace Thesis.Models.CodeGenerators
                     if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
                         !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
                     {
+                        // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
+                        if (vertex.CellType == CellType.Number &&
+                            testResult.ExpectedValue is string percentNumber &&
+                            percentNumber.Contains("%") &&
+                            double.TryParse(percentNumber.Replace("%", "").Replace(",", "."),
+                                out double number))
+                        {
+                            if (IsNumeric(testResult.ActualValue) && testResult.ActualValue == number * 0.01)
+                            {
+                                testResult.TestResultType = TestResultType.Pass;
+                                passCount++;
+                                continue;
+                            }
+                        }
+
                         testResult.TestResultType = TestResultType.TypeMismatch;
                         typeMismatchCount++;
                     }

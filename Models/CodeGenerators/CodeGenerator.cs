@@ -53,9 +53,6 @@ namespace Thesis.Models.CodeGenerators
             return variableName;
         }
 
-
-        
-
     }
 
     public enum Language
