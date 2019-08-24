@@ -56,7 +56,7 @@ namespace Thesis.Views
         {
             if (((WorkbookImpl)args.Workbook).IsLoaded)
             {
-                Logger.Log(LogItemType.Success, "Successfully loaded file.");
+                Logger.Log(LogItemType.Success, "Loaded file.");
 
                 if (!string.IsNullOrEmpty(App.Settings.SelectedWorksheet)
                     && spreadsheet.Workbook.Worksheets.Any(w => w.Name == App.Settings.SelectedWorksheet))
@@ -66,13 +66,15 @@ namespace Thesis.Views
                 }
 
                 _generator = new Generator(this);
-                _generator.GenerateGraph();
-                Logger.Log(LogItemType.Success, "Successfully generated graph.");
+                if (_generator.GenerateGraph())
+                {
+                    EnableGraphGenerationOptions();
 
-                this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                generateCodeTab.IsSelected = true;
+                    this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    generateCodeTab.IsSelected = true;
+                }
             }
         }
 

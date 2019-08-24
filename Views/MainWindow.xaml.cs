@@ -67,13 +67,31 @@ namespace Thesis.Views
             diagram2.Constraints = diagram2.Constraints | GraphConstraints.Virtualize;
         }
 
-        public void EnableGraphOptions()
+        public (int rowCount, int columnCount) GetSheetDimensions()
+        {
+            if (spreadsheet.ActiveSheet == null) return (0, 0);
+            var rowCount = Math.Min(1024, spreadsheet.ActiveSheet.Rows.Length);
+            var columnCount = Math.Min(64, spreadsheet.ActiveSheet.Columns.Length);
+            return (rowCount, columnCount);
+        }
+
+        public void EnableGraphGenerationOptions()
+        {
+            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;
+        }
+        
+        public void DisableGraphGenerationOptions()
+        {
+            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = false;
+        }
+
+        public void EnableClassGenerationOptions()
         {
             toolboxTab.IsEnabled = true;
             generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = true;
         }
 
-        private void DisableGraphOptions()
+        private void DisableClassGenerationOptions()
         {
             _generator = new Generator(this);
             toolboxTab.IsEnabled = false;

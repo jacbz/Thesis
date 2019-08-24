@@ -22,6 +22,8 @@ namespace Thesis.Views
     {
         private void LoadSpreadsheet()
         {
+            DisableGraphGenerationOptions();
+            
             pathLabel.Content = pathLabel.ToolTip = App.Settings.FilePath;
             pathLabel.FontStyle = FontStyles.Normal;
 
@@ -36,8 +38,7 @@ namespace Thesis.Views
             }
 
             spreadsheet.Opacity = 100;
-            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;
-            DisableGraphOptions();
+            DisableClassGenerationOptions();
         }
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
@@ -178,8 +179,8 @@ namespace Thesis.Views
         {
             Logger.Log(LogItemType.Info, "Coloring cells...");
 
-            var allCells = spreadsheet.ActiveSheet.Range[1, 1, spreadsheet.ActiveSheet.Rows.Length,
-                spreadsheet.ActiveSheet.Columns.Length];
+            var (rowCount, columnCount) = GetSheetDimensions();
+            var allCells = spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
             allCells.CellStyle.Color = Color.Transparent;
             allCells.CellStyle.Font.RGBColor = Color.Black;
             allCells.Borders.LineStyle = ExcelLineStyle.None;

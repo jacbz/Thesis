@@ -387,7 +387,7 @@ namespace Thesis.Models.CodeGenerators
                     return ParseExpression(string.Join(".Concat(", arguments.Select(a => TreeNodeToExpression(a, rootVertex)))
                            + (arguments.Length > 1 ? ")" : "") + ".Sum()");
 
-                // conditionals
+                // logicial functions
                 case "IF":
                     if (arguments.Length != 2 && arguments.Length != 3)
                         return FunctionError(functionName, arguments);
@@ -430,7 +430,6 @@ namespace Thesis.Models.CodeGenerators
                         // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
                         whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
                     }
-
 
                     return ParenthesizedExpression(ConditionalExpression(condition, whenTrue, whenFalse));
 
@@ -555,15 +554,27 @@ namespace Thesis.Models.CodeGenerators
             if (node.Term.Name == "FunctionCall")
             {
                 var function = node.GetFunction();
-                var type = _functionToCellTypeDictionary[function];
+                if (_functionToCellTypeDictionary.TryGetValue(function, out var functionType)
+                    && functionType != CellType.Unknown)
+                    return functionType;
+            }
 
-                if (type != CellType.Unknown) return type;
+            // TODO Implement
+            if (node.Term.Name == "Prefix")
+            {
+                return null;
+            }
+            // TODO Implement
+            if (node.Term.Name == "UDFunctionCall")
+            {
+                return null;
             }
 
             var text = node.FindTokenAndGetText();
             if (node.Term.Name == "Cell")
             {
-                var vertex = AddressToVertexDictionary[text];
+                if (!AddressToVertexDictionary.TryGetValue(text, out var vertex))
+                    return null;
                 return _useDynamic.Contains(vertex) ? (CellType?)null : vertex.CellType;
             }
 

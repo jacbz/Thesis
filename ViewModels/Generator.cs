@@ -32,27 +32,32 @@ namespace Thesis.ViewModels
             _window = mainWindow;
         }
 
-        public void GenerateGraph()
+        // return success
+        public bool GenerateGraph()
         {
+            _window.generateGraphButton.IsEnabled = false;
+
             ActiveWorksheet = _window.spreadsheet.ActiveSheet.Name;
             App.Settings.SelectedWorksheet = ActiveWorksheet;
             App.Settings.Persist();
 
             var logItem = Logger.Log(LogItemType.Info, "Generate graph from spreadsheet cells to determine output fields...", true);
 
-            var rowsCount = _window.spreadsheet.ActiveSheet.Rows.Length;
-            var columnsCount = _window.spreadsheet.ActiveSheet.Columns.Length;
-
-            var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowsCount, columnsCount];
+            var (rowCount, columnCount) = _window.GetSheetDimensions();
+            var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
             Graph = new Graph(allCells);
+            Logger.Log(LogItemType.Success, "Graph generation successful.");
 
+            _window.generateGraphButton.IsEnabled = true;
             logItem.AppendElapsedTime();
 
             OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
             _window.outputFieldsListView.ItemsSource = OutputVertices;
 
             LoadPersistedOutputFields();
+
+            return true;
         }
 
         private bool LoadPersistedOutputFields()
@@ -92,7 +97,7 @@ namespace Thesis.ViewModels
                 GenerateGraph();
             }
 
-            _window.EnableGraphOptions();
+            _window.EnableClassGenerationOptions();
 
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
             var includedVertixStrings = includedVertices.Select(v => v.StringAddress).ToList();
