@@ -500,8 +500,21 @@ namespace Thesis.Models.CodeGenerators
                     return GetRangeExpression(arguments[0], arguments[1]);
 
                 // other
+                case "DATE":
+                    if (arguments.Length != 3) return FunctionError(functionName, arguments);
+                    return ObjectCreationExpression(
+                            IdentifierName("DateTime"))
+                        .AddArgumentListArguments(
+                            Argument(TreeNodeToExpression(arguments[0], vertex)),
+                            Argument(TreeNodeToExpression(arguments[1], vertex)),
+                            Argument(TreeNodeToExpression(arguments[2], vertex))
+                            );
                 case "TODAY":
-                    return ParseExpression("DateTime.Now");
+                    // DateTime.Now
+                    return MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName("DateTime"),
+                        IdentifierName("Now"));
                 case "SECOND":
                 case "MINUTE":
                 case "HOUR":
@@ -549,6 +562,7 @@ namespace Thesis.Models.CodeGenerators
             { "CONCATENATE", CellType.Text },
             { ":", CellType.Unknown },
 
+            { "DATE", CellType.Date },
             { "SECOND", CellType.Date },
             { "MINUTE", CellType.Date },
             { "HOUR", CellType.Date },
