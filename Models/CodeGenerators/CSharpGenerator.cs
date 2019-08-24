@@ -19,10 +19,12 @@ namespace Thesis.Models.CodeGenerators
     {
         private HashSet<string> _usedVariableNames;
 
+        // vertices in this list must have type dynamic
+        private HashSet<Vertex> _useDynamic;
+
         public CSharpGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
             : base(generatedClasses, addressToVertexDictionary)
         {
-            _usedVariableNames = new HashSet<string>();
         }
 
         public override async Task<string> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null)
@@ -33,6 +35,8 @@ namespace Thesis.Models.CodeGenerators
         public string GenerateCode(Dictionary<string, TestResult> testResults = null)
         {
             Tester = new CSharpTester();
+            _usedVariableNames = new HashSet<string>();
+            _useDynamic = new HashSet<Vertex>();
 
             // generate variable names for all
             GenerateVariableNamesForAll();
@@ -51,8 +55,9 @@ namespace Thesis.Models.CodeGenerators
 
             var normalClasses = new List<MemberDeclarationSyntax>();
             var sharedClasses = new List<MemberDeclarationSyntax>();
-            // normal classes must be processed first, as they can infer some Unknown types in shared classes
-            foreach (var generatedClass in GeneratedClasses.OrderBy(v => v.IsSharedClass))
+
+            // shared classes first (must determine which types are dynamic)
+            foreach (var generatedClass in GeneratedClasses.OrderBy(v => !v.IsSharedClass))
             {
                 var newClass = GenerateClass(generatedClass, testResults);
 
@@ -100,7 +105,7 @@ namespace Thesis.Models.CodeGenerators
                 {
                     // for shared classes: omit type name as already declared
 
-                    // test
+                    // test result comment
                     var identifier = testResults == null
                         ? IdentifierName(formula.VariableName)
                         : GenerateIdentifierWithComment(formula.VariableName,
@@ -114,7 +119,7 @@ namespace Thesis.Models.CodeGenerators
                 }
                 else
                 {
-                    // test
+                    // test result comment
                     var type = testResults == null
                         ? ParseTypeName(GetTypeString(formula))
                         : GenerateTypeWithComment(GetTypeString(formula),
@@ -323,10 +328,6 @@ namespace Thesis.Models.CodeGenerators
                         // for rule OpenParen + Formula + CloseParen
                         return TreeNodeToExpression(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], rootVertex);
                     case "FunctionCall":
-                        var function = node.GetFunction();
-                        //if (function == "=")
-                        //    InferTypeInConditional(node);
-
                         return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), rootVertex);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
@@ -358,6 +359,7 @@ namespace Thesis.Models.CodeGenerators
                     return CommentExpression($"Terminal {node.Term.Name} is not implemented yet!", true);
             }
         }
+
         private ExpressionSyntax FunctionToExpression(string functionName, ParseTreeNode[] arguments, Vertex rootVertex)
         {
             switch (functionName)
@@ -389,25 +391,82 @@ namespace Thesis.Models.CodeGenerators
                 case "IF":
                     if (arguments.Length != 2 && arguments.Length != 3)
                         return FunctionError(functionName, arguments);
-                    return ConditionalExpression(
-                        ParenthesizedExpression(TreeNodeToExpression(arguments[0], rootVertex)),
-                        ParenthesizedExpression(TreeNodeToExpression(arguments[1], rootVertex)),
-                        arguments.Length == 3
-                                    ? ParenthesizedExpression(TreeNodeToExpression(arguments[2], rootVertex))
-                                    : CellTypeToNullExpression(rootVertex.CellType));
+
+                    ExpressionSyntax condition = TreeNodeToExpression(arguments[0], rootVertex);
+                    ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], rootVertex);
+                    ExpressionSyntax whenFalse;
+
+                    // if the condition is not always a bool (e.g. dynamic), use Equals(cond, true)
+                    // otherwise we might have a number as cond, and number can not be evaluated as bool
+                    var conditionType = GetType(arguments[0]);
+                    if (!conditionType.HasValue || conditionType.Value != CellType.Bool)
+                    {
+                        condition = InvocationExpression(IdentifierName("Equals"))
+                            .AddArgumentListArguments(
+                                Argument(condition),
+                                Argument(LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+                    }
+
+
+                    // check if there is a mismatch between type of whenTrue and whenFalse
+                    bool argumentsHaveDifferentTypes;
+                    if (arguments.Length == 3)
+                    {
+                        whenFalse = TreeNodeToExpression(arguments[2], rootVertex);
+                        argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2]) == null;
+                    }
+                    else
+                    {
+                        // if no else statement is given, Excel defaults to FALSE
+                        whenFalse = LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                        argumentsHaveDifferentTypes = !IsTypeBoolean(arguments[1]);
+                    }
+
+                    // if there is a mismatch in argument types, the variable must be of type dynamic
+                    if (argumentsHaveDifferentTypes)
+                    {
+                        _useDynamic.Add(rootVertex);
+                        // we must cast to type (dynamic):
+                        // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
+                        whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
+                    }
+
+
+                    return ParenthesizedExpression(ConditionalExpression(condition, whenTrue, whenFalse));
 
                 case "=":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
                     var leftExpression = TreeNodeToExpression(arguments[0], rootVertex);
                     var rightExpression = TreeNodeToExpression(arguments[1], rootVertex);
 
-                    // left.IsEqualTo(right)
-                    var equalsExpression = InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                leftExpression,
-                                IdentifierName("IsEqualTo")))
-                        .AddArgumentListArguments(Argument(rightExpression));
+                    ExpressionSyntax equalsExpression;
+                    var leftType = GetType(arguments[0]);
+                    var rightType = GetType(arguments[1]);
+                    if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value)
+                    {
+                        // Excel uses case insensitive string compare
+                        if (leftType.Value == CellType.Text && rightType.Value == CellType.Text)
+                        {
+                            equalsExpression = InvocationExpression(
+                                    MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        ParenthesizedExpression(leftExpression),
+                                        IdentifierName("CIEquals")))
+                                .AddArgumentListArguments(Argument(rightExpression));
+                        }
+                        else
+                        {
+                            // use normal == compare for legibility
+                            equalsExpression = BinaryExpression(SyntaxKind.EqualsExpression,
+                                leftExpression, rightExpression);
+                        }
+                    }
+                    else
+                    {
+                        // if types different, use our custom Equals method (== would throw exception if types are different)
+                        equalsExpression = InvocationExpression(IdentifierName("Equals"))
+                            .AddArgumentListArguments(Argument(leftExpression), Argument(rightExpression));
+                    }
                     return equalsExpression;
                 case "<>":
                 case "<":
@@ -437,13 +496,108 @@ namespace Thesis.Models.CodeGenerators
                 case "MONTH":
                 case "YEAR":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return ParseExpression(TreeNodeToExpression(arguments[0], rootVertex) + "." 
+                    return ParseExpression(TreeNodeToExpression(arguments[0], rootVertex) + "."
                         + functionName.Substring(0, 1) + functionName.Substring(1).ToLower());
 
                 default:
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
                         $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, rootVertex)))}", true);
             }
+        }
+
+
+        private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>()
+        {
+            { "+", CellType.Unknown },
+            { "-", CellType.Number },
+            { "*", CellType.Number },
+            { "/", CellType.Number },
+            { "%", CellType.Number },
+            { "^", CellType.Number },
+            { "ROUND", CellType.Number },
+            { "SUM", CellType.Number },
+
+            { "IF", CellType.Unknown },
+
+            { "=", CellType.Bool },
+            { "<>", CellType.Number },
+            { "<", CellType.Number },
+            { "<=", CellType.Number },
+            { ">=", CellType.Number },
+            { ">", CellType.Number },
+
+            { "&", CellType.Text },
+            { "CONCATENATE", CellType.Text },
+            { ":", CellType.Unknown },
+
+            { "SECOND", CellType.Date },
+            { "MINUTE", CellType.Date },
+            { "HOUR", CellType.Date },
+            { "DAY", CellType.Date },
+            { "MONTH", CellType.Date },
+            { "TODAY", CellType.Date },
+        };
+
+        // gets the type of a node
+        // if multiple types are found, or type is unknown or dynamic, return null
+        private CellType? GetType(ParseTreeNode node)
+        {
+            if (node.Term.Name == "ReferenceFunctionCall")
+            {
+                var arguments = node.ChildNodes[1];
+                if (arguments.ChildNodes.Count == 3)
+                    return IsSameType(arguments.ChildNodes[1], arguments.ChildNodes[2]);
+                if (arguments.ChildNodes.Count == 2)
+                    return IsTypeBoolean(arguments.ChildNodes[1]) ? CellType.Bool : (CellType?)null;
+                return null;
+
+            }
+            if (node.Term.Name == "FunctionCall")
+            {
+                var function = node.GetFunction();
+                var type = _functionToCellTypeDictionary[function];
+
+                if (type != CellType.Unknown) return type;
+            }
+
+            var text = node.FindTokenAndGetText();
+            if (node.Term.Name == "Cell")
+            {
+                var vertex = AddressToVertexDictionary[text];
+                return _useDynamic.Contains(vertex) ? (CellType?)null : vertex.CellType;
+            }
+
+            if (node.Term.Name == "Constant")
+            {
+                if (text.Contains("%")) return CellType.Number;
+                if (text.ToLower().Contains("true") || text.ToLower().Contains("false")) return CellType.Bool;
+                if (!text.Contains("\"")) return CellType.Number;
+                return CellType.Text;
+            }
+
+            var childTypes = node.ChildNodes.Select(GetType).Distinct().ToList();
+            if (childTypes.All(c => c.HasValue) && childTypes.Count == 1 && childTypes[0].Value != CellType.Unknown)
+                return childTypes[0].Value;
+            return null;
+        }
+
+        // checks if two parse tree nodes have the same type
+        private CellType? IsSameType(ParseTreeNode a, ParseTreeNode b)
+        {
+            var typeA = GetType(a);
+            var typeB = GetType(b);
+            if (typeA.HasValue && typeA.Value != CellType.Unknown && typeB.HasValue && typeB.Value != CellType.Unknown
+                && typeA.Value == typeB.Value)
+            {
+                return typeA.Value;
+            }
+            return null;
+        }
+
+        private bool IsTypeBoolean(ParseTreeNode a)
+        {
+            var typeOfIf = GetType(a);
+            return typeOfIf.HasValue && typeOfIf.Value == CellType.Bool;
         }
 
         // A1:B2 -> new[]{A1,A2,B1,B2}
@@ -482,7 +636,7 @@ namespace Thesis.Models.CodeGenerators
                     SeparatedList<ExpressionSyntax>(variables)));
         }
 
-        private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> _operators 
+        private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> _operators
             = new SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)>
         {
             {"+", (SyntaxKind.AddExpression, false)},
@@ -537,8 +691,6 @@ namespace Thesis.Models.CodeGenerators
         {
             return CommentExpression($"Function {functionName} has incorrect number of arguments ({arguments.Length})", true);
         }
-
-
         private ExpressionSyntax CommentExpression(string comment, bool isError = false)
         {
             return IdentifierName(
@@ -572,6 +724,8 @@ namespace Thesis.Models.CodeGenerators
 
         private string GetTypeString(Vertex vertex)
         {
+            if (_useDynamic.Contains(vertex)) return "dynamic";
+
             switch (vertex.CellType)
             {
                 case CellType.Bool:

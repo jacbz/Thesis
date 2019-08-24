@@ -39,8 +39,11 @@ namespace Thesis.ViewModels
             App.Settings.Persist();
 
             var logItem = Logger.Log(LogItemType.Info, "Generate graph from spreadsheet cells to determine output fields...", true);
-            var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, _window.spreadsheet.ActiveSheet.Rows.Length,
-                _window.spreadsheet.ActiveSheet.Columns.Length];
+
+            var rowsCount = _window.spreadsheet.ActiveSheet.Rows.Length;
+            var columnsCount = _window.spreadsheet.ActiveSheet.Columns.Length;
+
+            var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowsCount, columnsCount];
 
             Graph = new Graph(allCells);
 
@@ -221,7 +224,7 @@ namespace Thesis.ViewModels
                 var report = await Task.Run(() => CodeGenerator.GenerateTestReportAsync());
 
                 _window.codeTextBox.Text = report.Code;
-                Logger.Log(report.TypeMismatchCount == 0 && report.ValueMismatchCount == 0
+                Logger.Log(report.TypeMismatchCount == 0 && report.ValueMismatchCount == 0 && report.SkippedCount == 0
                         ? LogItemType.Success
                         : report.PassCount == 0
                             ? LogItemType.Error

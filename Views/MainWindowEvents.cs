@@ -137,22 +137,27 @@ namespace Thesis.Views
 
         private async void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
         {
+            generateCodeButton.IsEnabled = false;
+            testCodeButton.IsEnabled = false;
             codeGeneratorProgressRing.IsActive = true;
 
             await _generator.GenerateCode();
 
             codeGeneratorProgressRing.IsActive = false;
             testCodeButton.IsEnabled = true;
+            generateCodeButton.IsEnabled = true;
         }
 
         private async void TestCodeButton_Click(object sender, RoutedEventArgs e)
         {
+            testCodeButton.IsEnabled = false;
             logTab.IsSelected = true;
             codeGeneratorProgressRing.IsActive = true;
 
             await _generator.TestCode();
 
             codeGeneratorProgressRing.IsActive = false;
+            testCodeButton.IsEnabled = true;
         }
 
         public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)

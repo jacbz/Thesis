@@ -1,10 +1,19 @@
-public static bool IsEqualTo(this object left, object right)
+public static bool CIEquals(this String a, String b) {
+    return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
+}
+
+public static bool IsNumeric(this object o) => o is double || o is int || o is ushort || o is uint || o is ulong ||
+												  o is short || o is sbyte || o is long || o is float || o is byte ||
+												  o is decimal;
+
+// same as Object.Equals, but returns true for numbers of different types
+public static bool Equals(object a, object b)
 {
-	if (left is string l && right is string r)
+	if (IsNumeric(a) && IsNumeric(b))
 	{
-		return string.Equals(l, r, StringComparison.OrdinalIgnoreCase);
+		return double.Equals(Convert.ToDouble(a), Convert.ToDouble(b));
 	}
-	return left == right;
+	return Object.Equals(a, b);
 }
 
 public struct EmptyCell
@@ -19,7 +28,7 @@ public struct EmptyCell
         return b;
     }
 
-    public static dynamic operator +(EmptyCell a, EmptyCell b)
+    public static EmptyCell operator +(EmptyCell a, EmptyCell b)
     {
         return a;
     }
@@ -83,10 +92,6 @@ public struct EmptyCell
     {
         throw new System.DivideByZeroException();
     }
-
-    public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong ||
-                                              o is short || o is int || o is long || o is float || o is double ||
-                                              o is decimal;
 
     public static bool operator ==(dynamic a, EmptyCell empty)
     {

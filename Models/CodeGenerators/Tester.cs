@@ -36,10 +36,6 @@ namespace Thesis.Models.CodeGenerators
                         // two different numeric types are to be treated as equal types
                         !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
                     {
-                        if (variableName == "pferdbest_Dauerndeunbrauchbarkeitunfallkrankheit_TW2")
-                        {
-
-                        }
                         // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
                         if (vertex.CellType == CellType.Number &&
                             testResult.ExpectedValue is string percentNumber &&
