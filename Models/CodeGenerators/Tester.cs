@@ -55,15 +55,15 @@ namespace Thesis.Models.CodeGenerators
 
     public class ClassCode
     {
-        public bool IsSharedClass { get; }
+        public bool IsStaticClass { get; }
         public string ClassName { get; }
         public string Code { get; }
         public string FieldsCode { get; }
         public string MethodBodyCode { get; }
 
-        public ClassCode(bool isSharedClass, string className, string code, string fieldsCode, string methodBodyCode)
+        public ClassCode(bool isStaticClass, string className, string code, string fieldsCode, string methodBodyCode)
         {
-            IsSharedClass = isSharedClass;
+            IsStaticClass = isStaticClass;
             ClassName = className;
             Code = code;
             FieldsCode = fieldsCode;

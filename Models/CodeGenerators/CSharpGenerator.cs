@@ -54,22 +54,22 @@ namespace Thesis.Models.CodeGenerators
             @namespace = @namespace.AddMembers(resultClass);
 
             var normalClasses = new List<MemberDeclarationSyntax>();
-            var sharedClasses = new List<MemberDeclarationSyntax>();
+            var staticClasses = new List<MemberDeclarationSyntax>();
 
-            // shared classes first (must determine which types are dynamic)
-            foreach (var generatedClass in GeneratedClasses.OrderBy(v => !v.IsSharedClass))
+            // static classes first (must determine which types are dynamic)
+            foreach (var generatedClass in GeneratedClasses.OrderBy(v => !v.IsStaticClass))
             {
                 var newClass = GenerateClass(generatedClass, testResults);
 
-                if (generatedClass.IsSharedClass)
-                    sharedClasses.Add(newClass);
+                if (generatedClass.IsStaticClass)
+                    staticClasses.Add(newClass);
                 else
                     normalClasses.Add(newClass);
             }
 
-            // show shared classes on top for aesthetic reasons
+            // show static classes on top for aesthetic reasons
             @namespace = @namespace
-                .AddMembers(sharedClasses.ToArray())
+                .AddMembers(staticClasses.ToArray())
                 .AddMembers(normalClasses.ToArray());
 
             // format code and return as string
@@ -86,8 +86,8 @@ namespace Thesis.Models.CodeGenerators
             // public class {generatedClass.Name}
             var newClass = ClassDeclaration(generatedClass.Name)
                 .AddModifiers(Token(SyntaxKind.PublicKeyword));
-            // shared classes are static
-            if (generatedClass.IsSharedClass)
+            // static classes are static
+            if (generatedClass.IsStaticClass)
                 newClass = newClass.AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             // split vertex list into two
@@ -102,9 +102,9 @@ namespace Thesis.Models.CodeGenerators
             {
                 var expression = TreeNodeToExpression(formula.ParseTree, formula);
 
-                if (generatedClass.IsSharedClass)
+                if (generatedClass.IsStaticClass)
                 {
-                    // for shared classes: omit type name as already declared
+                    // for static classes: omit type name as already declared
 
                     // test result comment
                     var identifier = testResults == null
@@ -148,7 +148,7 @@ namespace Thesis.Models.CodeGenerators
                             .AddVariables(VariableDeclarator(constant.VariableName)
                                 .WithInitializer(
                                     EqualsValueClause(expression))));
-                if (generatedClass.IsSharedClass)
+                if (generatedClass.IsStaticClass)
                     field = field.AddModifiers(
                         Token(SyntaxKind.PublicKeyword),
                         Token(SyntaxKind.StaticKeyword));
@@ -158,8 +158,8 @@ namespace Thesis.Models.CodeGenerators
                 fields.Add(field);
             }
 
-            // extra fields for shared classes
-            if (generatedClass.IsSharedClass)
+            // extra fields for static classes
+            if (generatedClass.IsStaticClass)
             {
                 // add formula fields
                 foreach (var formula in formulas)
@@ -186,7 +186,7 @@ namespace Thesis.Models.CodeGenerators
             }
 
             Tester.ClassesCode.Add(new ClassCode(
-                generatedClass.IsSharedClass,
+                generatedClass.IsStaticClass,
                 generatedClass.Name,
                 newClass.NormalizeWhitespace().ToFullString(),
                 string.Join("\n", fields.Select(f => f.NormalizeWhitespace().ToFullString())),
@@ -214,7 +214,7 @@ namespace Thesis.Models.CodeGenerators
 
         private MemberDeclarationSyntax GenerateMethod(GeneratedClass generatedClass, List<StatementSyntax> statements)
         {
-            if (generatedClass.IsSharedClass)
+            if (generatedClass.IsStaticClass)
             {
                 // public static void Init()
                 var initMethod = MethodDeclaration(ParseTypeName("void"), "Init")
@@ -256,9 +256,9 @@ namespace Thesis.Models.CodeGenerators
             var methodBody = new List<StatementSyntax>();
             foreach (var generatedClass in GeneratedClasses
                 .Where(c => c.Vertices.Count(v => v.NodeType != NodeType.Constant && v.NodeType != NodeType.External) > 0)
-                .OrderBy(v => !v.IsSharedClass))
+                .OrderBy(v => !v.IsStaticClass))
             {
-                if (generatedClass.IsSharedClass)
+                if (generatedClass.IsStaticClass)
                 {
                     // {classname}.Init()
                     methodBody.Add(ExpressionStatement(

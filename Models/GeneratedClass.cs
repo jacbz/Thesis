@@ -9,7 +9,7 @@ namespace Thesis.Models
 {
     public class GeneratedClass
     {
-        public static readonly Color SharedColor = ColorTranslator.FromHtml("#CFD8DC");
+        public static readonly Color StaticColor = ColorTranslator.FromHtml("#CFD8DC");
         public static readonly Color ExternalColor = ColorTranslator.FromHtml("#AFEEEE");
 
         public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
@@ -22,13 +22,13 @@ namespace Thesis.Models
                 v.VariableName = string.IsNullOrWhiteSpace(v.VariableName) ? "_" + v.StringAddress : v.VariableName;
                 v.Class = this;
             });
-            Color = name == "Shared" ? SharedColor 
+            Color = name == "Static" ? StaticColor 
                 : name == "External" ? ExternalColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
 
         public string Name { get; set; }
-        public bool IsSharedClass => OutputVertex == null;
+        public bool IsStaticClass => OutputVertex == null;
         public Vertex OutputVertex { get; set; }
         public List<Vertex> Vertices { get; set; }
         public Color Color { get; set; }

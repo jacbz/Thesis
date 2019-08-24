@@ -355,16 +355,16 @@ namespace Thesis.Models
             }
             logItem.AppendElapsedTime();
 
-            var sharedVertices = vertexToOutputFieldVertices
+            var staticVertices = vertexToOutputFieldVertices
                 .Where(kvp => kvp.Value.Count > 1)
                 .Select(kvp => kvp.Key)
                 .ToList();
 
-            if (sharedVertices.Count > 0)
+            if (staticVertices.Count > 0)
             {
-                var sharedClass = new GeneratedClass("Shared", null, sharedVertices);
-                sharedClass.TopologicalSort();
-                classesList.Add(sharedClass);
+                var staticClass = new GeneratedClass("Static", null, staticVertices);
+                staticClass.TopologicalSort();
+                classesList.Add(staticClass);
             }
 
             if (ExternalVertices.Count > 0)

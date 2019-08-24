@@ -245,7 +245,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to shared classes" IsEnabled="False"/>
+                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to static classes" IsEnabled="False"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
                                     <StackPanel Orientation="Horizontal">

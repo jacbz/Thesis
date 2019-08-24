@@ -23,8 +23,8 @@ namespace Thesis.Models.CodeGenerators
         {
             var testResults = new Dictionary<string, TestResult>();
 
-            var lookup = ClassesCode.ToLookup(c => c.IsSharedClass);
-            var sharedClasses = lookup[true];
+            var lookup = ClassesCode.ToLookup(c => c.IsStaticClass);
+            var staticClasses = lookup[true];
             var normalClasses = lookup[false];
 
             Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
@@ -32,38 +32,38 @@ namespace Thesis.Models.CodeGenerators
             // base code required for testing, such as the EmptyCell class
             var baseCode = Properties.Resources.CSharpTestingBase;
 
-            // create a state with all shared classes initiated
+            // create a state with all static classes initiated
             ScriptState testState = await CSharpScript.RunAsync(baseCode, _scriptOptions);
 
-            // test each shared class separately
-            foreach (var sharedClass in sharedClasses)
+            // test each static class separately
+            foreach (var staticClass in staticClasses)
             {
                 try
                 {
-                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
+                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + staticClass.ClassName, true);
 
-                    var testSharedClassState = 
-                        await testState.ContinueWithAsync(sharedClass.FieldsCode);
-                    testSharedClassState = 
-                        await testSharedClassState.ContinueWithAsync(sharedClass.MethodBodyCode);
+                    var testStaticClassState = 
+                        await testState.ContinueWithAsync(staticClass.FieldsCode);
+                    testStaticClassState = 
+                        await testStaticClassState.ContinueWithAsync(staticClass.MethodBodyCode);
 
-                    foreach (var testResult in VariablesToTestResults(sharedClass.ClassName, testSharedClassState))
+                    foreach (var testResult in VariablesToTestResults(staticClass.ClassName, testStaticClassState))
                     {
                         testResults.Add(testResult.VariableName, testResult);
                     }
                     logItem2.DispatcherAppendElapsedTime();
 
-                    // initialize the shared classes state
-                    testState = await testState.ContinueWithAsync(sharedClass.Code);
-                    if (!string.IsNullOrEmpty(sharedClass.MethodBodyCode))
+                    // initialize the static classes state
+                    testState = await testState.ContinueWithAsync(staticClass.Code);
+                    if (!string.IsNullOrEmpty(staticClass.MethodBodyCode))
                     {
-                        testState = await testState.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+                        testState = await testState.ContinueWithAsync(staticClass.ClassName + ".Init();");
                     }
 
                 }
                 catch (Exception ex)
                 {
-                    LogException(ex, sharedClass.ClassName);
+                    LogException(ex, staticClass.ClassName);
                 }
             }
 
