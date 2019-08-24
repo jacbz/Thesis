@@ -163,7 +163,7 @@ namespace Thesis.Views
         /// <param name="vertices">Cells to style</param>
         /// <param name="styleCell">Cell styling function</param>
         /// <param name="styleBorder">Border styling function</param>
-        public void ColorSpreadsheetCells(List<Vertex> vertices, Action<Vertex, IStyle> styleCell, Action<Vertex, IBorders> styleBorder)
+        public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<Vertex, IStyle> styleCell, Action<Vertex, IBorders> styleBorder)
         {
             foreach (var vertex in vertices)
             {
@@ -172,7 +172,20 @@ namespace Thesis.Views
                 styleCell(vertex, range.CellStyle);
                 styleBorder(vertex, range.Borders);
             }
-            spreadsheet.ActiveGrid.InvalidateCells();
+        }
+
+        public void ColorSpreadsheetExternalCells(List<Vertex> externalVertices)
+        {
+            foreach(var externalVertex in externalVertices)
+            {
+                if(spreadsheet.GridCollection.TryGetValue(externalVertex.ExternalWorksheetName, out var grid))
+                {
+                    grid.Worksheet.Range[externalVertex.StringAddress].CellStyle.Color =
+                        Color.FromArgb(175, 238, 238);
+                }
+            }
+            // we don't reset the colors because that will take too long for all sheets
+            // colors will thus remain even if they are not external vertices anymore
         }
 
         public void ResetSpreadsheetColors()
@@ -183,7 +196,6 @@ namespace Thesis.Views
             var allCells = spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
             allCells.CellStyle.Color = Color.Transparent;
             allCells.CellStyle.Font.RGBColor = Color.Black;
-            allCells.Borders.LineStyle = ExcelLineStyle.None;
         }
     }
 }

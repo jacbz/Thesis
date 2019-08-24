@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Irony.Parsing;
 using Syncfusion.UI.Xaml.Diagram;
@@ -14,6 +15,7 @@ namespace Thesis.Models
         public string Formula { get; set; }
         public Label Label { get; set; }
         public string VariableName { get; set; }
+        public string ExternalWorksheetName { get; set; }
         public (int row, int col) Address { get; set; }
         public string StringAddress { get; }
         public HashSet<Vertex> Parents { get; set; }
@@ -33,13 +35,15 @@ namespace Thesis.Models
 
         public CellType CellType { get; set; }
         public NodeType NodeType =>
-            Parents.Count > 0
+            string.IsNullOrEmpty(ExternalWorksheetName)
+            ? Parents.Count > 0
                 ? Children.Count == 0
                     ? NodeType.Constant
                     : NodeType.Formula
                 : Children.Count > 0
                     ? NodeType.OutputField
-                    : NodeType.None;
+                    : NodeType.None
+            : NodeType.External;
 
         public NodeViewModel Node { get; set; }
         public GeneratedClass Class { get; set; }
@@ -100,8 +104,13 @@ namespace Thesis.Models
 
         public HashSet<Vertex> GetReachableVertices()
         {
-            var vertices = new HashSet<Vertex> {this};
-            foreach (var v in Children) vertices.UnionWith(v.GetReachableVertices());
+            var vertices = new HashSet<Vertex> { this };
+            // exclude external vertices
+            foreach (var v in Children.Where(v => v.NodeType != NodeType.External))
+            {
+                vertices.UnionWith(v.GetReachableVertices());
+            }
+
             return vertices;
         }
 
@@ -135,6 +144,7 @@ namespace Thesis.Models
         Formula,
         OutputField,
         Constant,
+        External,
         None
     }
 }

@@ -17,9 +17,11 @@
             <Color x:Key="FormulaColor">#8e44ad</Color>
             <Color x:Key="OutputColor">#e74c3c</Color>
             <Color x:Key="ConstantColor">#2980b9</Color>
+            <Color x:Key="ExternalColor">#1abc9c</Color>
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
             <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
+            <SolidColorBrush x:Key="ExternalColorBrush" Color="{DynamicResource ExternalColor}" />
 
             <Color x:Key="HeaderColor">#aaaaaa</Color>
             <Color x:Key="AttributeColor">#83d0c9</Color>

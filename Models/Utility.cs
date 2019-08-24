@@ -64,5 +64,12 @@ namespace Thesis.Models
             a[0] = char.ToUpper(a[0]);
             return new string(a);
         }
+
+        public static string RemoveExclamationMarkAtEnd(this string sheetName)
+        {
+            if (sheetName.Substring(sheetName.Length - 1, 1) == "!")
+                return sheetName.Substring(0, sheetName.Length - 1);
+            return sheetName;
+        }
     }
 }

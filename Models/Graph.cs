@@ -11,18 +11,23 @@ namespace Thesis.Models
     public class Graph
     {
         public List<Vertex> Vertices { get; set; }
+        public List<Vertex> ExternalVertices { get; set; }
 
         // Preserve copy for filtering purposes
         public List<Vertex> AllVertices { get; set; }
+        public List<Vertex> AllExternalVertices { get; set; }
 
         // For layouting purposes
         public List<int> PopulatedRows { get; set; }
         public List<int> PopulatedColumns { get; set; }
 
-        public Graph(IRange cells)
+        public Graph(IRange cells, Func<string, string, IRange> getExternalCellFunc)
         {
             var verticesDict = new Dictionary<string, Vertex>();
+            var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
+
             Vertices = new List<Vertex>();
+            ExternalVertices = new List<Vertex>();
 
             foreach (var cell in cells.Cells)
             {
@@ -37,27 +42,60 @@ namespace Thesis.Models
             foreach (var vertex in Vertices)
             {
                 if (vertex.ParseTree == null) continue;
-                //try
-                //{
+                try
+                {
                     var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
                     foreach (var cell in referencedCells)
                     {
                         vertex.Children.Add(verticesDict[cell]);
                         verticesDict[cell].Parents.Add(vertex);
                     }
-                    // TODO: so something with external cells
-                //}
-                //catch (Exception ex)
-                //{
-                //    Logger.Log(LogItemType.Error,
-                //        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.GetType().Name} ({ex.Message})");
-                //}
+                    // process external cells
+                    foreach(var (sheetName, address) in externalReferencedCells)
+                    {
+                        if (externalVerticesDict.TryGetValue((sheetName, address), out Vertex externalVertex))
+                        {
+                            vertex.Children.Add(externalVertex);
+                            externalVertex.Parents.Add(vertex);
+                        }
+                        else
+                        {
+                            var externalCellIRange = getExternalCellFunc(sheetName, address);
+                            if (externalCellIRange == null)
+                            {
+                                Logger.Log(LogItemType.Warning, $"Could not get cell {sheetName}.{address}");
+                            }
+                            else
+                            {
+                                externalVertex = new Vertex(externalCellIRange);
+                                externalVertex.ExternalWorksheetName = sheetName;
+                                externalVertex.VariableName = sheetName.ToPascalCase() + "_" + address;
+
+                                vertex.Children.Add(externalVertex);
+                                externalVertex.Parents.Add(vertex);
+                                ExternalVertices.Add(externalVertex);
+                                externalVerticesDict.Add((sheetName, address), externalVertex);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log(LogItemType.Error,
+                        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.GetType().Name} ({ex.Message})");
+                }
             }
+
+            if (ExternalVertices.Count > 0)
+                Logger.Log(LogItemType.Info, $"Discovered {ExternalVertices.Count} external cells.");
+
             GenerateLabels();
 
             AllVertices = Vertices.ToList();
+            AllExternalVertices = ExternalVertices.ToList();
 
             PerformTransitiveFilter(GetOutputFields());
+
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
 
@@ -178,13 +216,13 @@ namespace Thesis.Models
         private (List<string>, List<(string, string)>) GetListOfReferencedCells(string address, ParseTreeNode parseTree)
         {
             var referencedCells = new List<string>();
-            var externalReferencedCells = new List<(string, string)>();
+            var externalReferencedCells = new List<(string sheetName, string address)>();
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
             stack.Push(parseTree);
 
             // maps a Reference node to an external sheet
-            var external = new List<(ParseTreeNode, string)>();
+            var referenceNodeToExternalSheet = new HashSet<(ParseTreeNode node, string sheetName)>();
 
             while (stack.Count > 0)
             {
@@ -214,11 +252,10 @@ namespace Thesis.Models
                         }
                         break;
                     case "Cell":
-                        var externalMatch = external.FirstOrDefault(e => e.Item1 == node);
+                        var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
                         if (!externalMatch.Equals(default))
                         {
-                            Logger.Log(LogItemType.Warning, $"Skipping external reference in {address}: {externalMatch.Item2}");
-                            externalReferencedCells.Add((node.FindTokenAndGetText(), externalMatch.Item2));
+                            externalReferencedCells.Add((externalMatch.sheetName, node.FindTokenAndGetText()));
                         }
                         else
                         {
@@ -227,9 +264,13 @@ namespace Thesis.Models
                         break;
                     case "Prefix":
                         // SheetNameToken vs ParsedSheetNameToken
-                        string refName = node.ChildNodes.Count == 2 ? node.ChildNodes[1].FindTokenAndGetText() : node.FindTokenAndGetText();
+                        string sheetName = node.ChildNodes.Count == 2 
+                            ? node.ChildNodes[1].FindTokenAndGetText() 
+                            : node.FindTokenAndGetText();
+                        // remove ! at end of sheet name
+                        sheetName = sheetName.RemoveExclamationMarkAtEnd();
 
-                        // reference must on as far above as possible, to parse e.g. 'Sheet'!A1:A8
+                        // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
                         ParseTreeNode reference = node.Parent(parseTree);
                         var traverse = node;
                         while (traverse != parseTree)
@@ -238,7 +279,7 @@ namespace Thesis.Models
                             if (traverse.Term.Name == "Reference")
                                 reference = traverse;
                         }
-                        MarkChildNodesAsExternal(external, reference, refName);
+                        MarkChildNodesAsExternal(referenceNodeToExternalSheet, reference, sheetName);
                         break;
                 }
 
@@ -259,7 +300,7 @@ namespace Thesis.Models
             return (referencedCells, externalReferencedCells);
         }
 
-        private void MarkChildNodesAsExternal(List<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
+        private void MarkChildNodesAsExternal(HashSet<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
         {
             foreach (var child in node.ChildNodes)
             {
@@ -273,11 +314,6 @@ namespace Thesis.Models
             return Vertices.Where(v => v.NodeType == NodeType.OutputField).ToList();
         }
 
-        public void Reset()
-        {
-            Vertices = AllVertices.ToList();
-        }
-
         // Remove all vertices that are not transitively reachable from any vertex in the given list
         public void PerformTransitiveFilter(List<Vertex> vertices)
         {
@@ -289,6 +325,12 @@ namespace Thesis.Models
             PopulatedRows.Sort();
             PopulatedColumns = Vertices.Select(v => v.Address.col).Distinct().ToList();
             PopulatedColumns.Sort();
+
+            // filter external vertices for those which have at least one parent still in the vertices list
+            if (AllExternalVertices.Count == 0) return;
+            var logItem2 = Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...", true);
+            ExternalVertices = AllExternalVertices.Where(v => v.Parents.Any(p => Vertices.Contains(p))).ToList();
+            logItem2.AppendElapsedTime();
         }
 
         public List<GeneratedClass> GenerateClasses()
@@ -320,13 +362,19 @@ namespace Thesis.Models
 
             if (sharedVertices.Count > 0)
             {
-                var sharedClass = new GeneratedClass("Shared", null, sharedVertices, rnd);
+                var sharedClass = new GeneratedClass("Shared", null, sharedVertices);
                 sharedClass.TopologicalSort();
                 classesList.Add(sharedClass);
             }
 
-            if (Vertices.Count != classesList.Sum(l => l.Vertices.Count))
-                Logger.Log(LogItemType.Error, "Error creating classes; length mismatch");
+            if (ExternalVertices.Count > 0)
+            {
+                var externalClass = new GeneratedClass("External", null, ExternalVertices);
+                classesList.Add(externalClass);
+            }
+
+            if (Vertices.Count + ExternalVertices.Count != classesList.Sum(l => l.Vertices.Count))
+                Logger.Log(LogItemType.Error, "Error creating classes; number of vertices does not match number of vertices in classes");
 
             return classesList;
         }

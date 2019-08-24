@@ -91,7 +91,8 @@ namespace Thesis.Models.CodeGenerators
                 newClass = newClass.AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             // split vertex list into two
-            var lookup = generatedClass.Vertices.ToLookup(v => v.NodeType == NodeType.Constant);
+            var lookup = generatedClass.Vertices.ToLookup(v => 
+                v.NodeType == NodeType.Constant || v.NodeType == NodeType.External);
             var constants = lookup[true].ToList();
             var formulas = lookup[false].ToList();
 
@@ -173,11 +174,16 @@ namespace Thesis.Models.CodeGenerators
                 }
             }
 
-            // generate Calculate/Init method
-            var method = GenerateMethod(generatedClass, statements);
+            newClass = newClass.AddMembers(fields.ToArray());
 
-            // add fields and method to class
-            newClass = newClass.AddMembers(fields.ToArray()).AddMembers(method);
+            if (statements.Count > 0)
+            {
+                // generate Calculate/Init method
+                var method = GenerateMethod(generatedClass, statements);
+
+                // add fields and method to class
+                newClass = newClass.AddMembers(method);
+            }
 
             Tester.ClassesCode.Add(new ClassCode(
                 generatedClass.IsSharedClass,
@@ -248,7 +254,9 @@ namespace Thesis.Models.CodeGenerators
 
             // method body
             var methodBody = new List<StatementSyntax>();
-            foreach (var generatedClass in GeneratedClasses.OrderBy(v => !v.IsSharedClass))
+            foreach (var generatedClass in GeneratedClasses
+                .Where(c => c.Vertices.Count(v => v.NodeType != NodeType.Constant && v.NodeType != NodeType.External) > 0)
+                .OrderBy(v => !v.IsSharedClass))
             {
                 if (generatedClass.IsSharedClass)
                 {
@@ -286,6 +294,7 @@ namespace Thesis.Models.CodeGenerators
 
             mainMethod = mainMethod.WithBody(Block(methodBody));
             resultClass = resultClass.AddMembers(mainMethod);
+
             return resultClass;
         }
 
@@ -332,11 +341,17 @@ namespace Thesis.Models.CodeGenerators
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
                             return TreeNodeToExpression(node.ChildNodes[0], currentVertex);
+                        // External cells
                         if (node.ChildNodes.Count == 2)
                         {
                             var prefix = node.ChildNodes[0];
-                            var refName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            return ParseExpression($"ExternalRef(\"[{refName}\", {TreeNodeToExpression(node.ChildNodes[1], currentVertex)})");
+                            var sheetName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
+                            sheetName = sheetName.RemoveExclamationMarkAtEnd().ToPascalCase();
+                            var address = node.ChildNodes[1].FindTokenAndGetText();
+                            return MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName("External"),
+                                IdentifierName(sheetName + "_" + address));
                         }
                         return RuleNotImplemented(nt);
                     case "ReferenceItem":

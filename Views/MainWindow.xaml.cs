@@ -14,6 +14,7 @@ using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.ViewModels;
 
@@ -73,6 +74,13 @@ namespace Thesis.Views
             var rowCount = Math.Min(1024, spreadsheet.ActiveSheet.Rows.Length);
             var columnCount = Math.Min(64, spreadsheet.ActiveSheet.Columns.Length);
             return (rowCount, columnCount);
+        }
+
+        public IRange GetCellFromWorksheet(string sheetName, string address)
+        {
+            return spreadsheet.GridCollection.TryGetValue(sheetName, out var grid) 
+                ? grid.Worksheet.Range[address] 
+                : null;
         }
 
         public void EnableGraphGenerationOptions()

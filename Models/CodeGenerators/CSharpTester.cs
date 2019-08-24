@@ -33,7 +33,7 @@ namespace Thesis.Models.CodeGenerators
             var baseCode = Properties.Resources.CSharpTestingBase;
 
             // create a state with all shared classes initiated
-            ScriptState withSharedClassesInitialized = await CSharpScript.RunAsync(baseCode, _scriptOptions);
+            ScriptState testState = await CSharpScript.RunAsync(baseCode, _scriptOptions);
 
             // test each shared class separately
             foreach (var sharedClass in sharedClasses)
@@ -41,12 +41,12 @@ namespace Thesis.Models.CodeGenerators
                 try
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + sharedClass.ClassName, true);
-                    var testSharedClass = CSharpScript
-                        .Create(baseCode, _scriptOptions)
-                        .ContinueWith(sharedClass.FieldsCode)
-                        .ContinueWith(sharedClass.MethodBodyCode);
 
-                    var testSharedClassState = await testSharedClass.RunAsync();
+                    var testSharedClassState = 
+                        await testState.ContinueWithAsync(sharedClass.FieldsCode);
+                    testSharedClassState = 
+                        await testSharedClassState.ContinueWithAsync(sharedClass.MethodBodyCode);
+
                     foreach (var testResult in VariablesToTestResults(sharedClass.ClassName, testSharedClassState))
                     {
                         testResults.Add(testResult.VariableName, testResult);
@@ -54,10 +54,11 @@ namespace Thesis.Models.CodeGenerators
                     logItem2.DispatcherAppendElapsedTime();
 
                     // initialize the shared classes state
-                    withSharedClassesInitialized =
-                        await withSharedClassesInitialized.ContinueWithAsync(sharedClass.Code);
-                    withSharedClassesInitialized =
-                        await withSharedClassesInitialized.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+                    testState = await testState.ContinueWithAsync(sharedClass.Code);
+                    if (!string.IsNullOrEmpty(sharedClass.MethodBodyCode))
+                    {
+                        testState = await testState.ContinueWithAsync(sharedClass.ClassName + ".Init();");
+                    }
 
                 }
                 catch (Exception ex)
@@ -72,10 +73,8 @@ namespace Thesis.Models.CodeGenerators
                 try
                 {
                     var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
-                    var testNormalClassState =
-                        await withSharedClassesInitialized.ContinueWithAsync(normalClass.FieldsCode);
-                    testNormalClassState =
-                        await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
+                    var testNormalClassState = await testState.ContinueWithAsync(normalClass.FieldsCode);
+                    testNormalClassState = await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
                     foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
                     {
                         testResults.Add(testResult.VariableName, testResult);
@@ -113,7 +112,7 @@ namespace Thesis.Models.CodeGenerators
                 var variableName = keyValuePair.Key;
                 var vertex = keyValuePair.Value;
 
-                if (vertex.NodeType == NodeType.Constant) continue;
+                if (vertex.NodeType == NodeType.Constant || vertex.NodeType == NodeType.External) continue;
 
                 if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {

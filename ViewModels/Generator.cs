@@ -32,7 +32,7 @@ namespace Thesis.ViewModels
             _window = mainWindow;
         }
 
-        // return success
+        // return value: success
         public bool GenerateGraph()
         {
             _window.generateGraphButton.IsEnabled = false;
@@ -46,7 +46,7 @@ namespace Thesis.ViewModels
             var (rowCount, columnCount) = _window.GetSheetDimensions();
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
-            Graph = new Graph(allCells);
+            Graph = new Graph(allCells, _window.GetCellFromWorksheet);
             Logger.Log(LogItemType.Success, "Graph generation successful.");
 
             _window.generateGraphButton.IsEnabled = true;
@@ -60,6 +60,7 @@ namespace Thesis.ViewModels
             return true;
         }
 
+        // return value: success
         private bool LoadPersistedOutputFields()
         {
             // load selected output fields from settings
@@ -188,12 +189,12 @@ namespace Thesis.ViewModels
             _window.ResetSpreadsheetColors();
             foreach (var generatedClass in GeneratedClasses)
             {
-                _window.ColorSpreadsheetCells(generatedClass.Vertices, (vertex, style) =>
-                {
-                    _window.StyleCellByColor(generatedClass.Color, style);
-                }, _window.StyleBorderByNodeType);
+                _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => v.NodeType != NodeType.External), 
+                    (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); }, 
+                    _window.StyleBorderByNodeType);
             }
 
+            _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);
             _window.spreadsheet.ActiveGrid.InvalidateCells();
 
             LayoutClasses();

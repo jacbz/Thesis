@@ -9,8 +9,10 @@ namespace Thesis.Models
 {
     public class GeneratedClass
     {
-        private static readonly Color _sharedColor = ColorTranslator.FromHtml("#CFD8DC");
-        public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd)
+        public static readonly Color SharedColor = ColorTranslator.FromHtml("#CFD8DC");
+        public static readonly Color ExternalColor = ColorTranslator.FromHtml("#AFEEEE");
+
+        public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
         {
             Name = name;
             OutputVertex = outputVertex;
@@ -20,8 +22,8 @@ namespace Thesis.Models
                 v.VariableName = string.IsNullOrWhiteSpace(v.VariableName) ? "_" + v.StringAddress : v.VariableName;
                 v.Class = this;
             });
-            Color = outputVertex == null
-                ? _sharedColor
+            Color = name == "Shared" ? SharedColor 
+                : name == "External" ? ExternalColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
 

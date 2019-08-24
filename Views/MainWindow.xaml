@@ -139,14 +139,17 @@
 
                         <Label Grid.Column="2" FontWeight="Bold">Node types:</Label>
                         <StackPanel Grid.Column="2" Grid.Row="1" Orientation="Vertical">
-                            <Border BorderBrush="{DynamicResource ConstantColorBrush}" Margin="0,0,0,8" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="5" FontFamily="Segoe UI Light">Constant</TextBlock>
+                            <Border BorderBrush="{DynamicResource ConstantColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Constant</TextBlock>
                             </Border>
-                            <Border BorderBrush="{DynamicResource FormulaColorBrush}" Margin="0,0,0,8" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="5" FontFamily="Segoe UI Light">Formula</TextBlock>
+                            <Border BorderBrush="{DynamicResource FormulaColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Formula</TextBlock>
                             </Border>
-                            <Border BorderBrush="{DynamicResource OutputColorBrush}" Margin="0,0,0,8" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="5" FontFamily="Segoe UI Light">Output fields</TextBlock>
+                            <Border BorderBrush="{DynamicResource OutputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Output fields</TextBlock>
+                            </Border>
+                            <Border BorderBrush="{DynamicResource ExternalColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">External</TextBlock>
                             </Border>
                         </StackPanel>
 
@@ -242,7 +245,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to the shared class" IsEnabled="False"/>
+                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to shared classes" IsEnabled="False"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click">
                                     <StackPanel Orientation="Horizontal">

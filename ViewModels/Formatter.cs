@@ -37,6 +37,9 @@ namespace Thesis.ViewModels
                 case NodeType.Constant:
                     color = (MColor)Application.Current.Resources["ConstantColor"];
                     break;
+                case NodeType.External:
+                    color = (MColor)Application.Current.Resources["ExternalColor"];
+                    break;
                 default:
                     color = Colors.Transparent;
                     break;
