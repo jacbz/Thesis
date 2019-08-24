@@ -102,5 +102,96 @@ namespace Thesis.Models.CodeGenerators
                 new TestResult(className, variable.Name, variable.Value, variable.Type));
         }
 
+        public override TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary)
+        {
+            Logger.DispatcherLog(LogItemType.Info, "Generating test report...");
+
+            int passCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
+
+            foreach (var keyValuePair in variableNameToVertexDictionary)
+            {
+                var variableName = keyValuePair.Key;
+                var vertex = keyValuePair.Value;
+
+                if (vertex.NodeType == NodeType.Constant) continue;
+
+                if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
+                {
+                    testResult.ExpectedValue = vertex.Value;
+
+                    if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
+                        // two different numeric types are to be treated as equal types
+                        !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
+                    {
+                        // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
+                        if (vertex.CellType == CellType.Number &&
+                            testResult.ExpectedValue is string percentNumber &&
+                            percentNumber.Contains("%") &&
+                            double.TryParse(percentNumber.Replace("%", ""), out double number))
+                        {
+                            if (IsNumeric(testResult.ActualValue) && testResult.ActualValue == number * 0.01)
+                            {
+                                testResult.Annotation = "expected percentage but value matches that percentage";
+                                testResult.TestResultType = TestResultType.Pass;
+                                passCount++;
+                                continue;
+                            }
+                        }
+
+                        // handle EmptyCell
+                        if (testResult.ActualValue.GetType().Name.Contains("EmptyCell"))
+                        {
+                            if (IsNumeric(testResult.ExpectedValue) && Equals(testResult.ActualValue, 0) ||
+                               testResult.ExpectedValue is string s && s == "" ||
+                               testResult.ExpectedValue is bool b && b == false)
+                            {
+                                testResult.Annotation = "empty cell";
+                                testResult.TestResultType = TestResultType.Pass;
+                                passCount++;
+                                continue;
+                            }
+                        }
+
+                        testResult.TestResultType = TestResultType.TypeMismatch;
+                        typeMismatchCount++;
+                    }
+                    else if (testResult.ExpectedValue != testResult.ActualValue)
+                    {
+                        // allow mismatch in DateTime Hour, Second as functions like TODAY() will yield different times
+                        if (testResult.ExpectedValue is DateTime dt1 && testResult.ActualValue is DateTime dt2
+                                                                     && dt1.Year == dt2.Year &&
+                                                                     dt1.Month == dt2.Month && dt1.Day == dt2.Day)
+                        {
+                            testResult.Annotation = "ignored mismatch in hour/second";
+                            testResult.TestResultType = TestResultType.Pass;
+                            passCount++;
+                            continue;
+                        }
+
+                        testResult.TestResultType = TestResultType.ValueMismatch;
+                        valueMismatchCount++;
+                    }
+                    else
+                    {
+                        testResult.TestResultType = TestResultType.Pass;
+                        passCount++;
+                    }
+                }
+                else
+                {
+                    VariableToTestResultDictionary.Add(variableName,
+                        new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
+                        {
+                            ExpectedValue = vertex.Value,
+                            TestResultType = TestResultType.Skipped
+                        });
+                    skippedCount++;
+
+                }
+            }
+
+            return new TestReport(passCount, valueMismatchCount, typeMismatchCount, skippedCount);
+        }
+
     }
 }

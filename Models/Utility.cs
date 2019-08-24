@@ -52,5 +52,17 @@ namespace Thesis.Models
                 return (a - 1, b + 26);
             return (a, b);
         }
+
+        public static string ToTitleCase(this string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return string.Empty;
+
+            s = s.ToLower();
+
+            char[] a = s.ToCharArray();
+            a[0] = char.ToUpper(a[0]);
+            return new string(a);
+        }
     }
 }

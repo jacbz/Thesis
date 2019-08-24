@@ -367,6 +367,31 @@ namespace Thesis.Models.CodeGenerators
                 // arithmetic
                 case "+":
                 case "-":
+                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
+
+                    // adding a Date and a number yields Date.AddDays(number)
+                    var typeLeft = GetType(arguments[0]);
+                    var typeRight = GetType(arguments[1]);
+                    if (typeLeft.HasValue && typeRight.HasValue)
+                    {
+                        var leftExpr = TreeNodeToExpression(arguments[0], currentVertex);
+                        var rightExpr = TreeNodeToExpression(arguments[1], currentVertex);
+                        if (typeLeft.Value == CellType.Date)
+                        {
+                            return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    leftExpr, IdentifierName("AddDays")))
+                                .AddArgumentListArguments(Argument(rightExpr));
+                        }
+                        if (typeRight.Value == CellType.Date)
+                        {
+                            return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    rightExpr, IdentifierName("AddDays")))
+                                .AddArgumentListArguments(Argument(leftExpr));
+                        }
+                    }
+
+                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
+
                 case "*":
                 case "/":
                     return GenerateBinaryExpression(functionName, arguments, currentVertex);
@@ -384,20 +409,12 @@ namespace Thesis.Models.CodeGenerators
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
                     return ParseExpression($"Math.Round({TreeNodeToExpression(arguments[0], currentVertex)}, {TreeNodeToExpression(arguments[1], currentVertex)}, MidpointRounding.AwayFromZero)");
                 case "SUM":
-                    // Collection(...).Sum()
-                    return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
-                            IdentifierName("Sum")));
                 case "MIN":
-                    // Collection(...).Min()
-                    return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
-                        IdentifierName("Min")));
                 case "MAX":
-                    // Collection(...).Max()
+                    // Collection(...).Sum/Min/Max()
                     return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
-                        IdentifierName("Max")));
+                        IdentifierName(functionName.ToTitleCase())));
 
                 // logicial functions
                 case "IF":
@@ -665,7 +682,6 @@ namespace Thesis.Models.CodeGenerators
             if (left.ChildNodes.Count != 1 || right.ChildNodes.Count != 1)
                 return CommentExpression($"Error while parsing range");
 
-
             var leftChild = left.ChildNodes[0];
             var rightChild = right.ChildNodes[0];
             if (leftChild.Term.Name != "Cell" || rightChild.Term.Name != "Cell")
@@ -684,9 +700,6 @@ namespace Thesis.Models.CodeGenerators
                     entries.Add(FormatVariableReference(vertex, currentVertex));
                 }
             }
-
-            // remove last comma
-            if (entries.Count > 0) entries.RemoveAt(entries.Count - 1);
 
             // create custom collection
             return CollectionOf(entries.ToArray());
