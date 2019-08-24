@@ -16,6 +16,34 @@ public static bool Equals(object a, object b)
 	return Object.Equals(a, b);
 }
 
+// Implementation of Excel's round function that supports negative digits
+public static double Round(double value, double digits)
+{
+    if (digits >= 0)
+    {
+        return Math.Round(value, (int)digits, MidpointRounding.AwayFromZero);
+    }
+    else
+    {
+        digits = Math.Abs(digits);
+        double temp = value / Math.Pow(10, digits);
+        temp = Math.Round(temp, 0, MidpointRounding.AwayFromZero);
+        return temp * Math.Pow(10, digits);
+    }
+}
+
+public static double RoundUp(double value, double digits)
+{
+    var power = Math.Pow(10, digits);
+    return Math.Ceiling(value * power) / power;
+}
+
+public static double RoundDown(double value, double digits)
+{
+   var power = Math.Pow(10, digits);
+   return Math.Floor(value * power) / power;
+}
+
 // so we don't have to write "new" for a new collection
 public static InternalCollection Collection(params object[] items)
 {
@@ -29,8 +57,8 @@ public class InternalCollection
 	// flatten on arrival
 	public InternalCollection(params object[] items)
 	{
-		List<object> flattenedItems = new List<object>();
-		foreach(Object obj in items)
+		var flattenedItems = new List<object>();
+		foreach(object obj in items)
 		{
 			if (obj is InternalCollection ic)
 				flattenedItems.AddRange(ic.Items);

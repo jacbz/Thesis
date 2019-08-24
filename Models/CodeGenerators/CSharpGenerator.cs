@@ -304,7 +304,7 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private ExpressionSyntax TreeNodeToExpression(ParseTreeNode node, Vertex rootVertex)
+        private ExpressionSyntax TreeNodeToExpression(ParseTreeNode node, Vertex currentVertex)
         {
             // Non-Terminals
             if (node.Term is NonTerminal nt)
@@ -312,39 +312,39 @@ namespace Thesis.Models.CodeGenerators
                 switch (node.Term.Name)
                 {
                     case "Cell":
-                        return FormatVariableReferenceFromAddress(node.FindTokenAndGetText(), rootVertex);
+                        return FormatVariableReferenceFromAddress(node.FindTokenAndGetText(), currentVertex);
                     case "Constant":
                         string constant = node.FindTokenAndGetText();
                         if (constant.Contains("%") && !constant.Any(char.IsLetter))
                         {
                             // e.g. IF(A1>0, "1%", "2%")  (user entered "1%" instead of 1%)
-                            rootVertex.CellType = CellType.Number;
+                            currentVertex.CellType = CellType.Number;
                             constant = constant.Replace("%", "*0.01").Replace("\"", "");
                         }
                         return ParseExpression(constant);
                     case "FormulaWithEq":
-                        return TreeNodeToExpression(node.ChildNodes[1], rootVertex);
+                        return TreeNodeToExpression(node.ChildNodes[1], currentVertex);
                     case "Formula":
                         // for rule OpenParen + Formula + CloseParen
-                        return TreeNodeToExpression(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], rootVertex);
+                        return TreeNodeToExpression(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], currentVertex);
                     case "FunctionCall":
-                        return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), rootVertex);
+                        return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), currentVertex);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
-                            return TreeNodeToExpression(node.ChildNodes[0], rootVertex);
+                            return TreeNodeToExpression(node.ChildNodes[0], currentVertex);
                         if (node.ChildNodes.Count == 2)
                         {
                             var prefix = node.ChildNodes[0];
                             var refName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            return ParseExpression($"ExternalRef(\"[{refName}\", {TreeNodeToExpression(node.ChildNodes[1], rootVertex)})");
+                            return ParseExpression($"ExternalRef(\"[{refName}\", {TreeNodeToExpression(node.ChildNodes[1], currentVertex)})");
                         }
                         return RuleNotImplemented(nt);
                     case "ReferenceItem":
-                        return node.ChildNodes.Count == 1 ? TreeNodeToExpression(node.ChildNodes[0], rootVertex) : RuleNotImplemented(nt);
+                        return node.ChildNodes.Count == 1 ? TreeNodeToExpression(node.ChildNodes[0], currentVertex) : RuleNotImplemented(nt);
                     case "ReferenceFunctionCall":
-                        return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), rootVertex);
+                        return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), currentVertex);
                     case "UDFunctionCall":
-                        return ParseExpression($"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToExpression(a, rootVertex)))})");
+                        return ParseExpression($"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToExpression(a, currentVertex)))})");
                     // Not implemented
                     default:
                         return CommentExpression($"Parse token {node.Term.Name} is not implemented yet! {node}", true);
@@ -404,10 +404,18 @@ namespace Thesis.Models.CodeGenerators
                         LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0.01)));
                 case "^":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ParseExpression($"Math.Pow({TreeNodeToExpression(arguments[0], currentVertex)}, {TreeNodeToExpression(arguments[1], currentVertex)})");
+                    return InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName("Math"), IdentifierName("Pow")))
+                        .AddArgumentListArguments(
+                            Argument(TreeNodeToExpression(arguments[0], currentVertex)),
+                            Argument(TreeNodeToExpression(arguments[1], currentVertex)));
                 case "ROUND":
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ParseExpression($"Math.Round({TreeNodeToExpression(arguments[0], currentVertex)}, {TreeNodeToExpression(arguments[1], currentVertex)}, MidpointRounding.AwayFromZero)");
+                    return RoundFunction("Round", arguments, currentVertex);
+                case "ROUNDUP":
+                    return RoundFunction("RoundUp", arguments, currentVertex);
+                case "ROUNDDOWN":
+                    return RoundFunction("RoundDown", arguments, currentVertex);
                 case "SUM":
                 case "MIN":
                 case "MAX":
@@ -521,8 +529,7 @@ namespace Thesis.Models.CodeGenerators
                 case "&":
                 case "CONCATENATE":
                     if (arguments.Length < 2) return FunctionError(functionName, arguments);
-                    return ParseExpression(string.Join(" + ",
-                        arguments.Select(a => TreeNodeToExpression(a, currentVertex))));
+                    return FoldBinaryExpression("+", arguments, currentVertex);
 
                 case ":":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
@@ -551,8 +558,10 @@ namespace Thesis.Models.CodeGenerators
                 case "MONTH":
                 case "YEAR":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return ParseExpression(TreeNodeToExpression(arguments[0], currentVertex) + "."
-                        + functionName.Substring(0, 1) + functionName.Substring(1).ToLower());
+                    return MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        TreeNodeToExpression(arguments[0], currentVertex),
+                        IdentifierName(functionName.ToTitleCase()));
 
                 default:
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
@@ -560,6 +569,14 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
+        private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments, Vertex currentVertex)
+        {
+            if (arguments.Length != 2) return FunctionError(roundFunction, arguments);
+            return InvocationExpression(IdentifierName(roundFunction))
+                .AddArgumentListArguments(
+                    Argument(TreeNodeToExpression(arguments[0], currentVertex)),
+                    Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+        }
 
         private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>()
         {
@@ -570,6 +587,8 @@ namespace Thesis.Models.CodeGenerators
             { "%", CellType.Number },
             { "^", CellType.Number },
             { "ROUND", CellType.Number },
+            { "ROUNDUP", CellType.Number },
+            { "ROUNDDOWN", CellType.Number },
             { "SUM", CellType.Number },
             { "MIN", CellType.Number },
             { "MAX", CellType.Number },

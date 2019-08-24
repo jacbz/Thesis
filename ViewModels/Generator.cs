@@ -79,7 +79,9 @@ namespace Thesis.ViewModels
                     }
                 }
 
-                _window.outputFieldsListView.ScrollIntoView(OutputVertices.First(v => v.Include));
+                var firstIncludedOutputVertex = OutputVertices.FirstOrDefault(v => v.Include);
+                if (firstIncludedOutputVertex != null)
+                    _window.outputFieldsListView.ScrollIntoView(firstIncludedOutputVertex);
                 return true;
             }
 

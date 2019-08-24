@@ -118,10 +118,12 @@ namespace Thesis.Models.CodeGenerators
                 if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {
                     testResult.ExpectedValue = vertex.Value;
+                    var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
+                    var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
 
                     if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
                         // two different numeric types are to be treated as equal types
-                        !(IsNumeric(testResult.ExpectedValue) && IsNumeric(testResult.ActualValue)))
+                        !(expectedValueIsNumeric && actualValueIsNumeric))
                     {
                         // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
                         if (vertex.CellType == CellType.Number &&
@@ -129,7 +131,7 @@ namespace Thesis.Models.CodeGenerators
                             percentNumber.Contains("%") &&
                             double.TryParse(percentNumber.Replace("%", ""), out double number))
                         {
-                            if (IsNumeric(testResult.ActualValue) && testResult.ActualValue == number * 0.01)
+                            if (actualValueIsNumeric && testResult.ActualValue == number * 0.01)
                             {
                                 testResult.Annotation = "expected percentage but value matches that percentage";
                                 testResult.TestResultType = TestResultType.Pass;
@@ -141,7 +143,7 @@ namespace Thesis.Models.CodeGenerators
                         // handle EmptyCell
                         if (testResult.ActualValue.GetType().Name.Contains("EmptyCell"))
                         {
-                            if (IsNumeric(testResult.ExpectedValue) && Equals(testResult.ActualValue, 0) ||
+                            if (expectedValueIsNumeric && Equals(testResult.ActualValue, 0) ||
                                testResult.ExpectedValue is string s && s == "" ||
                                testResult.ExpectedValue is bool b && b == false)
                             {
@@ -166,6 +168,19 @@ namespace Thesis.Models.CodeGenerators
                             testResult.TestResultType = TestResultType.Pass;
                             passCount++;
                             continue;
+                        }
+
+                        if (expectedValueIsNumeric && actualValueIsNumeric)
+                        {
+                            double epsilon = Math.Abs(Convert.ToDouble(testResult.ActualValue) - 
+                                                      Convert.ToDouble(testResult.ExpectedValue));
+                            if (epsilon <= 0.0000001)
+                            {
+                                testResult.Annotation = $"difference of {epsilon:E}";
+                                testResult.TestResultType = TestResultType.Pass;
+                                passCount++;
+                                continue;
+                            }
                         }
 
                         testResult.TestResultType = TestResultType.ValueMismatch;
