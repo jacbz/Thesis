@@ -16,6 +16,74 @@ public static bool Equals(object a, object b)
 	return Object.Equals(a, b);
 }
 
+// so we don't have to write "new" for a new collection
+public static InternalCollection Collection(params object[] items)
+{
+	return new InternalCollection(items);
+}
+
+public class InternalCollection
+{
+	public object[] Items { get; }
+
+	// flatten on arrival
+	public InternalCollection(params object[] items)
+	{
+		List<object> flattenedItems = new List<object>();
+		foreach(Object obj in items)
+		{
+			if (obj is InternalCollection ic)
+				flattenedItems.AddRange(ic.Items);
+			else
+				flattenedItems.Add(obj);
+		}
+		Items = flattenedItems.ToArray();
+	}
+
+	public double Sum()
+	{
+		double result = 0;
+		foreach(object obj in Items)
+		{
+			if(obj.IsNumeric())
+				result += Convert.ToDouble(obj);
+			else if (obj is string s && double.TryParse(s, out double d))
+				result += d;
+		}
+		return result;
+	}
+
+	// Calculates the minimum. Ignores everything except numbers and strings
+	public double Min()
+	{
+		var min = Double.MaxValue;
+		foreach(object obj in Items)
+		{
+			if(obj.IsNumeric())
+				min = Math.Min(min, Convert.ToDouble(obj));
+			else if (obj is string s && double.TryParse(s, out double d))
+				min = Math.Min(min, d);
+		}
+		// if no valid arguments were provided, return 0
+		return min == Double.MaxValue ? 0 : min;
+	}
+
+	// Calculates the minimum. Ignores everything except numbers and strings
+	public double Max()
+	{
+		var max = Double.MinValue;
+		foreach(object obj in Items)
+		{
+			if(obj.IsNumeric())
+				max = Math.Max(max, Convert.ToDouble(obj));
+			else if (obj is string s && double.TryParse(s, out double d))
+				max = Math.Max(max, d);
+		}
+		// if no valid arguments were provided, return 0
+		return max == Double.MinValue ? 0 : max;
+	}
+}
+
 public struct EmptyCell
 {
     public static dynamic operator +(dynamic a, EmptyCell b)

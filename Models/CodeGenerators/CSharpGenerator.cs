@@ -312,7 +312,7 @@ namespace Thesis.Models.CodeGenerators
                 switch (node.Term.Name)
                 {
                     case "Cell":
-                        return FormatVariableReference(node.FindTokenAndGetText(), rootVertex);
+                        return FormatVariableReferenceFromAddress(node.FindTokenAndGetText(), rootVertex);
                     case "Constant":
                         string constant = node.FindTokenAndGetText();
                         if (constant.Contains("%") && !constant.Any(char.IsLetter))
@@ -360,7 +360,7 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private ExpressionSyntax FunctionToExpression(string functionName, ParseTreeNode[] arguments, Vertex vertex)
+        private ExpressionSyntax FunctionToExpression(string functionName, ParseTreeNode[] arguments, Vertex currentVertex)
         {
             switch (functionName)
             {
@@ -369,31 +369,43 @@ namespace Thesis.Models.CodeGenerators
                 case "-":
                 case "*":
                 case "/":
-                    return GenerateBinaryExpression(functionName, arguments, vertex);
+                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
                 case "%":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     // arguments[0] * 0.01
                     return BinaryExpression(
                         SyntaxKind.MultiplyExpression,
-                        TreeNodeToExpression(arguments[0], vertex),
+                        TreeNodeToExpression(arguments[0], currentVertex),
                         LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0.01)));
                 case "^":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ParseExpression($"Math.Pow({TreeNodeToExpression(arguments[0], vertex)}, {TreeNodeToExpression(arguments[1], vertex)})");
+                    return ParseExpression($"Math.Pow({TreeNodeToExpression(arguments[0], currentVertex)}, {TreeNodeToExpression(arguments[1], currentVertex)})");
                 case "ROUND":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ParseExpression($"Math.Round({TreeNodeToExpression(arguments[0], vertex)}, {TreeNodeToExpression(arguments[1], vertex)}, MidpointRounding.AwayFromZero)");
+                    return ParseExpression($"Math.Round({TreeNodeToExpression(arguments[0], currentVertex)}, {TreeNodeToExpression(arguments[1], currentVertex)}, MidpointRounding.AwayFromZero)");
                 case "SUM":
-                    return ParseExpression(string.Join(".Concat(", arguments.Select(a => TreeNodeToExpression(a, vertex)))
-                           + (arguments.Length > 1 ? ")" : "") + ".Sum()");
+                    // Collection(...).Sum()
+                    return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
+                            IdentifierName("Sum")));
+                case "MIN":
+                    // Collection(...).Min()
+                    return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
+                        IdentifierName("Min")));
+                case "MAX":
+                    // Collection(...).Max()
+                    return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
+                        IdentifierName("Max")));
 
                 // logicial functions
                 case "IF":
                     if (arguments.Length != 2 && arguments.Length != 3)
                         return FunctionError(functionName, arguments);
 
-                    ExpressionSyntax condition = TreeNodeToExpression(arguments[0], vertex);
-                    ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], vertex);
+                    ExpressionSyntax condition = TreeNodeToExpression(arguments[0], currentVertex);
+                    ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], currentVertex);
                     ExpressionSyntax whenFalse;
 
                     // if the condition is not always a bool (e.g. dynamic), use Equals(cond, true)
@@ -412,7 +424,7 @@ namespace Thesis.Models.CodeGenerators
                     bool argumentsHaveDifferentTypes;
                     if (arguments.Length == 3)
                     {
-                        whenFalse = TreeNodeToExpression(arguments[2], vertex);
+                        whenFalse = TreeNodeToExpression(arguments[2], currentVertex);
                         argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2]) == null;
                     }
                     else
@@ -425,7 +437,7 @@ namespace Thesis.Models.CodeGenerators
                     // if there is a mismatch in argument types, the variable must be of type dynamic
                     if (argumentsHaveDifferentTypes)
                     {
-                        _useDynamic.Add(vertex);
+                        _useDynamic.Add(currentVertex);
                         // we must cast to type (dynamic):
                         // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
                         whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
@@ -436,12 +448,12 @@ namespace Thesis.Models.CodeGenerators
                 case "OR":
                 case "XOR":
                     if (arguments.Length == 0) return FunctionError(functionName, arguments);
-                    if (arguments.Length == 1) return TreeNodeToExpression(arguments[0], vertex);
-                    return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments, vertex));
+                    if (arguments.Length == 1) return TreeNodeToExpression(arguments[0], currentVertex);
+                    return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments, currentVertex));
                 case "NOT":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, 
-                        TreeNodeToExpression(arguments[0], vertex));
+                        TreeNodeToExpression(arguments[0], currentVertex));
                 case "TRUE":
                     return LiteralExpression(SyntaxKind.TrueLiteralExpression);
                 case "FALSE":
@@ -449,8 +461,8 @@ namespace Thesis.Models.CodeGenerators
 
                 case "=":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], vertex);
-                    var rightExpression = TreeNodeToExpression(arguments[1], vertex);
+                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
+                    var rightExpression = TreeNodeToExpression(arguments[1], currentVertex);
 
                     ExpressionSyntax equalsExpression;
                     var leftType = GetType(arguments[0]);
@@ -486,18 +498,18 @@ namespace Thesis.Models.CodeGenerators
                 case "<=":
                 case ">=":
                 case ">":
-                    return GenerateBinaryExpression(functionName, arguments, vertex);
+                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
 
                 // strings
                 case "&":
                 case "CONCATENATE":
                     if (arguments.Length < 2) return FunctionError(functionName, arguments);
                     return ParseExpression(string.Join(" + ",
-                        arguments.Select(a => TreeNodeToExpression(a, vertex))));
+                        arguments.Select(a => TreeNodeToExpression(a, currentVertex))));
 
                 case ":":
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return GetRangeExpression(arguments[0], arguments[1]);
+                    return GetRangeExpression(arguments[0], arguments[1], currentVertex);
 
                 // other
                 case "DATE":
@@ -505,9 +517,9 @@ namespace Thesis.Models.CodeGenerators
                     return ObjectCreationExpression(
                             IdentifierName("DateTime"))
                         .AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[0], vertex)),
-                            Argument(TreeNodeToExpression(arguments[1], vertex)),
-                            Argument(TreeNodeToExpression(arguments[2], vertex))
+                            Argument(TreeNodeToExpression(arguments[0], currentVertex)),
+                            Argument(TreeNodeToExpression(arguments[1], currentVertex)),
+                            Argument(TreeNodeToExpression(arguments[2], currentVertex))
                             );
                 case "TODAY":
                     // DateTime.Now
@@ -522,12 +534,12 @@ namespace Thesis.Models.CodeGenerators
                 case "MONTH":
                 case "YEAR":
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return ParseExpression(TreeNodeToExpression(arguments[0], vertex) + "."
+                    return ParseExpression(TreeNodeToExpression(arguments[0], currentVertex) + "."
                         + functionName.Substring(0, 1) + functionName.Substring(1).ToLower());
 
                 default:
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
-                        $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, vertex)))}", true);
+                        $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}", true);
             }
         }
 
@@ -542,6 +554,8 @@ namespace Thesis.Models.CodeGenerators
             { "^", CellType.Number },
             { "ROUND", CellType.Number },
             { "SUM", CellType.Number },
+            { "MIN", CellType.Number },
+            { "MAX", CellType.Number },
 
             { "IF", CellType.Unknown },
             { "AND", CellType.Bool },
@@ -646,39 +660,48 @@ namespace Thesis.Models.CodeGenerators
         }
 
         // A1:B2 -> new[]{A1,A2,B1,B2}
-        private ExpressionSyntax GetRangeExpression(ParseTreeNode left, ParseTreeNode right)
+        private ExpressionSyntax GetRangeExpression(ParseTreeNode left, ParseTreeNode right, Vertex currentVertex)
         {
             if (left.ChildNodes.Count != 1 || right.ChildNodes.Count != 1)
                 return CommentExpression($"Error while parsing range");
 
-            var variables = new List<SyntaxNodeOrToken>();
 
             var leftChild = left.ChildNodes[0];
             var rightChild = right.ChildNodes[0];
             if (leftChild.Term.Name != "Cell" || rightChild.Term.Name != "Cell")
             {
-                return CommentExpression($"Range with more than 2 components not implemented yet!");
+                return CommentExpression("Range with more than 2 components not implemented yet!");
             }
 
             var leftAddress = leftChild.FindTokenAndGetText();
             var rightAddress = rightChild.FindTokenAndGetText();
 
+            var entries = new List<ExpressionSyntax>();
             foreach (var address in Utility.AddressesInRange(leftAddress, rightAddress))
             {
                 if (AddressToVertexDictionary.TryGetValue(address, out var vertex))
                 {
-                    variables.Add(IdentifierName(vertex.VariableName));
-                    variables.Add(Token(SyntaxKind.CommaToken));
+                    entries.Add(FormatVariableReference(vertex, currentVertex));
                 }
             }
 
             // remove last comma
-            if (variables.Count > 0) variables.RemoveAt(variables.Count - 1);
+            if (entries.Count > 0) entries.RemoveAt(entries.Count - 1);
 
-            return ImplicitArrayCreationExpression(
-                InitializerExpression(
-                    SyntaxKind.ArrayInitializerExpression,
-                    SeparatedList<ExpressionSyntax>(variables)));
+            // create custom collection
+            return CollectionOf(entries.ToArray());
+        }
+
+        private ExpressionSyntax CollectionOf(params ExpressionSyntax[] expressions)
+        {
+            // avoid Collection(Collection)
+            if (expressions.Length == 1 && expressions[0] is InvocationExpressionSyntax inv
+                && ((IdentifierNameSyntax)inv.Expression).Identifier.Text == "Collection")
+                return expressions[0];
+
+            return InvocationExpression(
+                    IdentifierName("Collection"))
+                .AddArgumentListArguments(expressions.Select(Argument).ToArray());
         }
 
         private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> _binaryOperators
@@ -729,17 +752,22 @@ namespace Thesis.Models.CodeGenerators
                 .Aggregate((acc, right) => BinaryExpression(syntaxKind, acc, right));
         }
 
-        private ExpressionSyntax FormatVariableReference(string address, Vertex rootVertex)
+        private ExpressionSyntax FormatVariableReferenceFromAddress(string address, Vertex currentVertex)
         {
-            if (AddressToVertexDictionary.TryGetValue(address, out var vertex))
+            if (AddressToVertexDictionary.TryGetValue(address, out var variableVertex))
             {
-                return rootVertex.Class == vertex.Class
-                    ? (ExpressionSyntax)IdentifierName(vertex.VariableName)
-                    : MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(vertex.Class.Name), IdentifierName(vertex.VariableName));
+                return FormatVariableReference(variableVertex, currentVertex);
             }
 
             return CommentExpression($"{address} not found", true);
+        }
+
+        private static ExpressionSyntax FormatVariableReference(Vertex variableVertex, Vertex currentVertex)
+        {
+            return currentVertex.Class == variableVertex.Class
+                ? (ExpressionSyntax) IdentifierName(variableVertex.VariableName)
+                : MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                    IdentifierName(variableVertex.Class.Name), IdentifierName(variableVertex.VariableName));
         }
 
         private ExpressionSyntax RuleNotImplemented(NonTerminal nt)

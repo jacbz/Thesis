@@ -15,8 +15,8 @@ namespace Thesis.Models.CodeGenerators
     public class CSharpTester : Tester
     {
         private readonly ScriptOptions _scriptOptions = ScriptOptions.Default
-            .WithImports("System", "System.Linq")
-            .WithReferences(typeof(System.Linq.Enumerable).Assembly)
+            .WithImports("System", "System.Linq", "System.Collections.Generic")
+            //.WithReferences(typeof(System.Linq.Enumerable).Assembly)
             // required for dynamic
             .WithReferences(typeof(RuntimeBinderException).GetTypeInfo().Assembly.Location);
         public override async Task PerformTestAsync()

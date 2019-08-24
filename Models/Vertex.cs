@@ -70,7 +70,8 @@ namespace Thesis.Models
             if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;
             if (cell.HasNumber || cell.HasFormulaNumberValue) return CellType.Number;
             if (cell.HasDateTime || cell.HasFormulaDateTime) return CellType.Date;
-            if (cell.HasString || cell.HasFormulaStringValue) return CellType.Text;
+            if (cell.HasString || cell.HasFormulaStringValue || 
+                !string.IsNullOrEmpty(cell.DisplayText)) return CellType.Text;
             return CellType.Unknown;
         }
 
