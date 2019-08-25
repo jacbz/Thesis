@@ -49,7 +49,7 @@
                     <StackPanel x:Name="toolboxContent" Orientation="Vertical" Opacity="0.3" IsEnabled="False">
                         <TextBlock Margin="6"><InlineUIContainer>
                                 <TextBlock FontWeight="Bold" FontSize="16" ><InlineUIContainer>
-                                        <TextBlock Text="{Binding NodeType, FallbackValue=0}" Padding="4,0" Foreground="White" Margin="0,0,2,0">
+                                        <TextBlock Text="{Binding NodeType, FallbackValue=Nothing selected}" Padding="4,0" Foreground="White" Margin="0,0,2,0">
                                             <TextBlock.Style>
                                                 <Style TargetType="{x:Type TextBlock}">
                                                     <Style.Triggers>
@@ -67,7 +67,7 @@
                                             </TextBlock.Style>
                                         </TextBlock>
                                     </InlineUIContainer><Run Text=" "/><InlineUIContainer>
-                                        <TextBlock Text="{Binding StringAddress, FallbackValue=0}"/>
+                                        <TextBlock Text="{Binding StringAddress}"/>
                                     </InlineUIContainer></TextBlock>
                             </InlineUIContainer><Run Text=" "/><InlineUIContainer>
                                 <TextBlock/>                        

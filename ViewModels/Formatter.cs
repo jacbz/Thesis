@@ -86,9 +86,10 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = vertex.VariableName,
+                        Content = string.IsNullOrEmpty(vertex.VariableName) ? vertex.StringAddress : vertex.VariableName,
                         ViewTemplate =
-                            Application.Current.Resources[vertex.VariableName != "" ? "normalLabel" : "redLabel"] as DataTemplate,
+                            Application.Current.Resources[!string.IsNullOrEmpty(vertex.VariableName) ? "normalLabel" : "redLabel"]
+                                as DataTemplate,
                         UnitWidth = 200
                     }
                 }
@@ -241,12 +242,11 @@ namespace Thesis.ViewModels
                 NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
-        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to)
+        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to, bool redirectSharedNodesToTopLeft = false)
         {
-            return new ConnectorViewModel
+            var connector = new ConnectorViewModel
             {
                 SourceNode = from.Node,
-                TargetNode = to.Node,
                 ConnectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style,
                 TargetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style,
                 Segments = new ObservableCollection<IConnectorSegment>
@@ -256,6 +256,11 @@ namespace Thesis.ViewModels
                 Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable,
                 ZIndex = -1
             };
+            if (to.NodeType == NodeType.External && redirectSharedNodesToTopLeft)
+                connector.TargetPoint = new Point(0, 0);
+            else
+                connector.TargetNode = to.Node;
+            return connector;
         }
 
         public static DColor GetTextColor(this DColor c)
@@ -272,50 +277,6 @@ namespace Thesis.ViewModels
         public static DColor ToDColor(this MColor color)
         {
             return DColor.FromArgb(color.A, color.R, color.G, color.B);
-        }
-
-        // String tools
-
-        public static string ToCamelCase(this string inputString)
-        {
-            var output = ToPascalCase(inputString);
-            if (output == "") return "";
-            return FirstToLower(output);
-        }
-
-        public static string FirstToLower(this string inputString)
-        {
-            return inputString.First().ToString().ToLower() + inputString.Substring(1);
-        }
-
-        public static string ToPascalCase(this string inputString)
-        {
-            if (inputString == "") return "";
-            var textInfo = new CultureInfo("en-US", false).TextInfo;
-            inputString = ProcessDiacritics(inputString.Replace("%", "Percent"));
-            inputString = Regex.Replace(inputString, "[^0-9a-zA-Z ]+", "");
-            inputString = textInfo.ToTitleCase(inputString).Replace(" ", "");
-            if (inputString == "") return "";
-            if (char.IsDigit(inputString.ToCharArray()[0])) inputString = "_" + inputString;
-            return inputString;
-        }
-
-        public static string ProcessDiacritics(this string inputString)
-        {
-            inputString = inputString
-                .Replace("ö", "oe")
-                .Replace("ä", "ae")
-                .Replace("ü", "ue")
-                .Replace("ß", "ss");
-            var normalizedString = inputString.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-            foreach (var c in normalizedString)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                    stringBuilder.Append(c);
-            }
-
-            return stringBuilder.ToString();
         }
     }
 }

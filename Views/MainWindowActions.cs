@@ -180,8 +180,7 @@ namespace Thesis.Views
             {
                 if(spreadsheet.GridCollection.TryGetValue(externalVertex.ExternalWorksheetName, out var grid))
                 {
-                    grid.Worksheet.Range[externalVertex.StringAddress].CellStyle.Color =
-                        Color.FromArgb(175, 238, 238);
+                    grid.Worksheet.Range[externalVertex.StringAddress].CellStyle.Color = GeneratedClass.ExternalColor;
                 }
             }
             // we don't reset the colors because that will take too long for all sheets

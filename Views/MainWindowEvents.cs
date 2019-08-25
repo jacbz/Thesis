@@ -70,10 +70,10 @@ namespace Thesis.Views
                 {
                     EnableGraphGenerationOptions();
 
-                    this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    generateCodeTab.IsSelected = true;
+                    //this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    //this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    //this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    //generateCodeTab.IsSelected = true;
                 }
             }
         }

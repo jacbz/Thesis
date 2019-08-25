@@ -130,7 +130,7 @@ namespace Thesis.ViewModels
                 ((NodeCollection) _window.diagram.Nodes).Add(vertex.FormatVertex(Graph));
             foreach (var vertex in Graph.Vertices)
             foreach (var child in vertex.Children)
-                ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child));
+                ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child, true));
 
             logItem.AppendElapsedTime();
         }

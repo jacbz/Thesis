@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -70,6 +71,58 @@ namespace Thesis.Models
             if (sheetName.Substring(sheetName.Length - 1, 1) == "!")
                 return sheetName.Substring(0, sheetName.Length - 1);
             return sheetName;
+        }
+
+        // String tools
+
+        public static string ToCamelCase(this string inputString)
+        {
+            var output = ToPascalCase(inputString);
+            if (output == "") return "";
+            return FirstToLower(output);
+        }
+
+        public static string FirstToLower(this string inputString)
+        {
+            return inputString.First().ToString().ToLower() + inputString.Substring(1);
+        }
+
+        public static string ToPascalCase(this string inputString)
+        {
+            if (inputString == "") return "";
+            var textInfo = new CultureInfo("en-US", false).TextInfo;
+            inputString = textInfo.ToTitleCase(inputString);
+            inputString = inputString.MakeNameVariableConform();
+            if (inputString == "") return "";
+            return inputString;
+        }
+
+        public static string MakeNameVariableConform(this string inputString)
+        {
+            inputString = ProcessDiacritics(inputString);
+            inputString = inputString.Replace("%", "Percent");
+            inputString = Regex.Replace(inputString, "[^0-9a-zA-Z_]+", "");
+            if (inputString.Length > 0 && char.IsDigit(inputString.ToCharArray()[0]))
+                inputString = "_" + inputString;
+            return inputString;
+        }
+
+        public static string ProcessDiacritics(this string inputString)
+        {
+            inputString = inputString
+                .Replace("ö", "oe")
+                .Replace("ä", "ae")
+                .Replace("ü", "ue")
+                .Replace("ß", "ss");
+            var normalizedString = inputString.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+            foreach (var c in normalizedString)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    stringBuilder.Append(c);
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }

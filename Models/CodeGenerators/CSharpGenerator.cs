@@ -301,14 +301,12 @@ namespace Thesis.Models.CodeGenerators
         private void GenerateVariableNamesForAll()
         {
             _usedVariableNames = CreateUsedVariableHashSet();
-
             foreach (var generatedClass in GeneratedClasses)
             {
                 generatedClass.Name = GenerateUniqueName(generatedClass.Name, _usedVariableNames);
-
                 foreach (var vertex in generatedClass.Vertices)
                 {
-                    vertex.VariableName = GenerateUniqueName(vertex.VariableName, _usedVariableNames);
+                    vertex.VariableName = GenerateUniqueName(vertex.VariableName.MakeNameVariableConform(), _usedVariableNames);
                 }
             }
         }

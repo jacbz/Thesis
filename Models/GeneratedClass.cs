@@ -19,7 +19,9 @@ namespace Thesis.Models
             Vertices = vertices;
             Vertices.ForEach(v =>
             {
-                v.VariableName = string.IsNullOrWhiteSpace(v.VariableName) ? "_" + v.StringAddress : v.VariableName;
+                v.VariableName = string.IsNullOrWhiteSpace(v.VariableName)
+                    ? "_" + v.StringAddress 
+                    : v.VariableName.MakeNameVariableConform();
                 v.Class = this;
             });
             Color = name == "Static" ? StaticColor 
