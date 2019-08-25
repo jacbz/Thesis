@@ -46,7 +46,7 @@ namespace Thesis.ViewModels
             var (rowCount, columnCount) = _window.GetSheetDimensions();
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
-            Graph = new Graph(allCells, _window.GetCellFromWorksheet);
+            Graph = new Graph(ActiveWorksheet, allCells, _window.GetCellFromWorksheet, _window.spreadsheet.Workbook.Names);
             Logger.Log(LogItemType.Success, "Graph generation successful.");
 
             _window.generateGraphButton.IsEnabled = true;
@@ -208,12 +208,14 @@ namespace Thesis.ViewModels
 
             _window.codeTextBox.Text = "";
 
-            var addressToVertexDictionary = Graph.Vertices.ToDictionary(v => v.StringAddress, v => v);
+            var addressToVertexDictionary = Graph.Vertices
+                .Where(v => !string.IsNullOrEmpty(v.StringAddress))
+                .ToDictionary(v => v.StringAddress, v => v);
             // implement different languages here
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary);
+                    CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary, Graph.NamedRangeDictionary);
                     break;
             }
             var code = await CodeGenerator.GenerateCodeAsync();
@@ -232,7 +234,10 @@ namespace Thesis.ViewModels
                 var report = await Task.Run(() => CodeGenerator.GenerateTestReportAsync());
 
                 _window.codeTextBox.Text = report.Code;
-                Logger.Log(report.TypeMismatchCount == 0 && report.ValueMismatchCount == 0 && report.SkippedCount == 0
+                Logger.Log(report.NullCount == 0
+                           && report.TypeMismatchCount == 0
+                           && report.ValueMismatchCount == 0 
+                           && report.SkippedCount == 0
                         ? LogItemType.Success
                         : report.PassCount == 0
                             ? LogItemType.Error

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Irony.Parsing;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
+using Syncfusion.XlsIO.Implementation;
 
 namespace Thesis.Models
 {
@@ -17,10 +18,11 @@ namespace Thesis.Models
         public string VariableName { get; set; }
         public string ExternalWorksheetName { get; set; }
         public (int row, int col) Address { get; set; }
-        public string StringAddress { get; }
+        public string StringAddress { get; set; }
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
         public ParseTreeNode ParseTree { get; set; }
+        public bool IsSpreadsheetCell => !string.IsNullOrEmpty(StringAddress);
 
         private bool _include;
         public bool Include
@@ -53,7 +55,14 @@ namespace Thesis.Models
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public Vertex(IRange cell)
+        public Vertex()
+        {
+            Parents = new HashSet<Vertex>();
+            Children = new HashSet<Vertex>();
+            Include = true;
+        }
+
+        public Vertex(IRange cell) : this()
         {
             CellType = GetCellType(cell);
             Value = GetCellValue(cell);
@@ -61,12 +70,25 @@ namespace Thesis.Models
             Formula = cell.HasFormula ? FormatFormula(cell.Formula) : null;
             Address = (cell.Row, cell.Column);
             StringAddress = cell.AddressLocal;
-            Parents = new HashSet<Vertex>();
-            Children = new HashSet<Vertex>();
-            Include = true;
 
             if (cell.HasFormula)
                 ParseTree = XLParser.ExcelFormulaParser.Parse(Formula);
+        }
+
+        public static Vertex CreateNamedRangeVertex(string namedRangeName, string namedRangeAddress, NameImpl namedRange)
+        {
+            var formula = "=" + namedRangeAddress;
+            return new Vertex
+            {
+                CellType = CellType.Range,
+                Value = null,
+                DisplayValue = "",
+                Formula = formula,
+                Address = (0, 0),
+                StringAddress = null,
+                ParseTree = XLParser.ExcelFormulaParser.Parse(formula),
+                VariableName = namedRangeName
+            };
         }
 
         public CellType GetCellType(IRange cell)
@@ -119,11 +141,6 @@ namespace Thesis.Models
             return $"{StringAddress},{CellType.ToString()}: {DisplayValue}";
         }
 
-        public override int GetHashCode()
-        {
-            return StringAddress.GetHashCode();
-        }
-
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -136,6 +153,7 @@ namespace Thesis.Models
         Number,
         Date,
         Text,
+        Range,
         Unknown
     }
 

@@ -22,8 +22,8 @@ namespace Thesis.Models.CodeGenerators
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
-        public CSharpGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
-            : base(generatedClasses, addressToVertexDictionary)
+        public CSharpGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary, Dictionary<string, Vertex> namedRangeDictionary) 
+            : base(generatedClasses, addressToVertexDictionary, namedRangeDictionary)
         {
         }
 
@@ -336,6 +336,11 @@ namespace Thesis.Models.CodeGenerators
                         return TreeNodeToExpression(node.ChildNodes.Count == 3 ? node.ChildNodes[1] : node.ChildNodes[0], currentVertex);
                     case "FunctionCall":
                         return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), currentVertex);
+                    case "NamedRange":
+                        var namedRangeName = node.FindTokenAndGetText();
+                        return NamedRangeDictionary.TryGetValue(namedRangeName, out var namedRangeVertex) 
+                            ? FormatVariableReference(namedRangeVertex, currentVertex) 
+                            : CommentExpression($"Did not find variable for named range {namedRangeName}", true);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
                             return TreeNodeToExpression(node.ChildNodes[0], currentVertex);
@@ -741,11 +746,14 @@ namespace Thesis.Models.CodeGenerators
         {
             // avoid Collection(Collection)
             if (expressions.Length == 1 && expressions[0] is InvocationExpressionSyntax inv
-                && ((IdentifierNameSyntax)inv.Expression).Identifier.Text == "Collection")
+                                        && inv.Expression is MemberAccessExpressionSyntax maes
+                                        && ((IdentifierNameSyntax)maes.Expression).Identifier.Text == "Collection")
                 return expressions[0];
 
             return InvocationExpression(
-                    IdentifierName("Collection"))
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName("Collection"),
+                        IdentifierName("Of")))
                 .AddArgumentListArguments(expressions.Select(Argument).ToArray());
         }
 
@@ -871,26 +879,10 @@ namespace Thesis.Models.CodeGenerators
                     return "string";
                 case CellType.Unknown:
                     return "EmptyCell";
+                case CellType.Range:
+                    return "Collection";
                 default:
                     return "";
-            }
-        }
-
-        public static ExpressionSyntax CellTypeToNullExpression(CellType cellType)
-        {
-            switch (cellType)
-            {
-                case CellType.Bool:
-                    return LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                case CellType.Unknown:
-                    return ObjectCreationExpression(IdentifierName("EmptyCell")).WithArgumentList(ArgumentList());
-                case CellType.Date:
-                    return LiteralExpression(SyntaxKind.NullLiteralExpression);
-                case CellType.Number:
-                    return LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0));
-                case CellType.Text:
-                default:
-                    return LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(""));
             }
         }
 

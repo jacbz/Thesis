@@ -51,6 +51,9 @@
 			<Word> FAIL </Word>
 			<Word> SKIPPED </Word>
 		</Keywords>
+    <Keywords fontWeight="bold" background="#34495e" foreground="#FFFFFF">
+      <Word> IGNORE </Word>
+    </Keywords>
 		<Keywords fontStyle="italic" foreground="#c0392b">
 			<Word>Actual</Word>
 		</Keywords>

@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
@@ -43,6 +44,8 @@ namespace Thesis.Views
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
+            if (!vertex.IsSpreadsheetCell) return;
+
             spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
                 ? _generator.ActiveWorksheet
                 : vertex.ExternalWorksheetName);
@@ -167,7 +170,7 @@ namespace Thesis.Views
         /// <param name="styleBorder">Border styling function</param>
         public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<Vertex, IStyle> styleCell, Action<Vertex, IBorders> styleBorder)
         {
-            foreach (var vertex in vertices)
+            foreach (var vertex in vertices.Where(v => v.IsSpreadsheetCell))
             {
                 var range = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
 
@@ -178,7 +181,7 @@ namespace Thesis.Views
 
         public void ColorSpreadsheetExternalCells(List<Vertex> externalVertices)
         {
-            foreach(var externalVertex in externalVertices)
+            foreach(var externalVertex in externalVertices.Where(v => v.IsSpreadsheetCell))
             {
                 if(spreadsheet.GridCollection.TryGetValue(externalVertex.ExternalWorksheetName, out var grid))
                 {

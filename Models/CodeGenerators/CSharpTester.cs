@@ -105,7 +105,7 @@ namespace Thesis.Models.CodeGenerators
         {
             Logger.DispatcherLog(LogItemType.Info, "Generating test report...");
 
-            int passCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
+            int passCount = 0, nullCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
 
             foreach (var keyValuePair in variableNameToVertexDictionary)
             {
@@ -120,7 +120,16 @@ namespace Thesis.Models.CodeGenerators
                     var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
                     var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
 
-                    if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
+                    if (vertex.CellType == CellType.Range)
+                    {
+                        testResult.TestResultType = TestResultType.Ignore;
+                    }
+                    else if (testResult.ActualValue == null)
+                    {
+                        testResult.TestResultType = TestResultType.Null;
+                        nullCount++;
+                    }
+                    else if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
                         // two different numeric types are to be treated as equal types
                         !(expectedValueIsNumeric && actualValueIsNumeric))
                     {
@@ -204,7 +213,7 @@ namespace Thesis.Models.CodeGenerators
                 }
             }
 
-            return new TestReport(passCount, valueMismatchCount, typeMismatchCount, skippedCount);
+            return new TestReport(passCount, nullCount, valueMismatchCount, typeMismatchCount, skippedCount);
         }
 
     }

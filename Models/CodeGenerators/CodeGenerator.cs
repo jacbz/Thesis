@@ -14,6 +14,7 @@ namespace Thesis.Models.CodeGenerators
     {
         private protected List<GeneratedClass> GeneratedClasses;
         private protected Dictionary<string, Vertex> AddressToVertexDictionary;
+        private protected Dictionary<string, Vertex> NamedRangeDictionary;
         public Dictionary<string, Vertex> VariableNameToVertexDictionary { get; set; }
 
         private protected Tester Tester;
@@ -29,10 +30,11 @@ namespace Thesis.Models.CodeGenerators
             return testReport;
         }
 
-        protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary)
+        protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary, Dictionary<string, Vertex> namedRangeDictionary)
         {
             GeneratedClasses = generatedClasses;
             AddressToVertexDictionary = addressToVertexDictionary;
+            NamedRangeDictionary = namedRangeDictionary;
         }
 
         /// <summary>

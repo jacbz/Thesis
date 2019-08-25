@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
+using Syncfusion.XlsIO.Implementation;
 using Thesis.ViewModels;
 using XLParser;
 
@@ -12,6 +13,7 @@ namespace Thesis.Models
     {
         public List<Vertex> Vertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; }
+        public Dictionary<string, Vertex> NamedRangeDictionary { get; set; }
 
         // Preserve copy for filtering purposes
         public List<Vertex> AllVertices { get; set; }
@@ -21,13 +23,14 @@ namespace Thesis.Models
         public List<int> PopulatedRows { get; set; }
         public List<int> PopulatedColumns { get; set; }
 
-        public Graph(IRange cells, Func<string, string, IRange> getExternalCellFunc)
+        public Graph(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames namedRanges)
         {
             var verticesDict = new Dictionary<string, Vertex>();
             var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
 
             Vertices = new List<Vertex>();
             ExternalVertices = new List<Vertex>();
+            NamedRangeDictionary = new Dictionary<string, Vertex>();
 
             foreach (var cell in cells.Cells)
             {
@@ -37,6 +40,37 @@ namespace Thesis.Models
                 Vertices.Add(vertex);
             }
 
+            // assigns a NamedRange name to a Vertex
+            foreach (NameImpl namedRange in namedRanges)
+            {
+                if (!namedRange.Value.Contains(worksheetName)) continue;
+                var namedRangeName = namedRange.Name;
+                var namedRangeAddress = namedRange.AddressLocal;
+
+                // contains more than one cell
+                Vertex namedRangeVertex;
+                if (namedRangeAddress.Contains(":"))
+                {
+                    namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress, namedRange);
+                    foreach (var child in namedRange.Cells)
+                    {
+                        var childVertex = verticesDict[child.AddressLocal];
+                        namedRangeVertex.Children.Add(childVertex);
+                        childVertex.Parents.Add(namedRangeVertex);
+                    }
+                }
+                else
+                {
+                    // simply assign the named range to the variable
+                    if (verticesDict.TryGetValue(namedRangeAddress, out namedRangeVertex))
+                        namedRangeVertex.VariableName = namedRangeName;
+                    else
+                        Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + namedRangeName);
+
+                }
+                NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
+            }
+
             Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
 
             foreach (var vertex in Vertices)
@@ -44,11 +78,12 @@ namespace Thesis.Models
                 if (vertex.ParseTree == null) continue;
                 try
                 {
-                    var (referencedCells, externalReferencedCells) = GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
-                    foreach (var cell in referencedCells)
+                    var (referencedCells, externalReferencedCells, referencedNamedRanges) = 
+                        GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
+                    foreach (var cellAddress in referencedCells)
                     {
-                        vertex.Children.Add(verticesDict[cell]);
-                        verticesDict[cell].Parents.Add(vertex);
+                        vertex.Children.Add(verticesDict[cellAddress]);
+                        verticesDict[cellAddress].Parents.Add(vertex);
                     }
                     // process external cells
                     foreach(var (sheetName, address) in externalReferencedCells)
@@ -76,6 +111,20 @@ namespace Thesis.Models
                                 ExternalVertices.Add(externalVertex);
                                 externalVerticesDict.Add((sheetName, address), externalVertex);
                             }
+                        }
+                    }
+
+                    // process named ranges
+                    foreach (var namedRangeName in referencedNamedRanges)
+                    {
+                        if (NamedRangeDictionary.TryGetValue(namedRangeName, out var namedRangeVertex))
+                        {
+                            vertex.Children.Add(namedRangeVertex);
+                            namedRangeVertex.Parents.Add(vertex);
+                        }
+                        else
+                        {
+                            Logger.Log(LogItemType.Warning, "Could not find named range " + namedRangeName);
                         }
                     }
                 }
@@ -207,16 +256,21 @@ namespace Thesis.Models
                     }
                 }
 
-                vertex.Label.GenerateVariableName();
+                // do not override name if name was already assigned, e.g. per named range
+                if (string.IsNullOrEmpty(vertex.VariableName))
+                    vertex.Label.GenerateVariableName();
             }
             logItem.AppendElapsedTime();
         }
 
         // recursively gets list of referenced cells from parse tree using DFS
-        private (List<string>, List<(string, string)>) GetListOfReferencedCells(string address, ParseTreeNode parseTree)
+        private (List<string> referencedCells, List<(string, string)> externalReferencedCells, List<string> referencedNamedRanges)
+            GetListOfReferencedCells(string address, ParseTreeNode parseTree)
         {
             var referencedCells = new List<string>();
             var externalReferencedCells = new List<(string sheetName, string address)>();
+            var referencedNamedRanges = new List<string>();
+
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
             stack.Push(parseTree);
@@ -231,6 +285,7 @@ namespace Thesis.Models
 
                 visited.Add(node);
 
+                bool processChildren = true;
                 switch (node.Term.Name)
                 {
                     case "ReferenceFunctionCall":
@@ -254,13 +309,14 @@ namespace Thesis.Models
                     case "Cell":
                         var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
                         if (!externalMatch.Equals(default))
-                        {
                             externalReferencedCells.Add((externalMatch.sheetName, node.FindTokenAndGetText()));
-                        }
                         else
-                        {
                             referencedCells.Add(node.FindTokenAndGetText());
-                        }
+                        break;
+                    case "NamedRange":
+                        var namedRangeName = node.FindTokenAndGetText();
+                        referencedNamedRanges.Add(namedRangeName);
+                        processChildren = false;
                         break;
                     case "Prefix":
                         // SheetNameToken vs ParsedSheetNameToken
@@ -288,7 +344,7 @@ namespace Thesis.Models
                     Logger.Log(LogItemType.Warning,
                         $"Skipping user defined function {node.FindTokenAndGetText()} in {address}");
                 }
-                else
+                else if (processChildren)
                 {
                     for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
                     {
@@ -297,7 +353,7 @@ namespace Thesis.Models
                 }
             }
 
-            return (referencedCells, externalReferencedCells);
+            return (referencedCells, externalReferencedCells, referencedNamedRanges);
         }
 
         private void MarkChildNodesAsExternal(HashSet<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)

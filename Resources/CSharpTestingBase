@@ -44,28 +44,32 @@ public static double RoundDown(double value, double digits)
    return Math.Floor(value * power) / power;
 }
 
-// so we don't have to write "new" for a new collection
-public static InternalCollection Collection(params object[] items)
+public class Collection
 {
-	return new InternalCollection(items);
-}
+	public object[] Items { get; set; }
 
-public class InternalCollection
-{
-	public object[] Items { get; }
+	private Collection()
+	{
+		Items = new object[0];
+	}
 
 	// flatten on arrival
-	public InternalCollection(params object[] items)
+	public static Collection Of(params object[] items)
 	{
+		Collection collection = new Collection();
+		if (items == null) return collection;
+
 		var flattenedItems = new List<object>();
 		foreach(object obj in items)
 		{
-			if (obj is InternalCollection ic)
+			if (obj == null) continue;
+			if (obj is Collection ic)
 				flattenedItems.AddRange(ic.Items);
 			else
 				flattenedItems.Add(obj);
 		}
-		Items = flattenedItems.ToArray();
+		collection.Items = flattenedItems.ToArray();
+		return collection;
 	}
 
 	public double Sum()

@@ -116,17 +116,17 @@ namespace Thesis.ViewModels
             var graphLayout = LayoutGraph(generatedClass).ToList();
             var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
+            var nodes = new ObservableCollection<NodeViewModel>();
             var group = new GroupViewModel
             {
-                Nodes = new ObservableCollection<NodeViewModel>()
+                Nodes = nodes
             };
-            var nodes = group.Nodes as ObservableCollection<NodeViewModel>;
 
             double width = VERTEX_BOX * (numOfFormulaColumns + 1) + CLASS_PADDING * 2;
             posX = posX == 0 ? DIAGRAM_PADDING : posX;
             var nextPosX = posX + width + CLASS_SPACING;
             double posY = DIAGRAM_PADDING;
-            double vertexBoxCenter = VERTEX_BOX / 2;
+            double vertexBoxCenter = VERTEX_BOX / 2.0;
 
             var lastColumnX = posX + CLASS_PADDING + numOfFormulaColumns * VERTEX_BOX + vertexBoxCenter;
             var currentRowY = posY + CLASS_PADDING + vertexBoxCenter;
@@ -151,7 +151,7 @@ namespace Thesis.ViewModels
 
                     currentRowY += VERTEX_BOX - smallVertexHeight;
 
-                    var middle = startRowY + (constants.Count - 1) / 2 * smallVertexHeight;
+                    var middle = startRowY + (constants.Count - 1) / 2.0 * smallVertexHeight;
                     for (var i = 0; i < formulas.Count; i++)
                     {
                         var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
@@ -194,15 +194,16 @@ namespace Thesis.ViewModels
                         ViewTemplate = Application.Current.Resources["classLabel"] as DataTemplate
                     }
                 },
-                ZIndex = int.MinValue
+                ZIndex = int.MinValue,
+                ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(generatedClass.Color.ToMColor()))
             };
-            classNode.ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(generatedClass.Color.ToMColor()));
             SetNodeConstraints(classNode);
 
             nodes.Add(classNode);
             return (group, nextPosX);
         }
 
+        // returns as list of vertex lists, each list is a row
         private static IEnumerable<List<Vertex>> LayoutGraph(GeneratedClass generatedClass)
         {
             if (generatedClass.OutputVertex == null)
