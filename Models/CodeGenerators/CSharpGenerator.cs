@@ -344,7 +344,7 @@ namespace Thesis.Models.CodeGenerators
                         {
                             var prefix = node.ChildNodes[0];
                             var sheetName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            sheetName = sheetName.RemoveExclamationMarkAtEnd().ToPascalCase();
+                            sheetName = sheetName.FormatSheetName().ToPascalCase();
                             var address = node.ChildNodes[1].FindTokenAndGetText();
                             return MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,

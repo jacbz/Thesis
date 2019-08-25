@@ -268,7 +268,7 @@ namespace Thesis.Models
                             ? node.ChildNodes[1].FindTokenAndGetText() 
                             : node.FindTokenAndGetText();
                         // remove ! at end of sheet name
-                        sheetName = sheetName.RemoveExclamationMarkAtEnd();
+                        sheetName = sheetName.FormatSheetName();
 
                         // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
                         ParseTreeNode reference = node.Parent(parseTree);
@@ -355,16 +355,17 @@ namespace Thesis.Models
             }
             logItem.AppendElapsedTime();
 
-            var staticVertices = vertexToOutputFieldVertices
+            // vertices used by more than one class
+            var sharedVertices = vertexToOutputFieldVertices
                 .Where(kvp => kvp.Value.Count > 1)
                 .Select(kvp => kvp.Key)
                 .ToList();
 
-            if (staticVertices.Count > 0)
+            if (sharedVertices.Count > 0)
             {
-                var staticClass = new GeneratedClass("Static", null, staticVertices);
-                staticClass.TopologicalSort();
-                classesList.Add(staticClass);
+                var globalClass = new GeneratedClass("Global", null, sharedVertices);
+                globalClass.TopologicalSort();
+                classesList.Add(globalClass);
             }
 
             if (ExternalVertices.Count > 0)

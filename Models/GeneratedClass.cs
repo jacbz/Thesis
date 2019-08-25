@@ -24,8 +24,8 @@ namespace Thesis.Models
                     : v.VariableName.MakeNameVariableConform();
                 v.Class = this;
             });
-            Color = name == "Static" ? StaticColor 
-                : name == "External" ? ExternalColor
+            Color = name == "External" ? ExternalColor
+                : rnd == null ? StaticColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
 

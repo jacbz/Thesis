@@ -43,7 +43,9 @@ namespace Thesis.Views
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
-            spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
+            spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
+                ? _generator.ActiveWorksheet
+                : vertex.ExternalWorksheetName);
             spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.Address.row, vertex.Address.col);
 
             // highlight selected vertex yellow for one second

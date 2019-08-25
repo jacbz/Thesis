@@ -33,10 +33,10 @@ namespace Thesis.Models
                 var attributeStrings = Attributes.Select(h => h.Text.ToPascalCase()).Reverse()
                     .Where(s => !string.IsNullOrWhiteSpace(s)).Distinct();
                 variableName += string.Join("_", attributeStrings);
-                variableName = variableName.FirstToLower();
+                variableName = variableName.ToTitleCase();
             }
 
-            Vertex.VariableName = variableName;
+            Vertex.VariableName = variableName.LowerFirstCharacter();
         }
     }
 

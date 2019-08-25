@@ -66,25 +66,30 @@ namespace Thesis.Models
             return new string(a);
         }
 
-        public static string RemoveExclamationMarkAtEnd(this string sheetName)
+        public static string LowerFirstCharacter(this string s)
         {
-            if (sheetName.Substring(sheetName.Length - 1, 1) == "!")
-                return sheetName.Substring(0, sheetName.Length - 1);
-            return sheetName;
+            if (string.IsNullOrEmpty(s))
+                return string.Empty;
+
+            char[] a = s.ToCharArray();
+            a[0] = char.ToLower(a[0]);
+            return new string(a);
         }
 
-        // String tools
+        public static string FormatSheetName(this string sheetName)
+        {
+            if (sheetName.Substring(sheetName.Length - 1, 1) == "!")
+                sheetName = sheetName.Substring(0, sheetName.Length - 1);
+            if (sheetName.Substring(sheetName.Length - 1, 1) == "'")
+                sheetName = sheetName.Substring(0, sheetName.Length - 1);
+            return sheetName;
+        }
 
         public static string ToCamelCase(this string inputString)
         {
             var output = ToPascalCase(inputString);
             if (output == "") return "";
-            return FirstToLower(output);
-        }
-
-        public static string FirstToLower(this string inputString)
-        {
-            return inputString.First().ToString().ToLower() + inputString.Substring(1);
+            return LowerFirstCharacter(output);
         }
 
         public static string ToPascalCase(this string inputString)
@@ -103,7 +108,12 @@ namespace Thesis.Models
             inputString = inputString.Replace("%", "Percent");
             inputString = Regex.Replace(inputString, "[^0-9a-zA-Z_]+", "");
             if (inputString.Length > 0 && char.IsDigit(inputString.ToCharArray()[0]))
-                inputString = "_" + inputString;
+            {
+                if (char.IsDigit(inputString.ToCharArray()[0]))
+                    inputString = "_" + inputString;
+                else
+                    inputString = inputString.LowerFirstCharacter();
+            }
             return inputString;
         }
 
