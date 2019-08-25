@@ -140,7 +140,7 @@ namespace Thesis.Models.CodeGenerators
             foreach (var constant in constants)
             {
                 // {type} {variableName} = {value};
-                var expression = VertexValueToExpression(constant.CellType, constant.Value);
+                var expression = GenerateConstantVertexField(constant);
                 var field =
                     FieldDeclaration(
                         VariableDeclaration(
@@ -349,12 +349,12 @@ namespace Thesis.Models.CodeGenerators
                         {
                             var prefix = node.ChildNodes[0];
                             var sheetName = prefix.ChildNodes.Count == 2 ? prefix.ChildNodes[1].FindTokenAndGetText() : prefix.FindTokenAndGetText();
-                            sheetName = sheetName.FormatSheetName().ToPascalCase();
+                            sheetName = sheetName.FormatSheetName();
                             var address = node.ChildNodes[1].FindTokenAndGetText();
                             return MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
                                 IdentifierName("External"),
-                                IdentifierName(sheetName + "_" + address));
+                                IdentifierName(Vertex.GenerateExternalVariableName(sheetName, address)));
                         }
                         return RuleNotImplemented(nt);
                     case "ReferenceItem":
@@ -774,7 +774,6 @@ namespace Thesis.Models.CodeGenerators
             {"XOR", (SyntaxKind.ExclusiveOrExpression, true)},
         };
 
-
         private ExpressionSyntax GenerateBinaryExpression(string functionName, ParseTreeNode[] arguments, Vertex vertex)
         {
             if (arguments.Length != 2) return FunctionError(functionName, arguments);
@@ -886,9 +885,10 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private ExpressionSyntax VertexValueToExpression(CellType cellType, dynamic vertexValue)
+        private ExpressionSyntax GenerateConstantVertexField(Vertex vertex)
         {
-            switch (cellType)
+            var vertexValue = vertex.Value;
+            switch (vertex.CellType)
             {
                 case CellType.Bool:
                     return LiteralExpression(vertexValue ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression);
@@ -900,6 +900,8 @@ namespace Thesis.Models.CodeGenerators
                     return ParseExpression($"DateTime.Parse(\"{vertexValue}\")");
                 case CellType.Unknown:
                     return ObjectCreationExpression(IdentifierName("EmptyCell")).WithArgumentList(ArgumentList());
+                case CellType.Range:
+                    return CollectionOf(vertex.Children.Select(c => FormatVariableReference(c, vertex)).ToArray());
                 default:
                     return LiteralExpression(SyntaxKind.NullLiteralExpression);
             }

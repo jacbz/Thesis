@@ -75,7 +75,7 @@ namespace Thesis.Models
                 ParseTree = XLParser.ExcelFormulaParser.Parse(Formula);
         }
 
-        public static Vertex CreateNamedRangeVertex(string namedRangeName, string namedRangeAddress, NameImpl namedRange)
+        public static Vertex CreateNamedRangeVertex(string namedRangeName, string namedRangeAddress)
         {
             var formula = "=" + namedRangeAddress;
             return new Vertex
@@ -89,6 +89,17 @@ namespace Thesis.Models
                 ParseTree = XLParser.ExcelFormulaParser.Parse(formula),
                 VariableName = namedRangeName
             };
+        }
+
+        public void MarkAsExternal(string worksheetName, string variableName)
+        {
+            ExternalWorksheetName = worksheetName;
+            VariableName = GenerateExternalVariableName(worksheetName, variableName);
+        }
+
+        public static string GenerateExternalVariableName(string worksheetName, string variableName)
+        {
+            return worksheetName.MakeNameVariableConform() + "_" + variableName;
         }
 
         public CellType GetCellType(IRange cell)
@@ -124,13 +135,14 @@ namespace Thesis.Models
             return formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
         }
 
-        public HashSet<Vertex> GetReachableVertices()
+        public HashSet<Vertex> GetReachableVertices(bool ignoreExternal = true)
         {
             var vertices = new HashSet<Vertex> { this };
             // exclude external vertices
-            foreach (var v in Children.Where(v => v.NodeType != NodeType.External))
+            foreach (var v in Children)
             {
-                vertices.UnionWith(v.GetReachableVertices());
+                if (ignoreExternal && v.NodeType == NodeType.External) continue;
+                vertices.UnionWith(v.GetReachableVertices(ignoreExternal));
             }
 
             return vertices;

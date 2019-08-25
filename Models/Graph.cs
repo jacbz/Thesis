@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
@@ -43,32 +44,83 @@ namespace Thesis.Models
             // assigns a NamedRange name to a Vertex
             foreach (NameImpl namedRange in namedRanges)
             {
-                if (!namedRange.Value.Contains(worksheetName)) continue;
                 var namedRangeName = namedRange.Name;
                 var namedRangeAddress = namedRange.AddressLocal;
 
-                // contains more than one cell
+                if (namedRangeAddress == null || namedRange.Cells.Length == 0 || namedRangeName == "_xlnm._FilterDatabase") continue;
+
+                // if the named range does not apply globally (which would mean namedRange.Worksheet = null),
+                // but to a specific worksheet, check if is valid currently
+                if (namedRange.Worksheet != null && namedRange.Worksheet.Name != worksheetName) continue;
+
                 Vertex namedRangeVertex;
-                if (namedRangeAddress.Contains(":"))
+
+                // external named ranges
+                var namedRangeWorksheetMatch = new Regex("'?([a-zA-Z0-9-+@#$^&()_,.! ]+)'?!").Match(namedRange.Value);
+                if (!namedRangeWorksheetMatch.Success)
                 {
-                    namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress, namedRange);
-                    foreach (var child in namedRange.Cells)
+                    Logger.Log(LogItemType.Warning, "Could not find worksheet for named range " + namedRangeName);
+                    continue;
+                }
+
+                var namedRangeWorksheetName = namedRangeWorksheetMatch.Groups[1].Value;
+                if (namedRangeWorksheetName != worksheetName)
+                {
+                    namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress);
+                    namedRangeVertex.MarkAsExternal(namedRangeWorksheetName, namedRangeName);
+
+                    ExternalVertices.Add(namedRangeVertex);
+                    if (namedRange.Cells.Length > 1)
                     {
-                        var childVertex = verticesDict[child.AddressLocal];
-                        namedRangeVertex.Children.Add(childVertex);
-                        childVertex.Parents.Add(namedRangeVertex);
+                        // create external cell for each child
+                        foreach (var child in namedRange.Cells)
+                        {
+                            var externalNamedRangeChildVertex = new Vertex(child);
+                            externalNamedRangeChildVertex.MarkAsExternal(namedRangeWorksheetName, child.AddressLocal);
+
+                            namedRangeVertex.Children.Add(externalNamedRangeChildVertex);
+                            externalNamedRangeChildVertex.Parents.Add(namedRangeVertex);
+
+                            ExternalVertices.Add(externalNamedRangeChildVertex);
+                        }
                     }
                 }
                 else
                 {
-                    // simply assign the named range to the variable
-                    if (verticesDict.TryGetValue(namedRangeAddress, out namedRangeVertex))
-                        namedRangeVertex.VariableName = namedRangeName;
+                    if (namedRange.Cells.Length == 1)
+                    {
+                        // simply assign the named range to the
+                        if (verticesDict.TryGetValue(namedRangeAddress, out namedRangeVertex))
+                        {
+                            namedRangeVertex.VariableName = namedRangeName;
+                        }
+                        else
+                        {
+                            Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + namedRangeName);
+                            continue;
+                        }
+                    }
                     else
-                        Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + namedRangeName);
-
+                    {
+                        // contains more than one cell
+                        namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress);
+                        foreach (var child in namedRange.Cells)
+                        {
+                            if (!verticesDict.TryGetValue(child.AddressLocal, out var childVertex))
+                            {
+                                Logger.Log(LogItemType.Warning, "Could not find vertex for address " + child.AddressLocal);
+                                continue;
+                            }
+                            namedRangeVertex.Children.Add(childVertex);
+                            childVertex.Parents.Add(namedRangeVertex);
+                        }
+                    }
                 }
-                NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
+
+                if (NamedRangeDictionary.ContainsKey(namedRangeName))
+                    Logger.Log(LogItemType.Warning, $"A named range with the name {namedRangeName} already exists!");
+                else
+                    NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
             }
 
             Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
@@ -103,8 +155,7 @@ namespace Thesis.Models
                             else
                             {
                                 externalVertex = new Vertex(externalCellIRange);
-                                externalVertex.ExternalWorksheetName = sheetName;
-                                externalVertex.VariableName = sheetName.ToPascalCase() + "_" + address;
+                                externalVertex.MarkAsExternal(sheetName, address);
 
                                 vertex.Children.Add(externalVertex);
                                 externalVertex.Parents.Add(vertex);
@@ -384,9 +435,11 @@ namespace Thesis.Models
 
             // filter external vertices for those which have at least one parent still in the vertices list
             if (AllExternalVertices.Count == 0) return;
-            var logItem2 = Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...", true);
-            ExternalVertices = AllExternalVertices.Where(v => v.Parents.Any(p => Vertices.Contains(p))).ToList();
-            logItem2.AppendElapsedTime();
+            Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...");
+            ExternalVertices = vertices
+                .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.NodeType == NodeType.External)
+                .Distinct()
+                .ToList();
         }
 
         public List<GeneratedClass> GenerateClasses()
@@ -427,6 +480,7 @@ namespace Thesis.Models
             if (ExternalVertices.Count > 0)
             {
                 var externalClass = new GeneratedClass("External", null, ExternalVertices);
+                externalClass.TopologicalSort();
                 classesList.Add(externalClass);
             }
 
