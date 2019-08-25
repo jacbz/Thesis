@@ -221,7 +221,7 @@
                                 <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" ToolTip="If output fields are changed, labels will be newly generated." >
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                                        <TextBlock><Run Text="Filter by selected output fields and generate graph"/></TextBlock>
+                                        <TextBlock><Run Text="Generate graph from selected worksheet and output fields"/></TextBlock>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

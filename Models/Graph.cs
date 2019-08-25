@@ -67,22 +67,17 @@ namespace Thesis.Models
                 if (namedRangeWorksheetName != worksheetName)
                 {
                     namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress);
-                    namedRangeVertex.MarkAsExternal(namedRangeWorksheetName, namedRangeName);
 
-                    ExternalVertices.Add(namedRangeVertex);
-                    if (namedRange.Cells.Length > 1)
+                    // create external cell for each child
+                    foreach (var child in namedRange.Cells)
                     {
-                        // create external cell for each child
-                        foreach (var child in namedRange.Cells)
-                        {
-                            var externalNamedRangeChildVertex = new Vertex(child);
-                            externalNamedRangeChildVertex.MarkAsExternal(namedRangeWorksheetName, child.AddressLocal);
+                        var externalNamedRangeChildVertex = new Vertex(child);
+                        externalNamedRangeChildVertex.MarkAsExternal(namedRangeWorksheetName, child.AddressLocal);
 
-                            namedRangeVertex.Children.Add(externalNamedRangeChildVertex);
-                            externalNamedRangeChildVertex.Parents.Add(namedRangeVertex);
+                        namedRangeVertex.Children.Add(externalNamedRangeChildVertex);
+                        externalNamedRangeChildVertex.Parents.Add(namedRangeVertex);
 
-                            ExternalVertices.Add(externalNamedRangeChildVertex);
-                        }
+                        ExternalVertices.Add(externalNamedRangeChildVertex);
                     }
                 }
                 else
@@ -208,6 +203,8 @@ namespace Thesis.Models
             Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
             foreach (var vertex in Vertices)
             {
+                if (!vertex.IsSpreadsheetCell) continue;
+
                 Label label = new Label(vertex);
                 if (vertex.CellType == CellType.Unknown && vertex.NodeType == NodeType.None)
                 {
@@ -240,7 +237,7 @@ namespace Thesis.Models
             // assign attributes and headers for each data type
             foreach (var vertex in Vertices)
             {
-                if (vertex.Label.Type != LabelType.Data) continue;
+                if (!vertex.IsSpreadsheetCell || vertex.Label.Type != LabelType.Data) continue;
 
                 (int row, int col) currentPos = vertex.Address;
 

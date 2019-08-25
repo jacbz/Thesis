@@ -92,7 +92,7 @@ namespace Thesis.Models.CodeGenerators
 
             // split vertex list into two
             var lookup = generatedClass.Vertices.ToLookup(v => 
-                v.NodeType == NodeType.Constant || v.NodeType == NodeType.External);
+                v.NodeType == NodeType.Constant || v.NodeType == NodeType.External || v.CellType == CellType.Range );
             var constants = lookup[true].ToList();
             var formulas = lookup[false].ToList();
 
