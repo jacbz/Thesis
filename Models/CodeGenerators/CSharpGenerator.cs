@@ -385,6 +385,7 @@ namespace Thesis.Models.CodeGenerators
                 // arithmetic
                 case "+":
                 case "-":
+                {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
                     // adding a Date and a number yields Date.AddDays(number)
@@ -409,41 +410,57 @@ namespace Thesis.Models.CodeGenerators
                     }
 
                     return GenerateBinaryExpression(functionName, arguments, currentVertex);
+                }
 
                 case "*":
                 case "/":
+                {
                     return GenerateBinaryExpression(functionName, arguments, currentVertex);
+                }
                 case "%":
+                {
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     // arguments[0] * 0.01
                     return BinaryExpression(
                         SyntaxKind.MultiplyExpression,
                         TreeNodeToExpression(arguments[0], currentVertex),
                         LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0.01)));
+                }
                 case "^":
+                {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
                     return InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            IdentifierName("Math"), IdentifierName("Pow")))
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                IdentifierName("Math"), IdentifierName("Pow")))
                         .AddArgumentListArguments(
                             Argument(TreeNodeToExpression(arguments[0], currentVertex)),
                             Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+                }
                 case "ROUND":
+                {
                     return RoundFunction("Round", arguments, currentVertex);
+                }
                 case "ROUNDUP":
+                {
                     return RoundFunction("RoundUp", arguments, currentVertex);
+                }
                 case "ROUNDDOWN":
+                {
                     return RoundFunction("RoundDown", arguments, currentVertex);
+                }
                 case "SUM":
                 case "MIN":
                 case "MAX":
+                {
                     // Collection(...).Sum/Min/Max()
                     return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
                         IdentifierName(functionName.ToTitleCase())));
+                }
 
                 // logicial functions
                 case "IF":
+                {
                     if (arguments.Length != 2 && arguments.Length != 3)
                         return FunctionError(functionName, arguments);
 
@@ -487,22 +504,68 @@ namespace Thesis.Models.CodeGenerators
                     }
 
                     return ParenthesizedExpression(ConditionalExpression(condition, whenTrue, whenFalse));
+                }
                 case "AND":
                 case "OR":
                 case "XOR":
+                {
                     if (arguments.Length == 0) return FunctionError(functionName, arguments);
                     if (arguments.Length == 1) return TreeNodeToExpression(arguments[0], currentVertex);
                     return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments, currentVertex));
+                }
                 case "NOT":
+                {
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, 
                         TreeNodeToExpression(arguments[0], currentVertex));
+                }
                 case "TRUE":
+                {
                     return LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                }
                 case "FALSE":
+                {
                     return LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                }
 
+                // IS functions
+                case "ISBLANK":
+                {
+                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
+                    var rightExpression = IdentifierName("EmptyCell");
+                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                }
+                case "ISLOGICAL":
+                {
+                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
+                    var rightExpression = PredefinedType( Token(SyntaxKind.BoolKeyword));
+                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                }
+                case "ISNONTEXT":
+                {
+                    // !(argument[0] is string)
+                    return PrefixUnaryExpression(
+                        SyntaxKind.LogicalNotExpression,
+                        ParenthesizedExpression(FunctionToExpression("ISTEXT", arguments, currentVertex)));
+                }
+                case "ISNUMBER":
+                {
+                    return InvocationExpression(IdentifierName("IsNumeric"))
+                        .AddArgumentListArguments(Argument(TreeNodeToExpression(arguments[0], currentVertex)));
+                }
+                case "ISTEXT":
+                {
+                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
+                    var rightExpression = PredefinedType(Token(SyntaxKind.StringKeyword));
+                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                }
+
+                // comparators
                 case "=":
+                {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
                     var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
                     var rightExpression = TreeNodeToExpression(arguments[1], currentVertex);
@@ -535,26 +598,35 @@ namespace Thesis.Models.CodeGenerators
                         equalsExpression = InvocationExpression(IdentifierName("Equals"))
                             .AddArgumentListArguments(Argument(leftExpression), Argument(rightExpression));
                     }
+
                     return equalsExpression;
+                }
                 case "<>":
                 case "<":
                 case "<=":
                 case ">=":
                 case ">":
+                {
                     return GenerateBinaryExpression(functionName, arguments, currentVertex);
+                }
 
                 // strings
                 case "&":
                 case "CONCATENATE":
+                {
                     if (arguments.Length < 2) return FunctionError(functionName, arguments);
                     return FoldBinaryExpression("+", arguments, currentVertex);
+                }
 
                 case ":":
+                {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
                     return GetRangeExpression(arguments[0], arguments[1], currentVertex);
+                }
 
                 // other
                 case "DATE":
+                {
                     if (arguments.Length != 3) return FunctionError(functionName, arguments);
                     return ObjectCreationExpression(
                             IdentifierName("DateTime"))
@@ -562,38 +634,36 @@ namespace Thesis.Models.CodeGenerators
                             Argument(TreeNodeToExpression(arguments[0], currentVertex)),
                             Argument(TreeNodeToExpression(arguments[1], currentVertex)),
                             Argument(TreeNodeToExpression(arguments[2], currentVertex))
-                            );
+                        );
+                }
                 case "TODAY":
+                {
                     // DateTime.Now
                     return MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         IdentifierName("DateTime"),
                         IdentifierName("Now"));
+                }
                 case "SECOND":
                 case "MINUTE":
                 case "HOUR":
                 case "DAY":
                 case "MONTH":
                 case "YEAR":
+                {
                     if (arguments.Length != 1) return FunctionError(functionName, arguments);
                     return MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         TreeNodeToExpression(arguments[0], currentVertex),
                         IdentifierName(functionName.ToTitleCase()));
+                }
 
                 default:
+                {
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
-                        $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}", true);
+                                             $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}", true);
+                }
             }
-        }
-
-        private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments, Vertex currentVertex)
-        {
-            if (arguments.Length != 2) return FunctionError(roundFunction, arguments);
-            return InvocationExpression(IdentifierName(roundFunction))
-                .AddArgumentListArguments(
-                    Argument(TreeNodeToExpression(arguments[0], currentVertex)),
-                    Argument(TreeNodeToExpression(arguments[1], currentVertex)));
         }
 
         private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>()
@@ -618,6 +688,12 @@ namespace Thesis.Models.CodeGenerators
             { "XOR", CellType.Bool },
             { "TRUE", CellType.Bool },
             { "FALSE", CellType.Bool },
+            
+            { "ISBLANK", CellType.Bool },
+            { "ISLOGICAL", CellType.Bool },
+            { "ISNOTEXT", CellType.Bool },
+            { "ISNUMBER", CellType.Bool },
+            { "ISTEXT", CellType.Bool },
 
             { "=", CellType.Bool },
             { "<>", CellType.Number },
@@ -638,6 +714,14 @@ namespace Thesis.Models.CodeGenerators
             { "MONTH", CellType.Date },
             { "TODAY", CellType.Date },
         };
+        private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments, Vertex currentVertex)
+        {
+            if (arguments.Length != 2) return FunctionError(roundFunction, arguments);
+            return InvocationExpression(IdentifierName(roundFunction))
+                .AddArgumentListArguments(
+                    Argument(TreeNodeToExpression(arguments[0], currentVertex)),
+                    Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+        }
 
         // gets the type of a node
         // if multiple types are found, or type is unknown or dynamic, return null
@@ -764,6 +848,13 @@ namespace Thesis.Models.CodeGenerators
             {"-", (SyntaxKind.SubtractExpression, false)},
             {"/", (SyntaxKind.DivideExpression, true)},
             {"*", (SyntaxKind.MultiplyExpression, true)},
+
+            {"ISBLANK", (SyntaxKind.IsExpression, false)},
+            {"ISLOGICAL", (SyntaxKind.IsExpression, false)},
+            {"ISNOTEXT", (SyntaxKind.IsExpression, false)},
+            {"ISNUMBER", (SyntaxKind.IsExpression, false)},
+            {"ISTEXT", (SyntaxKind.IsExpression, false)},
+
             {"<>", (SyntaxKind.NotEqualsExpression, false)},
             {"<", (SyntaxKind.LessThanExpression, false)},
             {"<=", (SyntaxKind.LessThanOrEqualExpression, false)},

@@ -467,18 +467,18 @@ namespace Thesis.Models
                 .Select(kvp => kvp.Key)
                 .ToList();
 
-            if (sharedVertices.Count > 0)
-            {
-                var globalClass = new GeneratedClass("Global", null, sharedVertices);
-                globalClass.TopologicalSort();
-                classesList.Add(globalClass);
-            }
-
             if (ExternalVertices.Count > 0)
             {
                 var externalClass = new GeneratedClass("External", null, ExternalVertices);
                 externalClass.TopologicalSort();
                 classesList.Add(externalClass);
+            }
+
+            if (sharedVertices.Count > 0)
+            {
+                var globalClass = new GeneratedClass("Global", null, sharedVertices);
+                globalClass.TopologicalSort();
+                classesList.Add(globalClass);
             }
 
             if (Vertices.Count + ExternalVertices.Count != classesList.Sum(l => l.Vertices.Count))
