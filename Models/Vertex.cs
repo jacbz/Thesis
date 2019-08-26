@@ -48,7 +48,7 @@ namespace Thesis.Models
             : NodeType.External;
 
         public NodeViewModel Node { get; set; }
-        public GeneratedClass Class { get; set; }
+        public Class Class { get; set; }
 
         // used in XAML binding
         public string CellTypeString => CellType.ToString();

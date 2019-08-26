@@ -110,10 +110,10 @@ namespace Thesis.ViewModels
             return shapeStyle;
         }
 
-        public static (GroupViewModel group, double nextPosX) FormatClass(this GeneratedClass generatedClass,
+        public static (GroupViewModel group, double nextPosX) FormatClass(this Class @class,
             double posX)
         {
-            var graphLayout = LayoutGraph(generatedClass).ToList();
+            var graphLayout = LayoutGraph(@class).ToList();
             var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
             var nodes = new ObservableCollection<NodeViewModel>();
@@ -174,8 +174,8 @@ namespace Thesis.ViewModels
 
             var classNode = new NodeViewModel
             {
-                ID = generatedClass.Name,
-                Content = generatedClass,
+                ID = @class.Name,
+                Content = @class,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = width,
                 UnitHeight = currentRowY - VERTEX_BOX + CLASS_PADDING,
@@ -190,12 +190,12 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = generatedClass.Name,
+                        Content = @class.Name,
                         ViewTemplate = Application.Current.Resources["classLabel"] as DataTemplate
                     }
                 },
                 ZIndex = int.MinValue,
-                ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(generatedClass.Color.ToMColor()))
+                ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(@class.Color.ToMColor()))
             };
             SetNodeConstraints(classNode);
 
@@ -204,16 +204,16 @@ namespace Thesis.ViewModels
         }
 
         // returns as list of vertex lists, each list is a row
-        private static IEnumerable<List<Vertex>> LayoutGraph(GeneratedClass generatedClass)
+        private static IEnumerable<List<Vertex>> LayoutGraph(Class @class)
         {
-            if (generatedClass.OutputVertex == null)
+            if (@class.OutputVertex == null)
             {
-                foreach (var vertex in generatedClass.Vertices)
+                foreach (var vertex in @class.Vertices)
                     yield return new List<Vertex> {vertex};
             }
             else
             {
-                var vertexQueue = new Queue<Vertex>(generatedClass.Vertices);
+                var vertexQueue = new Queue<Vertex>(@class.Vertices);
                 yield return new List<Vertex> {vertexQueue.Dequeue()};
                 while (vertexQueue.Count > 0)
                 {

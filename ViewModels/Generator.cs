@@ -21,11 +21,12 @@ namespace Thesis.ViewModels
         private readonly MainWindow _window;
 
         public Graph Graph { get; set; }
+        public ClassCollection ClassCollection { get; set; }
+        public Code Code { get; set; }
+
         public bool HideConnections { get; set; }
-        public List<GeneratedClass> GeneratedClasses { get; set; }
         public ObservableCollection<Vertex> OutputVertices { get; set; }
         public string ActiveWorksheet { get; set; }
-        public CodeGenerator CodeGenerator { get; set; }
 
         public Generator(MainWindow mainWindow)
         {
@@ -46,7 +47,7 @@ namespace Thesis.ViewModels
             var (rowCount, columnCount) = _window.GetSheetDimensions();
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
-            Graph = new Graph(ActiveWorksheet, allCells, _window.GetCellFromWorksheet, _window.spreadsheet.Workbook.Names);
+            Graph = Graph.FromSpreadsheet(ActiveWorksheet, allCells, _window.GetCellFromWorksheet, _window.spreadsheet.Workbook.Names);
             Logger.Log(LogItemType.Success, "Graph generation successful.");
 
             _window.generateGraphButton.IsEnabled = true;
@@ -144,7 +145,7 @@ namespace Thesis.ViewModels
             _window.diagram2.Groups = new GroupCollection();
 
             double nextPos = 0;
-            foreach (var generatedClass in GeneratedClasses)
+            foreach (var generatedClass in ClassCollection.Classes)
             {
                 var (group, nextPosX) = generatedClass.FormatClass(nextPos);
                 nextPos = nextPosX;
@@ -183,11 +184,11 @@ namespace Thesis.ViewModels
         {
             var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
 
-            GeneratedClasses = Graph.GenerateClasses();
+            ClassCollection = ClassCollection.FromGraph(Graph);
 
             logItem.AppendElapsedTime();
             _window.ResetSpreadsheetColors();
-            foreach (var generatedClass in GeneratedClasses)
+            foreach (var generatedClass in ClassCollection.Classes)
             {
                 _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => v.NodeType != NodeType.External), 
                     (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); }, 
@@ -199,7 +200,7 @@ namespace Thesis.ViewModels
 
             LayoutClasses();
 
-            Logger.Log(LogItemType.Success, $"Generated {GeneratedClasses.Count} classes.");
+            Logger.Log(LogItemType.Success, $"Generated {ClassCollection.Classes.Count} classes.");
         }
 
         public async Task GenerateCode()
@@ -212,16 +213,19 @@ namespace Thesis.ViewModels
                 .Where(v => !string.IsNullOrEmpty(v.StringAddress))
                 .ToDictionary(v => v.StringAddress, v => v);
             // implement different languages here
+            CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    CodeGenerator = new CSharpGenerator(GeneratedClasses, addressToVertexDictionary, Graph.NamedRangeDictionary);
+                    codeGenerator = new CSharpGenerator(ClassCollection, addressToVertexDictionary, Graph.NamedRangeDictionary);
                     break;
             }
-            var code = await CodeGenerator.GenerateCodeAsync();
+
+            Code = await Code.GenerateFrom(codeGenerator);
             logItem.AppendElapsedTime();
 
-            _window.codeTextBox.Text = code;
+            _window.codeTextBox.Text = Code.SourceCode;
+
             Logger.Log(LogItemType.Success, $"Successfully generated code.");
         }
 
@@ -229,9 +233,9 @@ namespace Thesis.ViewModels
         {
             Logger.Log(LogItemType.Info, $"Testing code...");
 
-            if (CodeGenerator != null)
+            if (Code != null)
             {
-                var report = await Task.Run(() => CodeGenerator.GenerateTestReportAsync());
+                var report = await Task.Run(() => Code.GenerateTestReportAsync());
 
                 _window.codeTextBox.Text = report.Code;
                 Logger.Log(report.NullCount == 0

@@ -7,12 +7,12 @@ using Thesis.ViewModels;
 
 namespace Thesis.Models
 {
-    public class GeneratedClass
+    public class Class
     {
         public static readonly Color StaticColor = ColorTranslator.FromHtml("#CFD8DC");
         public static readonly Color ExternalColor = ColorTranslator.FromHtml("#AFEEEE");
 
-        public GeneratedClass(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
+        public Class(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
         {
             Name = name;
             OutputVertex = outputVertex;

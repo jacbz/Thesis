@@ -183,11 +183,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Models\ClassCollection.cs" />
+    <Compile Include="Models\Code.cs" />
     <Compile Include="Models\CodeGenerators\CodeGenerator.cs" />
     <Compile Include="Models\CodeGenerators\CSharpGenerator.cs" />
     <Compile Include="Models\CodeGenerators\CSharpTester.cs" />
     <Compile Include="Models\CodeGenerators\Tester.cs" />
-    <Compile Include="Models\GeneratedClass.cs" />
+    <Compile Include="Models\Class.cs" />
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\Label.cs" />
     <Compile Include="Models\Utility.cs" />
@@ -267,6 +269,7 @@
   <ItemGroup>
     <None Include="Resources\CSharpTestingBase" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.0.0\build\Fody.targets" Condition="Exists('packages\Fody.6.0.0\build\Fody.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

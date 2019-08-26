@@ -216,10 +216,10 @@ namespace Thesis.Views
 
         private void CodeTextBoxSelectionChanged(object sender, EventArgs e)
         {
-            if (_generator.CodeGenerator?.VariableNameToVertexDictionary == null) return;
+            if (_generator.Code?.VariableNameToVertexDictionary == null) return;
 
             var selection = codeTextBox.SelectedText;
-            if (_generator.CodeGenerator.VariableNameToVertexDictionary.TryGetValue(selection, out var vertex))
+            if (_generator.Code.VariableNameToVertexDictionary.TryGetValue(selection, out var vertex))
             {
                 SelectVertexInSpreadsheet(vertex);
                 InitiateToolbox(vertex);

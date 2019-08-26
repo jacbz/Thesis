@@ -22,25 +22,26 @@ namespace Thesis.Models.CodeGenerators
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
-        public CSharpGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary, Dictionary<string, Vertex> namedRangeDictionary) 
-            : base(generatedClasses, addressToVertexDictionary, namedRangeDictionary)
+        public CSharpGenerator(
+            ClassCollection classCollection,
+            Dictionary<string, Vertex> addressToVertexDictionary,
+            Dictionary<string, Vertex> namedRangeDictionary) :
+            base(classCollection, addressToVertexDictionary, namedRangeDictionary)
         {
         }
 
-        public override async Task<string> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null)
+        public override async Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null)
         {
             return await Task.Run(() => GenerateCode(testResults));
         }
 
-        public string GenerateCode(Dictionary<string, TestResult> testResults = null)
+        public Code GenerateCode(Dictionary<string, TestResult> testResults = null)
         {
-            Tester = new CSharpTester();
             _usedVariableNames = new HashSet<string>();
             _useDynamic = new HashSet<Vertex>();
 
             // generate variable names for all
             GenerateVariableNamesForAll();
-            VariableNameToVertexDictionary = GeneratedClasses.SelectMany(c => c.Vertices).ToDictionary(v => v.VariableName);
 
             // namespace Thesis
             var @namespace = NamespaceDeclaration(ParseName("Thesis")).NormalizeWhitespace();
@@ -55,11 +56,13 @@ namespace Thesis.Models.CodeGenerators
 
             var normalClasses = new List<MemberDeclarationSyntax>();
             var staticClasses = new List<MemberDeclarationSyntax>();
+            var classesCode = new List<ClassCode>();
 
             // static classes first (must determine which types are dynamic)
-            foreach (var generatedClass in GeneratedClasses.OrderBy(v => !v.IsStaticClass))
+            foreach (var generatedClass in ClassCollection.Classes.OrderBy(v => !v.IsStaticClass))
             {
-                var newClass = GenerateClass(generatedClass, testResults);
+                var (newClass, classCode) = GenerateClass(generatedClass, testResults);
+                classesCode.Add(classCode);
 
                 if (generatedClass.IsStaticClass)
                     staticClasses.Add(newClass);
@@ -76,22 +79,24 @@ namespace Thesis.Models.CodeGenerators
             var workspace = new AdhocWorkspace();
             var options = workspace.Options;
             var node = Formatter.Format(@namespace, workspace, options);
-            var code = node.ToFullString();
+            var sourceCode = node.ToFullString();
 
-            return code;
+            var variableNameToVertexDictionary = ClassCollection.Classes.SelectMany(c => c.Vertices).ToDictionary(v => v.VariableName);
+            return new Code(sourceCode, variableNameToVertexDictionary, new CSharpTester(classesCode));
         }
 
-        private ClassDeclarationSyntax GenerateClass(GeneratedClass generatedClass, Dictionary<string, TestResult> testResults = null)
+        private (ClassDeclarationSyntax classDeclarationSyntax, ClassCode classCode)
+            GenerateClass(Class @class, Dictionary<string, TestResult> testResults = null)
         {
             // public class {generatedClass.Name}
-            var newClass = ClassDeclaration(generatedClass.Name)
+            var newClass = ClassDeclaration(@class.Name)
                 .AddModifiers(Token(SyntaxKind.PublicKeyword));
             // static classes are static
-            if (generatedClass.IsStaticClass)
+            if (@class.IsStaticClass)
                 newClass = newClass.AddModifiers(Token(SyntaxKind.StaticKeyword));
 
             // split vertex list into two
-            var lookup = generatedClass.Vertices.ToLookup(v => 
+            var lookup = @class.Vertices.ToLookup(v => 
                 v.NodeType == NodeType.Constant || v.NodeType == NodeType.External || v.CellType == CellType.Range );
             var constants = lookup[true].ToList();
             var formulas = lookup[false].ToList();
@@ -102,7 +107,7 @@ namespace Thesis.Models.CodeGenerators
             {
                 var expression = TreeNodeToExpression(formula.ParseTree, formula);
 
-                if (generatedClass.IsStaticClass)
+                if (@class.IsStaticClass)
                 {
                     // for static classes: omit type name as already declared
 
@@ -148,7 +153,7 @@ namespace Thesis.Models.CodeGenerators
                             .AddVariables(VariableDeclarator(constant.VariableName)
                                 .WithInitializer(
                                     EqualsValueClause(expression))));
-                if (generatedClass.IsStaticClass)
+                if (@class.IsStaticClass)
                     field = field.AddModifiers(
                         Token(SyntaxKind.PublicKeyword),
                         Token(SyntaxKind.StaticKeyword));
@@ -159,7 +164,7 @@ namespace Thesis.Models.CodeGenerators
             }
 
             // extra fields for static classes
-            if (generatedClass.IsStaticClass)
+            if (@class.IsStaticClass)
             {
                 // add formula fields
                 foreach (var formula in formulas)
@@ -179,19 +184,19 @@ namespace Thesis.Models.CodeGenerators
             if (statements.Count > 0)
             {
                 // generate Calculate/Init method
-                var method = GenerateMethod(generatedClass, statements);
+                var method = GenerateMethod(@class, statements);
 
                 // add fields and method to class
                 newClass = newClass.AddMembers(method);
             }
 
-            Tester.ClassesCode.Add(new ClassCode(
-                generatedClass.IsStaticClass,
-                generatedClass.Name,
+            var classCode = new ClassCode(
+                @class.IsStaticClass,
+                @class.Name,
                 newClass.NormalizeWhitespace().ToFullString(),
                 string.Join("\n", fields.Select(f => f.NormalizeWhitespace().ToFullString())),
-                string.Join("\n", statements.Select(f => f.NormalizeWhitespace().ToFullString()))));
-            return newClass;
+                string.Join("\n", statements.Select(f => f.NormalizeWhitespace().ToFullString())));
+            return (newClass, classCode);
         }
 
         private IdentifierNameSyntax GenerateTypeWithComment(string typeString, string comment)
@@ -212,9 +217,9 @@ namespace Thesis.Models.CodeGenerators
                     TriviaList()));
         }
 
-        private MemberDeclarationSyntax GenerateMethod(GeneratedClass generatedClass, List<StatementSyntax> statements)
+        private MemberDeclarationSyntax GenerateMethod(Class @class, List<StatementSyntax> statements)
         {
-            if (generatedClass.IsStaticClass)
+            if (@class.IsStaticClass)
             {
                 // public static void Init()
                 var initMethod = MethodDeclaration(ParseTypeName("void"), "Init")
@@ -227,10 +232,10 @@ namespace Thesis.Models.CodeGenerators
             else
             {
                 // return output vertex
-                statements.Add(ReturnStatement(IdentifierName(generatedClass.OutputVertex.VariableName)));
+                statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.VariableName)));
 
                 // public {type} Calculate()
-                var outputField = generatedClass.OutputVertex;
+                var outputField = @class.OutputVertex;
                 var calculateMethod = MethodDeclaration(ParseTypeName(GetTypeString(outputField)), "Calculate")
                     .AddModifiers(
                         Token(SyntaxKind.PublicKeyword))
@@ -254,7 +259,7 @@ namespace Thesis.Models.CodeGenerators
 
             // method body
             var methodBody = new List<StatementSyntax>();
-            foreach (var generatedClass in GeneratedClasses
+            foreach (var generatedClass in ClassCollection.Classes
                 .Where(c => c.Vertices.Count(v => v.NodeType != NodeType.Constant && v.NodeType != NodeType.External) > 0)
                 .OrderBy(v => !v.IsStaticClass))
             {
@@ -301,7 +306,7 @@ namespace Thesis.Models.CodeGenerators
         private void GenerateVariableNamesForAll()
         {
             _usedVariableNames = CreateUsedVariableHashSet();
-            foreach (var generatedClass in GeneratedClasses)
+            foreach (var generatedClass in ClassCollection.Classes)
             {
                 generatedClass.Name = GenerateUniqueName(generatedClass.Name, _usedVariableNames);
                 foreach (var vertex in generatedClass.Vertices)
@@ -666,7 +671,7 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>()
+        private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>
         {
             { "+", CellType.Unknown },
             { "-", CellType.Number },
@@ -714,6 +719,7 @@ namespace Thesis.Models.CodeGenerators
             { "MONTH", CellType.Date },
             { "TODAY", CellType.Date },
         };
+
         private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments, Vertex currentVertex)
         {
             if (arguments.Length != 2) return FunctionError(roundFunction, arguments);

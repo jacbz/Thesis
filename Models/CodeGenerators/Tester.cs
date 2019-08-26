@@ -9,18 +9,21 @@ namespace Thesis.Models.CodeGenerators
 {
     public abstract class Tester
     {
-        public List<ClassCode> ClassesCode { get; set; }
+        public List<ClassCode> ClassesCode { get; }
         public Dictionary<string, TestResult> VariableToTestResultDictionary { get; set; }
+
+        protected Tester(List<ClassCode> classesCode)
+        {
+            ClassesCode = classesCode;
+            VariableToTestResultDictionary = new Dictionary<string, TestResult>();
+        }
+
         public abstract Task PerformTestAsync();
         public abstract TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary);
 
+
+
         public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int || o is long || o is float || o is double || o is decimal;
-
-
-        protected Tester()
-        {
-            ClassesCode = new List<ClassCode>();
-        }
     }
 
     public class TestReport
@@ -56,24 +59,7 @@ namespace Thesis.Models.CodeGenerators
         Skipped,
         Ignore
     }
-
-    public class ClassCode
-    {
-        public bool IsStaticClass { get; }
-        public string ClassName { get; }
-        public string Code { get; }
-        public string FieldsCode { get; }
-        public string MethodBodyCode { get; }
-
-        public ClassCode(bool isStaticClass, string className, string code, string fieldsCode, string methodBodyCode)
-        {
-            IsStaticClass = isStaticClass;
-            ClassName = className;
-            Code = code;
-            FieldsCode = fieldsCode;
-            MethodBodyCode = methodBodyCode;
-        }
-    }
+    
 
     public class TestResult
     {
@@ -116,6 +102,24 @@ namespace Thesis.Models.CodeGenerators
                 default:
                     return "// Error";
             }
+        }
+    }
+
+    public class ClassCode
+    {
+        public bool IsStaticClass { get; }
+        public string ClassName { get; }
+        public string Code { get; }
+        public string FieldsCode { get; }
+        public string MethodBodyCode { get; }
+
+        public ClassCode(bool isStaticClass, string className, string code, string fieldsCode, string methodBodyCode)
+        {
+            IsStaticClass = isStaticClass;
+            ClassName = className;
+            Code = code;
+            FieldsCode = fieldsCode;
+            MethodBodyCode = methodBodyCode;
         }
     }
 }

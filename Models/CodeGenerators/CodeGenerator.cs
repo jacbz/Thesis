@@ -12,27 +12,18 @@ namespace Thesis.Models.CodeGenerators
 {
     public abstract class CodeGenerator
     {
-        private protected List<GeneratedClass> GeneratedClasses;
-        private protected Dictionary<string, Vertex> AddressToVertexDictionary;
-        private protected Dictionary<string, Vertex> NamedRangeDictionary;
-        public Dictionary<string, Vertex> VariableNameToVertexDictionary { get; set; }
+        protected ClassCollection ClassCollection;
+        protected Dictionary<string, Vertex> AddressToVertexDictionary;
+        protected Dictionary<string, Vertex> NamedRangeDictionary;
 
-        private protected Tester Tester;
+        public abstract Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null);
 
-        public abstract Task<string> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null);
-
-        public async Task<TestReport> GenerateTestReportAsync()
+        protected CodeGenerator(
+            ClassCollection classCollection,
+            Dictionary<string, Vertex> addressToVertexDictionary,
+            Dictionary<string, Vertex> namedRangeDictionary)
         {
-            await Tester.PerformTestAsync();
-            var testReport = Tester.GenerateTestReport(VariableNameToVertexDictionary);
-            Logger.DispatcherLog(LogItemType.Info, "Generating code with test results as comments...");
-            testReport.Code = await GenerateCodeAsync(Tester.VariableToTestResultDictionary);
-            return testReport;
-        }
-
-        protected CodeGenerator(List<GeneratedClass> generatedClasses, Dictionary<string, Vertex> addressToVertexDictionary, Dictionary<string, Vertex> namedRangeDictionary)
-        {
-            GeneratedClasses = generatedClasses;
+            ClassCollection = classCollection;
             AddressToVertexDictionary = addressToVertexDictionary;
             NamedRangeDictionary = namedRangeDictionary;
         }

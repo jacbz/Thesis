@@ -24,21 +24,25 @@ namespace Thesis.Models
         public List<int> PopulatedRows { get; set; }
         public List<int> PopulatedColumns { get; set; }
 
-        public Graph(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames namedRanges)
+        public Graph()
         {
-            var verticesDict = new Dictionary<string, Vertex>();
-            var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
-
             Vertices = new List<Vertex>();
             ExternalVertices = new List<Vertex>();
             NamedRangeDictionary = new Dictionary<string, Vertex>();
+        }
+
+        public static Graph FromSpreadsheet(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames namedRanges)
+        {
+            Graph graph = new Graph();
+            var verticesDict = new Dictionary<string, Vertex>();
+            var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
 
             foreach (var cell in cells.Cells)
             {
                 var vertex = new Vertex(cell);
 
                 verticesDict.Add(vertex.StringAddress, vertex);
-                Vertices.Add(vertex);
+                graph.Vertices.Add(vertex);
             }
 
             // assigns a NamedRange name to a Vertex
@@ -77,7 +81,7 @@ namespace Thesis.Models
                         namedRangeVertex.Children.Add(externalNamedRangeChildVertex);
                         externalNamedRangeChildVertex.Parents.Add(namedRangeVertex);
 
-                        ExternalVertices.Add(externalNamedRangeChildVertex);
+                        graph.ExternalVertices.Add(externalNamedRangeChildVertex);
                     }
                 }
                 else
@@ -112,21 +116,21 @@ namespace Thesis.Models
                     }
                 }
 
-                if (NamedRangeDictionary.ContainsKey(namedRangeName))
+                if (graph.NamedRangeDictionary.ContainsKey(namedRangeName))
                     Logger.Log(LogItemType.Warning, $"A named range with the name {namedRangeName} already exists!");
                 else
-                    NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
+                    graph.NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
             }
 
-            Logger.Log(LogItemType.Info, $"Considering {Vertices.Count} vertices...");
+            Logger.Log(LogItemType.Info, $"Considering {graph.Vertices.Count} vertices...");
 
-            foreach (var vertex in Vertices)
+            foreach (var vertex in graph.Vertices)
             {
                 if (vertex.ParseTree == null) continue;
                 try
                 {
-                    var (referencedCells, externalReferencedCells, referencedNamedRanges) = 
-                        GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
+                    var (referencedCells, externalReferencedCells, referencedNamedRanges) =
+                        graph.GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
                     foreach (var cellAddress in referencedCells)
                     {
                         vertex.Children.Add(verticesDict[cellAddress]);
@@ -154,7 +158,7 @@ namespace Thesis.Models
 
                                 vertex.Children.Add(externalVertex);
                                 externalVertex.Parents.Add(vertex);
-                                ExternalVertices.Add(externalVertex);
+                                graph.ExternalVertices.Add(externalVertex);
                                 externalVerticesDict.Add((sheetName, address), externalVertex);
                             }
                         }
@@ -163,7 +167,7 @@ namespace Thesis.Models
                     // process named ranges
                     foreach (var namedRangeName in referencedNamedRanges)
                     {
-                        if (NamedRangeDictionary.TryGetValue(namedRangeName, out var namedRangeVertex))
+                        if (graph.NamedRangeDictionary.TryGetValue(namedRangeName, out var namedRangeVertex))
                         {
                             vertex.Children.Add(namedRangeVertex);
                             namedRangeVertex.Parents.Add(vertex);
@@ -181,19 +185,20 @@ namespace Thesis.Models
                 }
             }
 
-            if (ExternalVertices.Count > 0)
-                Logger.Log(LogItemType.Info, $"Discovered {ExternalVertices.Count} external cells.");
+            if (graph.ExternalVertices.Count > 0)
+                Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
 
-            GenerateLabels();
+            graph.GenerateLabels();
 
-            AllVertices = Vertices.ToList();
-            AllExternalVertices = ExternalVertices.ToList();
+            graph.AllVertices = graph.Vertices.ToList();
+            graph.AllExternalVertices = graph.ExternalVertices.ToList();
 
-            PerformTransitiveFilter(GetOutputFields());
+            graph.PerformTransitiveFilter(graph.GetOutputFields());
 
             Logger.Log(LogItemType.Info,
-                $"Filtered for reachable vertices from output fields. {Vertices.Count} remaining");
+                $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
 
+            return graph;
         }
 
         private void GenerateLabels()
@@ -437,54 +442,6 @@ namespace Thesis.Models
                 .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.NodeType == NodeType.External)
                 .Distinct()
                 .ToList();
-        }
-
-        public List<GeneratedClass> GenerateClasses()
-        {
-            var classesList = new List<GeneratedClass>();
-            var vertexToOutputFieldVertices = Vertices.ToDictionary(v => v, v => new HashSet<Vertex>());
-            var rnd = new Random();
-
-            foreach (var vertex in GetOutputFields())
-            {
-                var reachableVertices = vertex.GetReachableVertices();
-                foreach (var v in reachableVertices) vertexToOutputFieldVertices[v].Add(vertex);
-                var newClass = new GeneratedClass($"Class{vertex.StringAddress}", vertex, reachableVertices.ToList(), rnd);
-                classesList.Add(newClass);
-            }
-
-            var logItem = Logger.Log(LogItemType.Info, "Applying topological sort...", true);
-            foreach (var generatedClass in classesList)
-            {
-                generatedClass.Vertices.RemoveAll(v => vertexToOutputFieldVertices[v].Count > 1);
-                generatedClass.TopologicalSort();
-            }
-            logItem.AppendElapsedTime();
-
-            // vertices used by more than one class
-            var sharedVertices = vertexToOutputFieldVertices
-                .Where(kvp => kvp.Value.Count > 1)
-                .Select(kvp => kvp.Key)
-                .ToList();
-
-            if (ExternalVertices.Count > 0)
-            {
-                var externalClass = new GeneratedClass("External", null, ExternalVertices);
-                externalClass.TopologicalSort();
-                classesList.Add(externalClass);
-            }
-
-            if (sharedVertices.Count > 0)
-            {
-                var globalClass = new GeneratedClass("Global", null, sharedVertices);
-                globalClass.TopologicalSort();
-                classesList.Add(globalClass);
-            }
-
-            if (Vertices.Count + ExternalVertices.Count != classesList.Sum(l => l.Vertices.Count))
-                Logger.Log(LogItemType.Error, "Error creating classes; number of vertices does not match number of vertices in classes");
-
-            return classesList;
         }
     }
 }

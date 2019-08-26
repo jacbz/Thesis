@@ -19,9 +19,14 @@ namespace Thesis.Models.CodeGenerators
             //.WithReferences(typeof(System.Linq.Enumerable).Assembly)
             // required for dynamic
             .WithReferences(typeof(RuntimeBinderException).GetTypeInfo().Assembly.Location);
+
+        public CSharpTester(List<ClassCode> classesCode) : base(classesCode)
+        {
+        }
+
         public override async Task PerformTestAsync()
         {
-            var testResults = new Dictionary<string, TestResult>();
+            VariableToTestResultDictionary.Clear();
 
             var lookup = ClassesCode.ToLookup(c => c.IsStaticClass);
             var staticClasses = lookup[true];
@@ -49,7 +54,7 @@ namespace Thesis.Models.CodeGenerators
 
                     foreach (var testResult in VariablesToTestResults(staticClass.ClassName, testStaticClassState))
                     {
-                        testResults.Add(testResult.VariableName, testResult);
+                        VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
                     }
                     logItem2.DispatcherAppendElapsedTime();
 
@@ -77,7 +82,7 @@ namespace Thesis.Models.CodeGenerators
                     testNormalClassState = await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
                     foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
                     {
-                        testResults.Add(testResult.VariableName, testResult);
+                        VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
                     }
                     logItem2.DispatcherAppendElapsedTime();
                 }
@@ -86,8 +91,6 @@ namespace Thesis.Models.CodeGenerators
                     LogException(ex, normalClass.ClassName);
                 }
             }
-
-            VariableToTestResultDictionary = testResults;
         }
 
         private static void LogException(Exception ex, string className)

@@ -71,8 +71,8 @@ namespace Thesis.Views
         public (int rowCount, int columnCount) GetSheetDimensions()
         {
             if (spreadsheet.ActiveSheet == null) return (0, 0);
-            var rowCount = Math.Min(1024, spreadsheet.ActiveSheet.Rows.Length);
-            var columnCount = Math.Min(64, spreadsheet.ActiveSheet.Columns.Length);
+            var rowCount = spreadsheet.ActiveSheet.UsedRange.LastRow;
+            var columnCount = spreadsheet.ActiveSheet.UsedRange.LastColumn;
             return (rowCount, columnCount);
         }
 
