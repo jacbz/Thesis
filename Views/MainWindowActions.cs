@@ -10,8 +10,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.Windows.Shared;
 using Syncfusion.XlsIO;
 using Thesis.Models;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Views
@@ -44,37 +46,38 @@ namespace Thesis.Views
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
-            if (!vertex.IsSpreadsheetCell) return;
+            if (!(vertex is CellVertex cell)) return;
 
-            spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
+            spreadsheet.SetActiveSheet(string.IsNullOrEmpty(cell.ExternalWorksheetName) 
                 ? _generator.ActiveWorksheet
-                : vertex.ExternalWorksheetName);
-            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(vertex.Address.row, vertex.Address.col);
+                : cell.ExternalWorksheetName);
+            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(cell.Address.row, cell.Address.col);
 
             // highlight selected vertex yellow for one second
-            var cell = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
-            var originalBgColor = cell.CellStyle.Color;
+            var spreadsheetCell = spreadsheet.ActiveSheet.Range[cell.StringAddress];
+            var originalBgColor = spreadsheetCell.CellStyle.Color;
             if (spreadsheet.Tag != null) return;
             spreadsheet.Tag = true;
-            cell.CellStyle.Color = Color.Yellow;
-            spreadsheet.ActiveGrid.InvalidateCell(vertex.Address.row, vertex.Address.col);
+            spreadsheetCell.CellStyle.Color = Color.Yellow;
+            spreadsheet.ActiveGrid.InvalidateCell(cell.Address.row, cell.Address.col);
             Task.Factory.StartNew(() => Thread.Sleep(1000))
                 .ContinueWith((t) =>
                 {
-                    cell.CellStyle.Color = originalBgColor;
-                    spreadsheet.ActiveGrid.InvalidateCell(vertex.Address.row, vertex.Address.col);
+                    spreadsheetCell.CellStyle.Color = originalBgColor;
+                    spreadsheet.ActiveGrid.InvalidateCell(cell.Address.row, cell.Address.col);
                     spreadsheet.Tag = null;
                 }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void SelectVertexInDiagrams(Vertex vertex)
         {
-            if (diagram.Nodes == null) return;
+            if (diagram.Nodes == null || !(vertex is CellVertex cell)) return;
+
             foreach (var node in (DiagramCollection<NodeViewModel>)diagram.Nodes)
-                if (node.Content is Vertex nodeVertex)
+                if (node.Content is CellVertex nodeCell)
                 {
-                    if (nodeVertex.Address.row == vertex.Address.row &&
-                        nodeVertex.Address.col == vertex.Address.col)
+                    if (nodeCell.Address.row == cell.Address.row &&
+                        nodeCell.Address.col == cell.Address.col)
                     {
                         node.IsSelected = true;
                         (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
@@ -89,10 +92,10 @@ namespace Thesis.Views
             if (diagram2.Groups == null) return;
             foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
             foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
-                if (node.Content is Vertex nodeVertex)
+                if (node.Content is CellVertex nodeCell)
                 {
-                    if (nodeVertex.Address.row == vertex.Address.row &&
-                        nodeVertex.Address.col == vertex.Address.col)
+                    if (nodeCell.Address.row == cell.Address.row &&
+                        nodeCell.Address.col == cell.Address.col)
                     {
                         node.IsSelected = true;
                         (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
@@ -107,11 +110,11 @@ namespace Thesis.Views
 
         private void SelectVertexInOutputListView(Vertex vertex)
         {
-            if (vertex.NodeType == NodeType.OutputField)
+            if (vertex is CellVertex cell && cell.NodeType == NodeType.OutputField)
             {
                 outputFieldsListView.Tag = true; // avoiding triggering OutputFieldsListView_SelectionChanged
-                outputFieldsListView.ScrollIntoView(vertex);
-                outputFieldsListView.SelectedItem = vertex;
+                outputFieldsListView.ScrollIntoView(cell);
+                outputFieldsListView.SelectedItem = cell;
                 outputFieldsListView.Tag = null;
             }
         }
@@ -124,14 +127,14 @@ namespace Thesis.Views
         public void ResetAndColorAllCells(List<Vertex> allVertices)
         {
             ResetSpreadsheetColors();
-            ColorSpreadsheetCells(allVertices, StyleCellByLabelType, StyleBorderByNodeType);
+            ColorSpreadsheetCells(allVertices.GetCellVertices(), StyleCellByLabelType, StyleBorderByNodeType);
             spreadsheet.ActiveGrid.InvalidateCells();
         }
 
-        public void StyleCellByLabelType(Vertex vertex, IStyle cellStyle)
+        public void StyleCellByLabelType(CellVertex cellVertex, IStyle cellStyle)
         {
             Color color;
-            switch (vertex.Label.Type)
+            switch (cellVertex.Label.Type)
             {
                 case LabelType.Attribute:
                     color = ((System.Windows.Media.Color)Application.Current.Resources["AttributeColor"]).ToDColor();
@@ -156,10 +159,10 @@ namespace Thesis.Views
             cellStyle.Font.RGBColor = color.GetTextColor();
         }
 
-        public void StyleBorderByNodeType(Vertex vertex, IBorders borderStyle)
+        public void StyleBorderByNodeType(CellVertex cellVertex, IBorders borderStyle)
         {
-            borderStyle.ColorRGB = vertex.GetNodeTypeColor();
-            borderStyle.LineStyle = vertex.NodeType == NodeType.None ? ExcelLineStyle.None : ExcelLineStyle.Thick;
+            borderStyle.ColorRGB = cellVertex.GetNodeTypeColor();
+            borderStyle.LineStyle = cellVertex.NodeType == NodeType.None ? ExcelLineStyle.None : ExcelLineStyle.Thick;
         }
 
         /// <summary>
@@ -168,7 +171,7 @@ namespace Thesis.Views
         /// <param name="vertices">Cells to style</param>
         /// <param name="styleCell">Cell styling function</param>
         /// <param name="styleBorder">Border styling function</param>
-        public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<Vertex, IStyle> styleCell, Action<Vertex, IBorders> styleBorder)
+        public void ColorSpreadsheetCells(IEnumerable<CellVertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
         {
             foreach (var vertex in vertices.Where(v => v.IsSpreadsheetCell))
             {

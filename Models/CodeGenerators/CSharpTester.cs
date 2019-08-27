@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CSharp.RuntimeBinder;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
@@ -115,92 +116,96 @@ namespace Thesis.Models.CodeGenerators
                 var variableName = keyValuePair.Key;
                 var vertex = keyValuePair.Value;
 
-                if (vertex.NodeType == NodeType.Constant || vertex.NodeType == NodeType.External) continue;
-
                 if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
                 {
-                    testResult.ExpectedValue = vertex.Value;
-                    var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
-                    var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
-
-                    if (vertex.CellType == CellType.Range)
+                    if (vertex is RangeVertex)
                     {
                         testResult.TestResultType = TestResultType.Ignore;
                     }
-                    else if (testResult.ActualValue == null)
-                    {
-                        testResult.TestResultType = TestResultType.Null;
-                        nullCount++;
-                    }
-                    else if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
-                        // two different numeric types are to be treated as equal types
-                        !(expectedValueIsNumeric && actualValueIsNumeric))
-                    {
-                        // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
-                        if (vertex.CellType == CellType.Number &&
-                            testResult.ExpectedValue is string percentNumber &&
-                            percentNumber.Contains("%") &&
-                            double.TryParse(percentNumber.Replace("%", ""), out double number))
-                        {
-                            if (actualValueIsNumeric && testResult.ActualValue == number * 0.01)
-                            {
-                                testResult.Annotation = "expected percentage but value matches that percentage";
-                                testResult.TestResultType = TestResultType.Pass;
-                                passCount++;
-                                continue;
-                            }
-                        }
-
-                        // handle EmptyCell
-                        if (testResult.ActualValue.GetType().Name.Contains("EmptyCell"))
-                        {
-                            if (expectedValueIsNumeric && Equals(testResult.ActualValue, 0) ||
-                               testResult.ExpectedValue is string s && s == "" ||
-                               testResult.ExpectedValue is bool b && b == false)
-                            {
-                                testResult.Annotation = "empty cell";
-                                testResult.TestResultType = TestResultType.Pass;
-                                passCount++;
-                                continue;
-                            }
-                        }
-
-                        testResult.TestResultType = TestResultType.TypeMismatch;
-                        typeMismatchCount++;
-                    }
-                    else if (testResult.ExpectedValue != testResult.ActualValue)
-                    {
-                        // allow mismatch in DateTime Hour, Second as functions like TODAY() will yield different times
-                        if (testResult.ExpectedValue is DateTime dt1 && testResult.ActualValue is DateTime dt2
-                                                                     && dt1.Year == dt2.Year &&
-                                                                     dt1.Month == dt2.Month && dt1.Day == dt2.Day)
-                        {
-                            testResult.Annotation = "ignored mismatch in hour/second";
-                            testResult.TestResultType = TestResultType.Pass;
-                            passCount++;
-                            continue;
-                        }
-
-                        if (expectedValueIsNumeric && actualValueIsNumeric)
-                        {
-                            double epsilon = Math.Abs(Convert.ToDouble(testResult.ActualValue) - 
-                                                      Convert.ToDouble(testResult.ExpectedValue));
-                            if (epsilon <= 0.0000001)
-                            {
-                                testResult.Annotation = $"difference of {epsilon:E}";
-                                testResult.TestResultType = TestResultType.Pass;
-                                passCount++;
-                                continue;
-                            }
-                        }
-
-                        testResult.TestResultType = TestResultType.ValueMismatch;
-                        valueMismatchCount++;
-                    }
                     else
                     {
-                        testResult.TestResultType = TestResultType.Pass;
-                        passCount++;
+                        var cellVertex = (CellVertex)keyValuePair.Value;
+                        if (cellVertex.NodeType == NodeType.Constant || cellVertex.IsExternal) continue;
+
+                        testResult.ExpectedValue = cellVertex.Value;
+                        var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
+                        var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
+
+                        if (testResult.ActualValue == null)
+                        {
+                            testResult.TestResultType = TestResultType.Null;
+                            nullCount++;
+                        }
+                        else if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
+                            // two different numeric types are to be treated as equal types
+                            !(expectedValueIsNumeric && actualValueIsNumeric))
+                        {
+                            // test for strings with %, e.g. 0,02 should pass with the expected value was "2%"
+                            if (cellVertex.CellType == CellType.Number &&
+                                testResult.ExpectedValue is string percentNumber &&
+                                percentNumber.Contains("%") &&
+                                double.TryParse(percentNumber.Replace("%", ""), out double number))
+                            {
+                                if (actualValueIsNumeric && testResult.ActualValue == number * 0.01)
+                                {
+                                    testResult.Annotation = "expected percentage but value matches that percentage";
+                                    testResult.TestResultType = TestResultType.Pass;
+                                    passCount++;
+                                    continue;
+                                }
+                            }
+
+                            // handle EmptyCell
+                            if (testResult.ActualValue.GetType().Name.Contains("EmptyCell"))
+                            {
+                                if (expectedValueIsNumeric && Equals(testResult.ActualValue, 0) ||
+                                   testResult.ExpectedValue is string s && s == "" ||
+                                   testResult.ExpectedValue is bool b && b == false)
+                                {
+                                    testResult.Annotation = "empty cell";
+                                    testResult.TestResultType = TestResultType.Pass;
+                                    passCount++;
+                                    continue;
+                                }
+                            }
+
+                            testResult.TestResultType = TestResultType.TypeMismatch;
+                            typeMismatchCount++;
+                        }
+                        else if (testResult.ExpectedValue != testResult.ActualValue)
+                        {
+                            // allow mismatch in DateTime Hour, Second as functions like TODAY() will yield different times
+                            if (testResult.ExpectedValue is DateTime dt1 && testResult.ActualValue is DateTime dt2
+                                                                         && dt1.Year == dt2.Year &&
+                                                                         dt1.Month == dt2.Month && dt1.Day == dt2.Day)
+                            {
+                                testResult.Annotation = "ignored mismatch in hour/second";
+                                testResult.TestResultType = TestResultType.Pass;
+                                passCount++;
+                                continue;
+                            }
+
+                            if (expectedValueIsNumeric && actualValueIsNumeric)
+                            {
+                                double epsilon = Math.Abs(Convert.ToDouble(testResult.ActualValue) -
+                                                          Convert.ToDouble(testResult.ExpectedValue));
+                                if (epsilon <= 0.0000001)
+                                {
+                                    testResult.Annotation = $"difference of {epsilon:E}";
+                                    testResult.TestResultType = TestResultType.Pass;
+                                    passCount++;
+                                    continue;
+                                }
+                            }
+
+                            testResult.TestResultType = TestResultType.ValueMismatch;
+                            valueMismatchCount++;
+                        }
+                        else
+                        {
+                            testResult.TestResultType = TestResultType.Pass;
+                            passCount++;
+                        }
                     }
                 }
                 else
@@ -208,7 +213,7 @@ namespace Thesis.Models.CodeGenerators
                     VariableToTestResultDictionary.Add(variableName,
                         new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
                         {
-                            ExpectedValue = vertex.Value,
+                            ExpectedValue = vertex is CellVertex cellVertex ? cellVertex.Value : null,
                             TestResultType = TestResultType.Skipped
                         });
                     skippedCount++;

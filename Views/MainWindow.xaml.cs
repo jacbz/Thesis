@@ -15,7 +15,7 @@ using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
-using Thesis.Models;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Views

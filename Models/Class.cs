@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using Thesis.Models.CodeGenerators;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models
@@ -12,6 +13,12 @@ namespace Thesis.Models
         public static readonly Color StaticColor = ColorTranslator.FromHtml("#CFD8DC");
         public static readonly Color ExternalColor = ColorTranslator.FromHtml("#AFEEEE");
 
+        public string Name { get; set; }
+        public bool IsStaticClass => OutputVertex == null;
+        public Vertex OutputVertex { get; set; }
+        public List<Vertex> Vertices { get; set; }
+        public Color Color { get; set; }
+
         public Class(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
         {
             Name = name;
@@ -20,7 +27,7 @@ namespace Thesis.Models
             Vertices.ForEach(v =>
             {
                 v.VariableName = string.IsNullOrWhiteSpace(v.VariableName)
-                    ? "_" + v.StringAddress 
+                    ? "_" + v.StringAddress
                     : v.VariableName.MakeNameVariableConform();
                 v.Class = this;
             });
@@ -28,12 +35,6 @@ namespace Thesis.Models
                 : rnd == null ? StaticColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
         }
-
-        public string Name { get; set; }
-        public bool IsStaticClass => OutputVertex == null;
-        public Vertex OutputVertex { get; set; }
-        public List<Vertex> Vertices { get; set; }
-        public Color Color { get; set; }
 
         // Implementation of Kahn's algorithm
         public void TopologicalSort()

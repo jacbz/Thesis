@@ -10,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
+using Thesis.Models.VertexTypes;
 using MColor = System.Windows.Media.Color;
 using DColor = System.Drawing.Color;
 
@@ -23,59 +24,63 @@ namespace Thesis.ViewModels
         private static readonly int CLASS_PADDING = 20; // padding inside classes
         private static readonly int CLASS_SPACING = 40; // spacing between classes
 
-        public static DColor GetNodeTypeColor(this Vertex vertex)
+        public static DColor GetNodeTypeColor(this CellVertex cellVertex)
         {
             MColor color;
-            switch (vertex.NodeType)
+            if (cellVertex.IsExternal)
             {
-                case NodeType.OutputField:
-                    color = (MColor) Application.Current.Resources["OutputColor"];
-                    break;
-                case NodeType.Formula:
-                    color = (MColor)Application.Current.Resources["FormulaColor"];
-                    break;
-                case NodeType.Constant:
-                    color = (MColor)Application.Current.Resources["ConstantColor"];
-                    break;
-                case NodeType.External:
-                    color = (MColor)Application.Current.Resources["ExternalColor"];
-                    break;
-                default:
-                    color = Colors.Transparent;
-                    break;
+                color = (MColor)Application.Current.Resources["ExternalColor"];
+            }
+            else
+            {
+                switch (cellVertex.NodeType)
+                {
+                    case NodeType.OutputField:
+                        color = (MColor)Application.Current.Resources["OutputColor"];
+                        break;
+                    case NodeType.Formula:
+                        color = (MColor)Application.Current.Resources["FormulaColor"];
+                        break;
+                    case NodeType.Constant:
+                        color = (MColor)Application.Current.Resources["ConstantColor"];
+                        break;
+                    default:
+                        color = Colors.Transparent;
+                        break;
+                }
             }
             return color.ToDColor();
         }
 
-        public static NodeViewModel FormatVertex(this Vertex vertex, Graph graph)
+        public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, Graph graph)
         {
-            return FormatVertex(vertex,
-                graph.PopulatedColumns.IndexOf(vertex.Address.col) * VERTEX_BOX + DIAGRAM_PADDING,
-                graph.PopulatedRows.IndexOf(vertex.Address.row) * VERTEX_BOX + DIAGRAM_PADDING);
+            return FormatCellVertex(cellVertex,
+                graph.PopulatedColumns.IndexOf(cellVertex.Address.col) * VERTEX_BOX + DIAGRAM_PADDING,
+                graph.PopulatedRows.IndexOf(cellVertex.Address.row) * VERTEX_BOX + DIAGRAM_PADDING);
         }
 
-        public static NodeViewModel FormatVertex(this Vertex vertex, double posX, double posY)
+        public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, double posX, double posY)
         {
-            var size = vertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, vertex.Parents.Count * 4 + 25);
+            var size = cellVertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, cellVertex.Parents.Count * 4 + 25);
             var node = new NodeViewModel
             {
-                ID = vertex.StringAddress,
-                Content = vertex,
+                ID = cellVertex.StringAddress,
+                Content = cellVertex,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = size,
                 UnitHeight = size,
                 OffsetX = posX,
                 OffsetY = posY,
                 ShapeStyle = GetNodeShapeStyle(Application.Current.Resources[
-                    vertex.NodeType == NodeType.Formula
+                    cellVertex.NodeType == NodeType.Formula
                         ? "FormulaColorBrush"
-                        : vertex.NodeType == NodeType.OutputField
+                        : cellVertex.NodeType == NodeType.OutputField
                             ? "OutputColorBrush"
                             : "ConstantColorBrush"] as SolidColorBrush),
                 Shape = Application.Current.Resources[
-                    vertex.NodeType == NodeType.Formula
+                    cellVertex.NodeType == NodeType.Formula
                         ? "Heptagon"
-                        : vertex.NodeType == NodeType.OutputField
+                        : cellVertex.NodeType == NodeType.OutputField
                             ? "Trapezoid"
                             : "Ellipse"
                 ],
@@ -86,16 +91,16 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = string.IsNullOrEmpty(vertex.VariableName) ? vertex.StringAddress : vertex.VariableName,
+                        Content = string.IsNullOrEmpty(cellVertex.VariableName) ? cellVertex.StringAddress : cellVertex.VariableName,
                         ViewTemplate =
-                            Application.Current.Resources[!string.IsNullOrEmpty(vertex.VariableName) ? "normalLabel" : "redLabel"]
+                            Application.Current.Resources[!string.IsNullOrEmpty(cellVertex.VariableName) ? "normalLabel" : "redLabel"]
                                 as DataTemplate,
                         UnitWidth = 200
                     }
                 }
             };
             SetNodeConstraints(node);
-            vertex.Node = node;
+            cellVertex.Node = node;
             return node;
         }
 
@@ -144,7 +149,7 @@ namespace Thesis.ViewModels
                     // layout to the right, top-to-bottom, center the rest
                     foreach (var vertex in constants)
                     {
-                        var node = vertex.FormatVertex(lastColumnX, currentRowY);
+                        var node = vertex.FormatCellVertex(lastColumnX, currentRowY);
                         currentRowY += smallVertexHeight;
                         nodes.Add(node);
                     }
@@ -154,7 +159,7 @@ namespace Thesis.ViewModels
                     var middle = startRowY + (constants.Count - 1) / 2.0 * smallVertexHeight;
                     for (var i = 0; i < formulas.Count; i++)
                     {
-                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
+                        var node = formulas[i].FormatCellVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
                             middle);
                         nodes.Add(node);
                     }
@@ -163,7 +168,7 @@ namespace Thesis.ViewModels
                 {
                     for (var i = 0; i < formulas.Count; i++)
                     {
-                        var node = formulas[i].FormatVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
+                        var node = formulas[i].FormatCellVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
                             currentRowY);
                         nodes.Add(node);
                     }
@@ -204,21 +209,22 @@ namespace Thesis.ViewModels
         }
 
         // returns as list of vertex lists, each list is a row
-        private static IEnumerable<List<Vertex>> LayoutGraph(Class @class)
+        private static IEnumerable<List<CellVertex>> LayoutGraph(Class @class)
         {
+            var classCellVertices = @class.Vertices.GetCellVertices();
             if (@class.OutputVertex == null)
             {
-                foreach (var vertex in @class.Vertices)
-                    yield return new List<Vertex> {vertex};
+                foreach (var cellVertex in classCellVertices)
+                    yield return new List<CellVertex> {cellVertex};
             }
             else
             {
-                var vertexQueue = new Queue<Vertex>(@class.Vertices);
-                yield return new List<Vertex> {vertexQueue.Dequeue()};
+                var vertexQueue = new Queue<CellVertex>(classCellVertices);
+                yield return new List<CellVertex> {vertexQueue.Dequeue()};
                 while (vertexQueue.Count > 0)
                 {
                     var vertex = vertexQueue.Dequeue();
-                    var entry = new List<Vertex> {vertex};
+                    var entry = new List<CellVertex> {vertex};
                     while (vertexQueue.Count > 0 && vertex.Children.Contains(vertexQueue.Peek()))
                     {
                         var child = vertexQueue.Dequeue();
@@ -243,7 +249,7 @@ namespace Thesis.ViewModels
                 NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
-        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to, bool redirectSharedNodesToTopLeft = false)
+        public static ConnectorViewModel FormatEdge(this CellVertex from, Vertex to)
         {
             var connector = new ConnectorViewModel
             {
@@ -257,7 +263,7 @@ namespace Thesis.ViewModels
                 Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable,
                 ZIndex = -1
             };
-            if (to.NodeType == NodeType.External && redirectSharedNodesToTopLeft)
+            if (to.IsExternal || !(to is CellVertex))
                 connector.TargetPoint = new Point(0, 0);
             else
                 connector.TargetNode = to.Node;

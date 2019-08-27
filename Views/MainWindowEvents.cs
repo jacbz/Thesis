@@ -13,7 +13,7 @@ using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO.Implementation;
-using Thesis.Models;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Views
@@ -82,7 +82,7 @@ namespace Thesis.Views
         {
             spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
 
-            var vertex = _generator.GetVertexByAddress(e.Cell.RowIndex, e.Cell.ColumnIndex);
+            var vertex = _generator.Graph.GetVertexByAddress(e.Cell.RowIndex, e.Cell.ColumnIndex);
 
             if (vertex != null && vertex.NodeType == NodeType.OutputField)
             {
@@ -171,7 +171,7 @@ namespace Thesis.Views
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
             if (e.ActivationTrigger == ActivationTrigger.Program) return;
-            var vertex = _generator.GetVertexByAddress(e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
+            var vertex = _generator.Graph.GetVertexByAddress(e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
             if (vertex != null)
             {
                 SelectVertexInDiagrams(vertex);

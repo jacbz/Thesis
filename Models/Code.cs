@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Thesis.Models.CodeGenerators;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models
@@ -23,7 +24,7 @@ namespace Thesis.Models
             Tester = tester;
         }
 
-        public static async Task<Code> GenerateFrom(CodeGenerator codeGenerator)
+        public static async Task<Code> GenerateWith(CodeGenerator codeGenerator)
         {
             Code code = await codeGenerator.GenerateCodeAsync();
             code.CodeGenerator = codeGenerator;

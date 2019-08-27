@@ -12,6 +12,7 @@ using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.Models.CodeGenerators;
+using Thesis.Models.VertexTypes;
 using Thesis.Views;
 
 namespace Thesis.ViewModels
@@ -25,7 +26,7 @@ namespace Thesis.ViewModels
         public Code Code { get; set; }
 
         public bool HideConnections { get; set; }
-        public ObservableCollection<Vertex> OutputVertices { get; set; }
+        public ObservableCollection<CellVertex> OutputVertices { get; set; }
         public string ActiveWorksheet { get; set; }
 
         public Generator(MainWindow mainWindow)
@@ -53,7 +54,7 @@ namespace Thesis.ViewModels
             _window.generateGraphButton.IsEnabled = true;
             logItem.AppendElapsedTime();
 
-            OutputVertices = new ObservableCollection<Vertex>(Graph.GetOutputFields());
+            OutputVertices = new ObservableCollection<CellVertex>(Graph.GetOutputFields());
             _window.outputFieldsListView.ItemsSource = OutputVertices;
 
             LoadPersistedOutputFields();
@@ -127,11 +128,12 @@ namespace Thesis.ViewModels
             _window.diagram.Nodes = new NodeCollection();
             _window.diagram.Connectors = new ConnectorCollection();
 
-            foreach (var vertex in Graph.Vertices)
-                ((NodeCollection) _window.diagram.Nodes).Add(vertex.FormatVertex(Graph));
-            foreach (var vertex in Graph.Vertices)
-            foreach (var child in vertex.Children)
-                ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child, true));
+            var graphCellVertices = Graph.Vertices.GetCellVertices();
+            foreach (var vertex in graphCellVertices)
+                ((NodeCollection) _window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
+            foreach (var vertex in graphCellVertices)
+                foreach (var child in vertex.Children)
+                    ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child));
 
             logItem.AppendElapsedTime();
         }
@@ -151,8 +153,8 @@ namespace Thesis.ViewModels
                 nextPos = nextPosX;
                 (_window.diagram2.Groups as GroupCollection).Add(group);
             }
-
-            foreach (var vertex in Graph.Vertices)
+            
+            foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
             {
                 if (HideConnections && vertex.Class != child.Class) continue;
@@ -172,14 +174,6 @@ namespace Thesis.ViewModels
             OutputVertices.ForEach(v => v.Include = false);
         }
 
-        public Vertex GetVertexByAddress(int row, int col)
-        {
-            return Graph.AllVertices
-                .FirstOrDefault(v =>
-                    v.Address.row == row &&
-                    v.Address.col == col);
-        }
-
         public void GenerateClasses()
         {
             var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
@@ -190,7 +184,7 @@ namespace Thesis.ViewModels
             _window.ResetSpreadsheetColors();
             foreach (var generatedClass in ClassCollection.Classes)
             {
-                _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => v.NodeType != NodeType.External), 
+                _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal).GetCellVertices(), 
                     (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); }, 
                     _window.StyleBorderByNodeType);
             }
@@ -210,18 +204,19 @@ namespace Thesis.ViewModels
             _window.codeTextBox.Text = "";
 
             var addressToVertexDictionary = Graph.Vertices
-                .Where(v => !string.IsNullOrEmpty(v.StringAddress))
+                .GetCellVertices()
                 .ToDictionary(v => v.StringAddress, v => v);
+
             // implement different languages here
             CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    codeGenerator = new CSharpGenerator(ClassCollection, addressToVertexDictionary, Graph.NamedRangeDictionary);
+                    codeGenerator = new CSharpGenerator(ClassCollection, addressToVertexDictionary, Graph.NameDictionary);
                     break;
             }
 
-            Code = await Code.GenerateFrom(codeGenerator);
+            Code = await Code.GenerateWith(codeGenerator);
             logItem.AppendElapsedTime();
 
             _window.codeTextBox.Text = Code.SourceCode;

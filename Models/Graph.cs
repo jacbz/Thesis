@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 using XLParser;
 
@@ -14,7 +15,7 @@ namespace Thesis.Models
     {
         public List<Vertex> Vertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; }
-        public Dictionary<string, Vertex> NamedRangeDictionary { get; set; }
+        public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
 
         // Preserve copy for filtering purposes
         public List<Vertex> AllVertices { get; set; }
@@ -28,10 +29,10 @@ namespace Thesis.Models
         {
             Vertices = new List<Vertex>();
             ExternalVertices = new List<Vertex>();
-            NamedRangeDictionary = new Dictionary<string, Vertex>();
+            NameDictionary = new Dictionary<string, Vertex>();
         }
 
-        public static Graph FromSpreadsheet(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames namedRanges)
+        public static Graph FromSpreadsheet(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames names)
         {
             Graph graph = new Graph();
             var verticesDict = new Dictionary<string, Vertex>();
@@ -39,110 +40,111 @@ namespace Thesis.Models
 
             foreach (var cell in cells.Cells)
             {
-                var vertex = new Vertex(cell);
+                var cellVertex = new CellVertex(cell);
 
-                verticesDict.Add(vertex.StringAddress, vertex);
-                graph.Vertices.Add(vertex);
+                verticesDict.Add(cellVertex.StringAddress, cellVertex);
+                graph.Vertices.Add(cellVertex);
             }
 
-            // assigns a NamedRange name to a Vertex
-            foreach (NameImpl namedRange in namedRanges)
+            // assigns a name name to a Vertex
+            foreach (NameImpl name in names)
             {
-                var namedRangeName = namedRange.Name;
-                var namedRangeAddress = namedRange.AddressLocal;
+                var nameTitle = name.Name;
+                var nameAddress = name.AddressLocal;
 
-                if (namedRangeAddress == null || namedRange.Cells.Length == 0 || namedRangeName == "_xlnm._FilterDatabase") continue;
+                if (nameAddress == null || name.Cells.Length == 0 || nameTitle == "_xlnm._FilterDatabase") continue;
 
-                // if the named range does not apply globally (which would mean namedRange.Worksheet = null),
+                // if the named range does not apply globally (which would mean name.Worksheet = null),
                 // but to a specific worksheet, check if is valid currently
-                if (namedRange.Worksheet != null && namedRange.Worksheet.Name != worksheetName) continue;
+                if (name.Worksheet != null && name.Worksheet.Name != worksheetName) continue;
 
-                Vertex namedRangeVertex;
+                Vertex nameVertex;
 
                 // external named ranges
-                var namedRangeWorksheetMatch = new Regex("'?([a-zA-Z0-9-+@#$^&()_,.! ]+)'?!").Match(namedRange.Value);
-                if (!namedRangeWorksheetMatch.Success)
+                var nameWorksheetMatch = new Regex("'?([a-zA-Z0-9-+@#$^&()_,.! ]+)'?!").Match(name.Value);
+                if (!nameWorksheetMatch.Success)
                 {
-                    Logger.Log(LogItemType.Warning, "Could not find worksheet for named range " + namedRangeName);
+                    Logger.Log(LogItemType.Warning, "Could not find worksheet for named range " + nameTitle);
                     continue;
                 }
 
-                var namedRangeWorksheetName = namedRangeWorksheetMatch.Groups[1].Value;
-                if (namedRangeWorksheetName != worksheetName)
+                var nameWorksheetName = nameWorksheetMatch.Groups[1].Value;
+                if (nameWorksheetName != worksheetName)
                 {
-                    namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress);
+                    nameVertex = new RangeVertex(name.Cells, nameTitle);
+                    nameVertex.MarkAsExternal(nameWorksheetName, nameTitle);
 
                     // create external cell for each child
-                    foreach (var child in namedRange.Cells)
-                    {
-                        var externalNamedRangeChildVertex = new Vertex(child);
-                        externalNamedRangeChildVertex.MarkAsExternal(namedRangeWorksheetName, child.AddressLocal);
+                    //foreach (var child in name.Cells)
+                    //{
+                    //    var externalnameChildVertex = new Vertex(child);
+                    //    externalnameChildVertex.MarkAsExternal(nameWorksheetName, child.AddressLocal);
 
-                        namedRangeVertex.Children.Add(externalNamedRangeChildVertex);
-                        externalNamedRangeChildVertex.Parents.Add(namedRangeVertex);
+                    //    nameVertex.Children.Add(externalnameChildVertex);
+                    //    externalnameChildVertex.Parents.Add(nameVertex);
 
-                        graph.ExternalVertices.Add(externalNamedRangeChildVertex);
-                    }
+                    //    graph.ExternalVertices.Add(externalnameChildVertex);
+                    //}
                 }
                 else
                 {
-                    if (namedRange.Cells.Length == 1)
+                    if (name.Cells.Length == 1)
                     {
-                        // simply assign the named range to the
-                        if (verticesDict.TryGetValue(namedRangeAddress, out namedRangeVertex))
+                        // simply assign the named range to the cell vertex
+                        if (verticesDict.TryGetValue(nameAddress, out nameVertex))
                         {
-                            namedRangeVertex.VariableName = namedRangeName;
+                            nameVertex.VariableName = nameTitle;
                         }
                         else
                         {
-                            Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + namedRangeName);
+                            Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + nameTitle);
                             continue;
                         }
                     }
                     else
                     {
                         // contains more than one cell
-                        namedRangeVertex = Vertex.CreateNamedRangeVertex(namedRangeName, namedRangeAddress);
-                        foreach (var child in namedRange.Cells)
-                        {
-                            if (!verticesDict.TryGetValue(child.AddressLocal, out var childVertex))
-                            {
-                                Logger.Log(LogItemType.Warning, "Could not find vertex for address " + child.AddressLocal);
-                                continue;
-                            }
-                            namedRangeVertex.Children.Add(childVertex);
-                            childVertex.Parents.Add(namedRangeVertex);
-                        }
+                        nameVertex = new RangeVertex(name.Cells, nameTitle);
+                        //foreach (var child in name.Cells)
+                        //{
+                        //    if (!verticesDict.TryGetValue(child.AddressLocal, out var childVertex))
+                        //    {
+                        //        Logger.Log(LogItemType.Warning, "Could not find vertex for address " + child.AddressLocal);
+                        //        continue;
+                        //    }
+                        //    nameVertex.Children.Add(childVertex);
+                        //    childVertex.Parents.Add(nameVertex);
+                        //}
                     }
                 }
 
-                if (graph.NamedRangeDictionary.ContainsKey(namedRangeName))
-                    Logger.Log(LogItemType.Warning, $"A named range with the name {namedRangeName} already exists!");
+                if (graph.NameDictionary.ContainsKey(nameTitle))
+                    Logger.Log(LogItemType.Warning, $"Name {nameTitle} already exists!");
                 else
-                    graph.NamedRangeDictionary.Add(namedRangeName, namedRangeVertex);
+                    graph.NameDictionary.Add(nameTitle, nameVertex);
             }
 
             Logger.Log(LogItemType.Info, $"Considering {graph.Vertices.Count} vertices...");
 
-            foreach (var vertex in graph.Vertices)
+            foreach (var cellVertex in graph.Vertices.OfType<CellVertex>())
             {
-                if (vertex.ParseTree == null) continue;
+                if (cellVertex.ParseTree == null) continue;
                 try
                 {
-                    var (referencedCells, externalReferencedCells, referencedNamedRanges) =
-                        graph.GetListOfReferencedCells(vertex.StringAddress, vertex.ParseTree);
+                    var (referencedCells, externalReferencedCells, referencednames) =
+                        graph.GetListOfReferencedCells(cellVertex.StringAddress, cellVertex.ParseTree);
                     foreach (var cellAddress in referencedCells)
                     {
-                        vertex.Children.Add(verticesDict[cellAddress]);
-                        verticesDict[cellAddress].Parents.Add(vertex);
+                        cellVertex.Children.Add(verticesDict[cellAddress]);
+                        verticesDict[cellAddress].Parents.Add(cellVertex);
                     }
                     // process external cells
                     foreach(var (sheetName, address) in externalReferencedCells)
                     {
-                        if (externalVerticesDict.TryGetValue((sheetName, address), out Vertex externalVertex))
+                        if (externalVerticesDict.TryGetValue((sheetName, address), out var externalCellVertex))
                         {
-                            vertex.Children.Add(externalVertex);
-                            externalVertex.Parents.Add(vertex);
+                            cellVertex.Children.Add(externalCellVertex);
+                            externalCellVertex.Parents.Add(cellVertex);
                         }
                         else
                         {
@@ -153,35 +155,35 @@ namespace Thesis.Models
                             }
                             else
                             {
-                                externalVertex = new Vertex(externalCellIRange);
-                                externalVertex.MarkAsExternal(sheetName, address);
+                                externalCellVertex = new CellVertex(externalCellIRange);
+                                externalCellVertex.MarkAsExternal(sheetName, address);
 
-                                vertex.Children.Add(externalVertex);
-                                externalVertex.Parents.Add(vertex);
-                                graph.ExternalVertices.Add(externalVertex);
-                                externalVerticesDict.Add((sheetName, address), externalVertex);
+                                cellVertex.Children.Add(externalCellVertex);
+                                externalCellVertex.Parents.Add(cellVertex);
+                                graph.ExternalVertices.Add(externalCellVertex);
+                                externalVerticesDict.Add((sheetName, address), externalCellVertex);
                             }
                         }
                     }
 
                     // process named ranges
-                    foreach (var namedRangeName in referencedNamedRanges)
+                    foreach (var nameName in referencednames)
                     {
-                        if (graph.NamedRangeDictionary.TryGetValue(namedRangeName, out var namedRangeVertex))
+                        if (graph.NameDictionary.TryGetValue(nameName, out var nameVertex))
                         {
-                            vertex.Children.Add(namedRangeVertex);
-                            namedRangeVertex.Parents.Add(vertex);
+                            cellVertex.Children.Add(nameVertex);
+                            nameVertex.Parents.Add(cellVertex);
                         }
                         else
                         {
-                            Logger.Log(LogItemType.Warning, "Could not find named range " + namedRangeName);
+                            Logger.Log(LogItemType.Warning, "Could not find named range " + nameName);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     Logger.Log(LogItemType.Error,
-                        $"Error processing formula in {vertex.StringAddress} ({vertex.Formula}): {ex.GetType().Name} ({ex.Message})");
+                        $"Error processing formula in {cellVertex.StringAddress} ({cellVertex.Formula}): {ex.GetType().Name} ({ex.Message})");
                 }
             }
 
@@ -206,28 +208,28 @@ namespace Thesis.Models
             var logItem = Logger.Log(LogItemType.Info, "Generating labels...", true);
             // Create labels
             Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
-            foreach (var vertex in Vertices)
-            {
-                if (!vertex.IsSpreadsheetCell) continue;
 
-                Label label = new Label(vertex);
-                if (vertex.CellType == CellType.Unknown && vertex.NodeType == NodeType.None)
+            var cells = Vertices.GetCellVertices();
+            foreach (var cell in cells)
+            {
+                Label label = new Label(cell);
+                if (cell.CellType == CellType.Unknown && cell.NodeType == NodeType.None)
                 {
                     label.Type = LabelType.None;
                 }
-                else if (vertex.Children.Count == 0 && vertex.Parents.Count == 0 && vertex.CellType == CellType.Text)
+                else if (cell.Children.Count == 0 && cell.Parents.Count == 0 && cell.CellType == CellType.Text)
                 {
-                    if (labelDictionary.TryGetValue((vertex.Address.row - 1, vertex.Address.col), out Label labelAbove)
+                    if (labelDictionary.TryGetValue((cell.Address.row - 1, cell.Address.col), out Label labelAbove)
                         && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
                     {
                         label.Type = LabelType.Attribute;
-                        label.Text = vertex.DisplayValue;
+                        label.Text = cell.DisplayValue;
                         labelAbove.Type = LabelType.Attribute;
                     }
                     else
                     {
                         label.Type = LabelType.Header;
-                        label.Text = vertex.DisplayValue;
+                        label.Text = cell.DisplayValue;
                     }
                 }
                 else
@@ -235,16 +237,16 @@ namespace Thesis.Models
                     label.Type = LabelType.Data;
                 }
 
-                vertex.Label = label;
-                labelDictionary.Add((vertex.Address.row, vertex.Address.col), label);
+                cell.Label = label;
+                labelDictionary.Add((cell.Address.row, cell.Address.col), label);
             }
 
             // assign attributes and headers for each data type
-            foreach (var vertex in Vertices)
+            foreach (var cell in cells)
             {
-                if (!vertex.IsSpreadsheetCell || vertex.Label.Type != LabelType.Data) continue;
+                if (!cell.IsSpreadsheetCell || cell.Label.Type != LabelType.Data) continue;
 
-                (int row, int col) currentPos = vertex.Address;
+                (int row, int col) currentPos = cell.Address;
 
                 // add attributes
                 bool foundAttribute = false;
@@ -260,13 +262,13 @@ namespace Thesis.Models
                     if (currentLabel.Type == LabelType.Attribute)
                     {
                         foundAttribute = true;
-                        vertex.Label.Attributes.Add(currentLabel);
+                        cell.Label.Attributes.Add(currentLabel);
                         distancesToAttribute.Add(distanceToAttribute);
                     }
                 }
 
                 // add headers
-                currentPos = vertex.Address;
+                currentPos = cell.Address;
                 if (!foundAttribute)
                 {
                     // no attributes, use first header on the top
@@ -275,7 +277,7 @@ namespace Thesis.Models
                         var currentLabel = labelDictionary[currentPos];
                         if (currentLabel.Type == LabelType.Header)
                         {
-                            vertex.Label.Headers.Add(currentLabel);
+                            cell.Label.Headers.Add(currentLabel);
                             break;
                         }
                     }
@@ -304,25 +306,25 @@ namespace Thesis.Models
                         if (currentLabel.Type == LabelType.Header)
                         {
                             foundHeader = true;
-                            vertex.Label.Headers.Add(currentLabel);
+                            cell.Label.Headers.Add(currentLabel);
                         }
                     }
                 }
 
                 // do not override name if name was already assigned, e.g. per named range
-                if (string.IsNullOrEmpty(vertex.VariableName))
-                    vertex.Label.GenerateVariableName();
+                if (string.IsNullOrEmpty(cell.VariableName))
+                    cell.Label.GenerateVariableName();
             }
             logItem.AppendElapsedTime();
         }
 
         // recursively gets list of referenced cells from parse tree using DFS
-        private (List<string> referencedCells, List<(string, string)> externalReferencedCells, List<string> referencedNamedRanges)
+        private (List<string> referencedCells, List<(string, string)> externalReferencedCells, List<string> referencednames)
             GetListOfReferencedCells(string address, ParseTreeNode parseTree)
         {
             var referencedCells = new List<string>();
             var externalReferencedCells = new List<(string sheetName, string address)>();
-            var referencedNamedRanges = new List<string>();
+            var referencdNames = new List<string>();
 
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
@@ -367,8 +369,8 @@ namespace Thesis.Models
                             referencedCells.Add(node.FindTokenAndGetText());
                         break;
                     case "NamedRange":
-                        var namedRangeName = node.FindTokenAndGetText();
-                        referencedNamedRanges.Add(namedRangeName);
+                        var name = node.FindTokenAndGetText();
+                        referencdNames.Add(name);
                         processChildren = false;
                         break;
                     case "Prefix":
@@ -406,7 +408,7 @@ namespace Thesis.Models
                 }
             }
 
-            return (referencedCells, externalReferencedCells, referencedNamedRanges);
+            return (referencedCells, externalReferencedCells, referencdNames);
         }
 
         private void MarkChildNodesAsExternal(HashSet<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
@@ -418,30 +420,42 @@ namespace Thesis.Models
             }
         }
 
-        public List<Vertex> GetOutputFields()
+        public List<CellVertex> GetOutputFields()
         {
-            return Vertices.Where(v => v.NodeType == NodeType.OutputField).ToList();
+            return Vertices
+                .OfType<CellVertex>()
+                .Where(v => v.NodeType == NodeType.OutputField).ToList();
         }
 
         // Remove all vertices that are not transitively reachable from any vertex in the given list
-        public void PerformTransitiveFilter(List<Vertex> vertices)
+        public void PerformTransitiveFilter(List<CellVertex> cellVertices)
         {
             var logItem = Logger.Log(LogItemType.Info, "Perform transitive filter...", true);
-            Vertices = vertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
+            Vertices = cellVertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
             logItem.AppendElapsedTime();
 
-            PopulatedRows = Vertices.Select(v => v.Address.row).Distinct().ToList();
+            var cells = Vertices.OfType<CellVertex>().ToList();
+            PopulatedRows = cells.Select(v => v.Address.row).Distinct().ToList();
             PopulatedRows.Sort();
-            PopulatedColumns = Vertices.Select(v => v.Address.col).Distinct().ToList();
+            PopulatedColumns = cells.Select(v => v.Address.col).Distinct().ToList();
             PopulatedColumns.Sort();
 
             // filter external vertices for those which have at least one parent still in the vertices list
             if (AllExternalVertices.Count == 0) return;
             Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...");
-            ExternalVertices = vertices
-                .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.NodeType == NodeType.External)
+            ExternalVertices = cellVertices
+                .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.IsExternal)
                 .Distinct()
                 .ToList();
+        }
+
+        public CellVertex GetVertexByAddress(int row, int col)
+        {
+            return AllVertices
+                .OfType<CellVertex>()
+                .FirstOrDefault(v =>
+                    v.Address.row == row &&
+                    v.Address.col == col);
         }
     }
 }

@@ -193,6 +193,8 @@
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\Label.cs" />
     <Compile Include="Models\Utility.cs" />
+    <Compile Include="Models\VertexTypes\CellVertex.cs" />
+    <Compile Include="Models\VertexTypes\RangeVertex.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -200,7 +202,7 @@
     </Compile>
     <Compile Include="ViewModels\LogItem.cs" />
     <Compile Include="Models\UserSettings.cs" />
-    <Compile Include="Models\Vertex.cs" />
+    <Compile Include="Models\VertexTypes\Vertex.cs" />
     <Compile Include="Views\BraceFoldingStrategy.cs" />
     <Compile Include="Views\MainWindowEvents.cs" />
     <Compile Include="Views\MainWindowActions.cs" />

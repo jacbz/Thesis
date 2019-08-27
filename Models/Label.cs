@@ -1,18 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models
 {
     public class Label
     {
-        public Vertex Vertex { get; }
+        public CellVertex Vertex { get; }
         public LabelType Type { get; set; }
         public string Text { get; set; }
         public List<Label> Attributes { get; set; }
         public List<Label> Headers { get; set; }
 
-        public Label(Vertex vertex)
+        public Label(CellVertex vertex)
         {
             Attributes = new List<Label>();
             Headers = new List<Label>();

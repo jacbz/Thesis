@@ -5,11 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Thesis.Models.VertexTypes;
 
 namespace Thesis.Models
 {
     public static class Utility
     {
+        public static List<CellVertex> GetCellVertices(this IEnumerable<Vertex> vertices)
+        {
+            return vertices.OfType<CellVertex>().ToList();
+        }
+
         // e.g. A1, C2 -> [A1,A2,B1,B2,C1,C2]
         public static IEnumerable<string> AddressesInRange(string start, string end)
         {
@@ -111,8 +117,6 @@ namespace Thesis.Models
             {
                 if (char.IsDigit(inputString.ToCharArray()[0]))
                     inputString = "_" + inputString;
-                else
-                    inputString = inputString.LowerFirstCharacter();
             }
             return inputString;
         }

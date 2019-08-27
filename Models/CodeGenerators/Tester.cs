@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Thesis.ViewModels;
+using Thesis.Models.VertexTypes;
 
 namespace Thesis.Models.CodeGenerators
 {
@@ -20,8 +19,6 @@ namespace Thesis.Models.CodeGenerators
 
         public abstract Task PerformTestAsync();
         public abstract TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary);
-
-
 
         public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int || o is long || o is float || o is double || o is decimal;
     }

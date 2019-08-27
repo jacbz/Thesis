@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.CSharp;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models.CodeGenerators
@@ -13,19 +14,19 @@ namespace Thesis.Models.CodeGenerators
     public abstract class CodeGenerator
     {
         protected ClassCollection ClassCollection;
-        protected Dictionary<string, Vertex> AddressToVertexDictionary;
-        protected Dictionary<string, Vertex> NamedRangeDictionary;
+        protected Dictionary<string, CellVertex> AddressToVertexDictionary;
+        protected Dictionary<string, Vertex> NameDictionary;
 
         public abstract Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null);
 
         protected CodeGenerator(
             ClassCollection classCollection,
-            Dictionary<string, Vertex> addressToVertexDictionary,
-            Dictionary<string, Vertex> namedRangeDictionary)
+            Dictionary<string, CellVertex> addressToVertexDictionary,
+            Dictionary<string, Vertex> nameDictionary)
         {
             ClassCollection = classCollection;
             AddressToVertexDictionary = addressToVertexDictionary;
-            NamedRangeDictionary = namedRangeDictionary;
+            NameDictionary = nameDictionary;
         }
 
         /// <summary>

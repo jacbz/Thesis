@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Models
@@ -20,13 +21,14 @@ namespace Thesis.Models
         {
             ClassCollection classCollection = new ClassCollection();
 
-            var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<Vertex>());
+            var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<CellVertex>());
             var rnd = new Random();
 
             foreach (var vertex in graph.GetOutputFields())
             {
                 var reachableVertices = vertex.GetReachableVertices();
-                foreach (var v in reachableVertices) vertexToOutputFieldVertices[v].Add(vertex);
+                foreach (var v in reachableVertices)
+                    vertexToOutputFieldVertices[v].Add(vertex);
                 var newClass = new Class($"Class{vertex.StringAddress}", vertex, reachableVertices.ToList(), rnd);
                 classCollection.Classes.Add(newClass);
             }
