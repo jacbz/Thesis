@@ -16,10 +16,10 @@ namespace Thesis.Models
         public List<Vertex> Vertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; }
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
+        public Dictionary<string, RangeVertex> RangeDictionary { get; set; }
 
-        // Preserve copy for filtering purposes
+        // toolbox
         public List<Vertex> AllVertices { get; set; }
-        public List<Vertex> AllExternalVertices { get; set; }
 
         // For layouting purposes
         public List<int> PopulatedRows { get; set; }
@@ -30,9 +30,14 @@ namespace Thesis.Models
             Vertices = new List<Vertex>();
             ExternalVertices = new List<Vertex>();
             NameDictionary = new Dictionary<string, Vertex>();
+            RangeDictionary = new Dictionary<string, RangeVertex>();
         }
 
-        public static Graph FromSpreadsheet(string worksheetName, IRange cells, Func<string, string, IRange> getExternalCellFunc, INames names)
+        public static Graph FromSpreadsheet(string worksheetName, 
+            IRange cells, 
+            Func<string, string, IRange> getExternalCellFunc, 
+            Func<string, IRange> getRangeFunc,
+            INames names)
         {
             Graph graph = new Graph();
             var verticesDict = new Dictionary<string, Vertex>();
@@ -73,18 +78,6 @@ namespace Thesis.Models
                 {
                     nameVertex = new RangeVertex(name.Cells, nameTitle);
                     nameVertex.MarkAsExternal(nameWorksheetName, nameTitle);
-
-                    // create external cell for each child
-                    //foreach (var child in name.Cells)
-                    //{
-                    //    var externalnameChildVertex = new Vertex(child);
-                    //    externalnameChildVertex.MarkAsExternal(nameWorksheetName, child.AddressLocal);
-
-                    //    nameVertex.Children.Add(externalnameChildVertex);
-                    //    externalnameChildVertex.Parents.Add(nameVertex);
-
-                    //    graph.ExternalVertices.Add(externalnameChildVertex);
-                    //}
                 }
                 else
                 {
@@ -105,16 +98,6 @@ namespace Thesis.Models
                     {
                         // contains more than one cell
                         nameVertex = new RangeVertex(name.Cells, nameTitle);
-                        //foreach (var child in name.Cells)
-                        //{
-                        //    if (!verticesDict.TryGetValue(child.AddressLocal, out var childVertex))
-                        //    {
-                        //        Logger.Log(LogItemType.Warning, "Could not find vertex for address " + child.AddressLocal);
-                        //        continue;
-                        //    }
-                        //    nameVertex.Children.Add(childVertex);
-                        //    childVertex.Parents.Add(nameVertex);
-                        //}
                     }
                 }
 
@@ -131,8 +114,10 @@ namespace Thesis.Models
                 if (cellVertex.ParseTree == null) continue;
                 try
                 {
-                    var (referencedCells, externalReferencedCells, referencednames) =
-                        graph.GetListOfReferencedCells(cellVertex.StringAddress, cellVertex.ParseTree);
+                    var (referencedCells, externalReferencedCells, referencedNames) =
+                        graph.GetListOfReferencedCells(
+                            cellVertex,
+                            getRangeFunc);
                     foreach (var cellAddress in referencedCells)
                     {
                         cellVertex.Children.Add(verticesDict[cellAddress]);
@@ -167,7 +152,7 @@ namespace Thesis.Models
                     }
 
                     // process named ranges
-                    foreach (var nameName in referencednames)
+                    foreach (var nameName in referencedNames)
                     {
                         if (graph.NameDictionary.TryGetValue(nameName, out var nameVertex))
                         {
@@ -190,10 +175,12 @@ namespace Thesis.Models
             if (graph.ExternalVertices.Count > 0)
                 Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
 
+            // add all range vertices
+            graph.Vertices.AddRange(graph.RangeDictionary.Values.ToList());
+
             graph.GenerateLabels();
 
             graph.AllVertices = graph.Vertices.ToList();
-            graph.AllExternalVertices = graph.ExternalVertices.ToList();
 
             graph.PerformTransitiveFilter(graph.GetOutputFields());
 
@@ -320,15 +307,15 @@ namespace Thesis.Models
 
         // recursively gets list of referenced cells from parse tree using DFS
         private (List<string> referencedCells, List<(string, string)> externalReferencedCells, List<string> referencednames)
-            GetListOfReferencedCells(string address, ParseTreeNode parseTree)
+            GetListOfReferencedCells(CellVertex cellVertex, Func<string, IRange> getRangeFunc)
         {
             var referencedCells = new List<string>();
             var externalReferencedCells = new List<(string sheetName, string address)>();
-            var referencdNames = new List<string>();
+            var referencedNames = new List<string>();
 
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
-            stack.Push(parseTree);
+            stack.Push(cellVertex.ParseTree);
 
             // maps a Reference node to an external sheet
             var referenceNodeToExternalSheet = new HashSet<(ParseTreeNode node, string sheetName)>();
@@ -344,22 +331,17 @@ namespace Thesis.Models
                 switch (node.Term.Name)
                 {
                     case "ReferenceFunctionCall":
-                        // ranges
-                        if (node.ChildNodes.Count == 3 && node.GetFunction() == ":")
-                        {
-                            var leftChild = node.ChildNodes[0].ChildNodes[0];
-                            var rightChild = node.ChildNodes[2].ChildNodes[0];
-                            if (leftChild.Term.Name == "Cell" && rightChild.Term.Name == "Cell")
-                            {
-                                var leftAddress = leftChild.FindTokenAndGetText();
-                                var rightAddress = rightChild.FindTokenAndGetText();
+                        string range = node.NodeToString(cellVertex.Formula);
 
-                                var addressesInRange = Utility.AddressesInRange(leftAddress, rightAddress).ToArray();
-                                Logger.Log(LogItemType.Info,
-                                    $"Found range in {address}: Adding {string.Join(", ", addressesInRange)}");
-                                referencedCells.AddRange(addressesInRange);
-                            }
+                        if (!RangeDictionary.TryGetValue(range, out var rangeVertex))
+                        {
+                            rangeVertex = new RangeVertex(getRangeFunc(range).Cells, range);
+                            RangeDictionary.Add(range, rangeVertex);
                         }
+
+                        rangeVertex.Parents.Add(cellVertex);
+                        cellVertex.Children.Add(rangeVertex);
+
                         break;
                     case "Cell":
                         var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
@@ -370,7 +352,7 @@ namespace Thesis.Models
                         break;
                     case "NamedRange":
                         var name = node.FindTokenAndGetText();
-                        referencdNames.Add(name);
+                        referencedNames.Add(name);
                         processChildren = false;
                         break;
                     case "Prefix":
@@ -382,11 +364,11 @@ namespace Thesis.Models
                         sheetName = sheetName.FormatSheetName();
 
                         // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
-                        ParseTreeNode reference = node.Parent(parseTree);
+                        ParseTreeNode reference = node.Parent(cellVertex.ParseTree);
                         var traverse = node;
-                        while (traverse != parseTree)
+                        while (traverse != cellVertex.ParseTree)
                         {
-                            traverse = traverse.Parent(parseTree);
+                            traverse = traverse.Parent(cellVertex.ParseTree);
                             if (traverse.Term.Name == "Reference")
                                 reference = traverse;
                         }
@@ -397,7 +379,7 @@ namespace Thesis.Models
                 if (node.Term.Name == "UDFunctionCall")
                 {
                     Logger.Log(LogItemType.Warning,
-                        $"Skipping user defined function {node.FindTokenAndGetText()} in {address}");
+                        $"Skipping user defined function {node.FindTokenAndGetText()} in {cellVertex.Address}");
                 }
                 else if (processChildren)
                 {
@@ -408,7 +390,7 @@ namespace Thesis.Models
                 }
             }
 
-            return (referencedCells, externalReferencedCells, referencdNames);
+            return (referencedCells, externalReferencedCells, referencedNames);
         }
 
         private void MarkChildNodesAsExternal(HashSet<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
@@ -441,7 +423,6 @@ namespace Thesis.Models
             PopulatedColumns.Sort();
 
             // filter external vertices for those which have at least one parent still in the vertices list
-            if (AllExternalVertices.Count == 0) return;
             Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...");
             ExternalVertices = cellVertices
                 .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.IsExternal)

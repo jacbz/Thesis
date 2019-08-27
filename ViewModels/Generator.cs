@@ -48,7 +48,12 @@ namespace Thesis.ViewModels
             var (rowCount, columnCount) = _window.GetSheetDimensions();
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
-            Graph = Graph.FromSpreadsheet(ActiveWorksheet, allCells, _window.GetCellFromWorksheet, _window.spreadsheet.Workbook.Names);
+            Graph = Graph.FromSpreadsheet(
+                ActiveWorksheet, 
+                allCells, 
+                _window.GetCellFromWorksheet, 
+                _window.GetRangeFromCurrentWorksheet,
+                _window.spreadsheet.Workbook.Names);
             Logger.Log(LogItemType.Success, "Graph generation successful.");
 
             _window.generateGraphButton.IsEnabled = true;
@@ -205,14 +210,18 @@ namespace Thesis.ViewModels
 
             var addressToVertexDictionary = Graph.Vertices
                 .GetCellVertices()
-                .ToDictionary(v => v.StringAddress, v => v);
+                .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
 
             // implement different languages here
             CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    codeGenerator = new CSharpGenerator(ClassCollection, addressToVertexDictionary, Graph.NameDictionary);
+                    codeGenerator = new CSharpGenerator(
+                        ClassCollection,
+                        addressToVertexDictionary, 
+                        Graph.RangeDictionary, 
+                        Graph.NameDictionary);
                     break;
             }
 

@@ -23,11 +23,11 @@ namespace Thesis.Models.CodeGenerators
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
-        public CSharpGenerator(
-            ClassCollection classCollection,
-            Dictionary<string, CellVertex> addressToVertexDictionary,
-            Dictionary<string, Vertex> nameDictionary) :
-            base(classCollection, addressToVertexDictionary, nameDictionary)
+        public CSharpGenerator(ClassCollection classCollection, 
+            Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
+            Dictionary<string, RangeVertex> rangeDictionary, 
+            Dictionary<string, Vertex> nameDictionary) : 
+            base(classCollection, addressToVertexDictionary, rangeDictionary, nameDictionary)
         {
         }
 
@@ -108,7 +108,7 @@ namespace Thesis.Models.CodeGenerators
             {
                 var expression = formula is CellVertex cellVertex 
                     ? TreeNodeToExpression(cellVertex.ParseTree, cellVertex)
-                    : RangeToExpression(formula as RangeVertex);
+                    : RangeVertexToExpression(formula as RangeVertex);
 
                 if (@class.IsStaticClass)
                 {
@@ -148,7 +148,7 @@ namespace Thesis.Models.CodeGenerators
             foreach (var constant in constants)
             {
                 // {type} {variableName} = {value};
-                var expression = GenerateConstantVertexField(constant);
+                var expression = VertexValueToExpression(constant);
                 var field =
                     FieldDeclaration(
                         VariableDeclaration(
@@ -320,9 +320,43 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private ExpressionSyntax RangeToExpression(RangeVertex rangeVertex)
+        private ExpressionSyntax RangeVertexToExpression(RangeVertex rangeVertex)
         {
-            return ParseExpression("Matrix.Of(x,y,z)");
+            switch (rangeVertex.Type)
+            {
+                case RangeVertex.RangeType.Column:
+                {
+                    var columnArray = rangeVertex.GetColumnArray();
+                    return ColumnOf(columnArray
+                        .Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
+                        .ToArray());
+                }
+                case RangeVertex.RangeType.Row:
+                {
+                    var rowArray = rangeVertex.GetRowArray();
+                    return RowOf(rowArray
+                        .Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
+                        .ToArray());
+                }
+                case RangeVertex.RangeType.Matrix:
+                {
+                    var matrix = rangeVertex.GetMatrixArray();
+                    return MatrixOf(matrix
+                        .Select(rowArray => RowOf(rowArray.Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
+                            .ToArray()))
+                        .ToArray());
+                }
+                default:
+                    return null;
+            }
+        }
+
+        // if a cell vertex already exists, use that one, else format as constant
+        private ExpressionSyntax CellVertexToConstantOrVariable(CellVertex cellVertex, Vertex currentVertex)
+        {
+            return AddressToVertexDictionary.TryGetValue((currentVertex.WorksheetName, cellVertex.StringAddress), out var c) 
+                ? VariableReferenceToExpression(c, currentVertex) 
+                : VertexValueToExpression(cellVertex);
         }
 
         private ExpressionSyntax TreeNodeToExpression(ParseTreeNode node, CellVertex currentVertex)
@@ -333,7 +367,7 @@ namespace Thesis.Models.CodeGenerators
                 switch (node.Term.Name)
                 {
                     case "Cell":
-                        return FormatVariableReferenceFromAddress(node.FindTokenAndGetText(), currentVertex);
+                        return VariableReferenceFromAddressToExpression(node.FindTokenAndGetText(), currentVertex);
                     case "Constant":
                         string constant = node.FindTokenAndGetText();
                         if (constant.Contains("%") && !constant.Any(char.IsLetter))
@@ -353,7 +387,7 @@ namespace Thesis.Models.CodeGenerators
                     case "NamedRange":
                         var namedRangeName = node.FindTokenAndGetText();
                         return NameDictionary.TryGetValue(namedRangeName, out var namedRangeVertex) 
-                            ? FormatVariableReference(namedRangeVertex, currentVertex) 
+                            ? VariableReferenceToExpression(namedRangeVertex, currentVertex) 
                             : CommentExpression($"Did not find variable for named range {namedRangeName}", true);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
@@ -403,8 +437,8 @@ namespace Thesis.Models.CodeGenerators
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
                     // adding a Date and a number yields Date.AddDays(number)
-                    var typeLeft = GetType(arguments[0]);
-                    var typeRight = GetType(arguments[1]);
+                    var typeLeft = GetType(arguments[0], currentVertex);
+                    var typeRight = GetType(arguments[1], currentVertex);
                     if (typeLeft.HasValue && typeRight.HasValue)
                     {
                         var leftExpr = TreeNodeToExpression(arguments[0], currentVertex);
@@ -443,12 +477,8 @@ namespace Thesis.Models.CodeGenerators
                 case "^":
                 {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName("Math"), IdentifierName("Pow")))
-                        .AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[0], currentVertex)),
-                            Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+                    return ClassFunctionCall("Math", "Pow", 
+                        TreeNodeToExpression(arguments[0], currentVertex), TreeNodeToExpression(arguments[1], currentVertex));
                 }
                 case "ROUND":
                 {
@@ -484,7 +514,7 @@ namespace Thesis.Models.CodeGenerators
 
                     // if the condition is not always a bool (e.g. dynamic), use Equals(cond, true)
                     // otherwise we might have a number as cond, and number can not be evaluated as bool
-                    var conditionType = GetType(arguments[0]);
+                    var conditionType = GetType(arguments[0], currentVertex);
                     if (!conditionType.HasValue || conditionType.Value != CellType.Bool)
                     {
                         condition = InvocationExpression(IdentifierName("Equals"))
@@ -499,13 +529,13 @@ namespace Thesis.Models.CodeGenerators
                     if (arguments.Length == 3)
                     {
                         whenFalse = TreeNodeToExpression(arguments[2], currentVertex);
-                        argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2]) == null;
+                        argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2], currentVertex) == null;
                     }
                     else
                     {
                         // if no else statement is given, Excel defaults to FALSE
                         whenFalse = LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                        argumentsHaveDifferentTypes = !IsTypeBoolean(arguments[1]);
+                        argumentsHaveDifferentTypes = !IsTypeBoolean(arguments[1], currentVertex);
                     }
 
                     // if there is a mismatch in argument types, the variable must be of type dynamic
@@ -585,8 +615,8 @@ namespace Thesis.Models.CodeGenerators
                     var rightExpression = TreeNodeToExpression(arguments[1], currentVertex);
 
                     ExpressionSyntax equalsExpression;
-                    var leftType = GetType(arguments[0]);
-                    var rightType = GetType(arguments[1]);
+                    var leftType = GetType(arguments[0], currentVertex);
+                    var rightType = GetType(arguments[1], currentVertex);
                     if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value)
                     {
                         // Excel uses case insensitive string compare
@@ -635,7 +665,12 @@ namespace Thesis.Models.CodeGenerators
                 case ":":
                 {
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return GetRangeExpression(arguments[0], arguments[1], currentVertex);
+
+                    var range = arguments[0].FindTokenAndGetText() + ":" + arguments[1].FindTokenAndGetText();
+
+                    if (RangeDictionary.TryGetValue(range, out var rangeVertex))
+                        return RangeVertexToExpression(rangeVertex);
+                    return CommentExpression($"Range {range} not found!");
                 }
 
                 // other
@@ -740,15 +775,15 @@ namespace Thesis.Models.CodeGenerators
 
         // gets the type of a node
         // if multiple types are found, or type is unknown or dynamic, return null
-        private CellType? GetType(ParseTreeNode node)
+        private CellType? GetType(ParseTreeNode node, Vertex currentVertex)
         {
             if (node.Term.Name == "ReferenceFunctionCall")
             {
                 var arguments = node.ChildNodes[1];
                 if (arguments.ChildNodes.Count == 3)
-                    return IsSameType(arguments.ChildNodes[1], arguments.ChildNodes[2]);
+                    return IsSameType(arguments.ChildNodes[1], arguments.ChildNodes[2], currentVertex);
                 if (arguments.ChildNodes.Count == 2)
-                    return IsTypeBoolean(arguments.ChildNodes[1]) ? CellType.Bool : (CellType?)null;
+                    return IsTypeBoolean(arguments.ChildNodes[1], currentVertex) ? CellType.Bool : (CellType?)null;
                 return null;
 
             }
@@ -774,9 +809,9 @@ namespace Thesis.Models.CodeGenerators
             var text = node.FindTokenAndGetText();
             if (node.Term.Name == "Cell")
             {
-                if (!AddressToVertexDictionary.TryGetValue(text, out var vertex))
+                if (!AddressToVertexDictionary.TryGetValue((currentVertex.WorksheetName, text), out var referencedVertex))
                     return null;
-                return _useDynamic.Contains(vertex) ? (CellType?)null : vertex.CellType;
+                return _useDynamic.Contains(referencedVertex) ? (CellType?)null : referencedVertex.CellType;
             }
 
             if (node.Term.Name == "Constant")
@@ -787,17 +822,17 @@ namespace Thesis.Models.CodeGenerators
                 return CellType.Text;
             }
 
-            var childTypes = node.ChildNodes.Select(GetType).Distinct().ToList();
+            var childTypes = node.ChildNodes.Select(node1 => GetType(node1, currentVertex)).Distinct().ToList();
             if (childTypes.All(c => c.HasValue) && childTypes.Count == 1 && childTypes[0].Value != CellType.Unknown)
                 return childTypes[0].Value;
             return null;
         }
 
         // checks if two parse tree nodes have the same type
-        private CellType? IsSameType(ParseTreeNode a, ParseTreeNode b)
+        private CellType? IsSameType(ParseTreeNode a, ParseTreeNode b, Vertex currentVertex)
         {
-            var typeA = GetType(a);
-            var typeB = GetType(b);
+            var typeA = GetType(a, currentVertex);
+            var typeB = GetType(b, currentVertex);
             if (typeA.HasValue && typeA.Value != CellType.Unknown && typeB.HasValue && typeB.Value != CellType.Unknown
                 && typeA.Value == typeB.Value)
             {
@@ -806,41 +841,12 @@ namespace Thesis.Models.CodeGenerators
             return null;
         }
 
-        private bool IsTypeBoolean(ParseTreeNode a)
+        private bool IsTypeBoolean(ParseTreeNode a, Vertex currentVertex)
         {
-            var typeOfIf = GetType(a);
+            var typeOfIf = GetType(a, currentVertex);
             return typeOfIf.HasValue && typeOfIf.Value == CellType.Bool;
         }
-
-        // A1:B2 -> new[]{A1,A2,B1,B2}
-        private ExpressionSyntax GetRangeExpression(ParseTreeNode left, ParseTreeNode right, Vertex currentVertex)
-        {
-            if (left.ChildNodes.Count != 1 || right.ChildNodes.Count != 1)
-                return CommentExpression($"Error while parsing range");
-
-            var leftChild = left.ChildNodes[0];
-            var rightChild = right.ChildNodes[0];
-            if (leftChild.Term.Name != "Cell" || rightChild.Term.Name != "Cell")
-            {
-                return CommentExpression("Range with more than 2 components not implemented yet!");
-            }
-
-            var leftAddress = leftChild.FindTokenAndGetText();
-            var rightAddress = rightChild.FindTokenAndGetText();
-
-            var entries = new List<ExpressionSyntax>();
-            foreach (var address in Utility.AddressesInRange(leftAddress, rightAddress))
-            {
-                if (AddressToVertexDictionary.TryGetValue(address, out var vertex))
-                {
-                    entries.Add(FormatVariableReference(vertex, currentVertex));
-                }
-            }
-
-            // create custom collection
-            return CollectionOf(entries.ToArray());
-        }
-
+        
         private ExpressionSyntax CollectionOf(params ExpressionSyntax[] expressions)
         {
             // avoid Collection(Collection)
@@ -849,10 +855,30 @@ namespace Thesis.Models.CodeGenerators
                                         && ((IdentifierNameSyntax)maes.Expression).Identifier.Text == "Collection")
                 return expressions[0];
 
+            return ClassFunctionCall("Collection", "Of", expressions);
+        }
+
+        private ExpressionSyntax MatrixOf(params ExpressionSyntax[] expressions)
+        {
+            return ClassFunctionCall("Matrix", "Of", expressions);
+        }
+
+        private ExpressionSyntax ColumnOf(params ExpressionSyntax[] expressions)
+        {
+            return ClassFunctionCall("Column", "Of", expressions);
+        }
+
+        private ExpressionSyntax RowOf(params ExpressionSyntax[] expressions)
+        {
+            return ClassFunctionCall("Row", "Of", expressions);
+        }
+
+        private ExpressionSyntax ClassFunctionCall(string className, string functionName, params ExpressionSyntax[] expressions)
+        {
             return InvocationExpression(
                     MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName("Collection"),
-                        IdentifierName("Of")))
+                        IdentifierName(className),
+                        IdentifierName(functionName)))
                 .AddArgumentListArguments(expressions.Select(Argument).ToArray());
         }
 
@@ -910,17 +936,18 @@ namespace Thesis.Models.CodeGenerators
                 .Aggregate((acc, right) => BinaryExpression(syntaxKind, acc, right));
         }
 
-        private ExpressionSyntax FormatVariableReferenceFromAddress(string address, Vertex currentVertex)
+        private ExpressionSyntax VariableReferenceFromAddressToExpression(string address, Vertex currentVertex)
         {
-            if (AddressToVertexDictionary.TryGetValue(address, out var variableVertex))
+            if (AddressToVertexDictionary.TryGetValue((currentVertex.WorksheetName, address)
+                , out var variableVertex))
             {
-                return FormatVariableReference(variableVertex, currentVertex);
+                return VariableReferenceToExpression(variableVertex, currentVertex);
             }
 
             return CommentExpression($"{address} not found", true);
         }
 
-        private static ExpressionSyntax FormatVariableReference(Vertex variableVertex, Vertex currentVertex)
+        private static ExpressionSyntax VariableReferenceToExpression(Vertex variableVertex, Vertex currentVertex)
         {
             return currentVertex.Class == variableVertex.Class
                 ? (ExpressionSyntax) IdentifierName(variableVertex.VariableName)
@@ -972,8 +999,8 @@ namespace Thesis.Models.CodeGenerators
         {
             if (_useDynamic.Contains(vertex)) return "dynamic";
 
-            if (vertex is RangeVertex)
-                return "Collection";
+            if (vertex is RangeVertex rangeVertex)
+                return rangeVertex.Type.ToString();
             
             switch (((CellVertex) vertex).CellType)
             {
@@ -992,11 +1019,10 @@ namespace Thesis.Models.CodeGenerators
             }
         }
 
-        private ExpressionSyntax GenerateConstantVertexField(Vertex vertex)
+        private ExpressionSyntax VertexValueToExpression(Vertex vertex)
         {
             if (vertex is RangeVertex rangeVertex)
-                return RangeToExpression(rangeVertex);
-            //return CollectionOf(vertex.Children.Select(c => FormatVariableReference(c, vertex)).ToArray());
+                return RangeVertexToExpression(rangeVertex);
 
             var cellVertex = (CellVertex) vertex;
             var vertexValue = cellVertex.Value;

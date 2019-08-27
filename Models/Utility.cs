@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Irony.Parsing;
 using Thesis.Models.VertexTypes;
 
 namespace Thesis.Models
@@ -14,6 +15,11 @@ namespace Thesis.Models
         public static List<CellVertex> GetCellVertices(this IEnumerable<Vertex> vertices)
         {
             return vertices.OfType<CellVertex>().ToList();
+        }
+
+        public static string NodeToString(this ParseTreeNode node, string formula)
+        {
+            return formula.Substring(node.Span.Location.Column, node.Span.Length);
         }
 
         // e.g. A1, C2 -> [A1,A2,B1,B2,C1,C2]

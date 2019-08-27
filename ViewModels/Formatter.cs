@@ -119,7 +119,9 @@ namespace Thesis.ViewModels
             double posX)
         {
             var graphLayout = LayoutGraph(@class).ToList();
-            var numOfFormulaColumns = graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
+            var numOfFormulaColumns = graphLayout.Count == 0 
+                ? 0 
+                : graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
             var nodes = new ObservableCollection<NodeViewModel>();
             var group = new GroupViewModel

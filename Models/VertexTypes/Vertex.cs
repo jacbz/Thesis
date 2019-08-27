@@ -10,13 +10,17 @@ namespace Thesis.Models.VertexTypes
     public abstract class Vertex : INotifyPropertyChanged
     {
         public string StringAddress { get; set; }
+
+        public (string worksheet, string address) GlobalAddress => IsExternal
+            ? (ExternalWorksheetName, StringAddress)
+            : (null, StringAddress);
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
         public string VariableName { get; set; } // for ranges, this will be either a name (named range), or address (e.g. A1:C3)
 
         public bool IsExternal => !string.IsNullOrEmpty(ExternalWorksheetName);
         public string ExternalWorksheetName { get; set; }
-
+        public string WorksheetName => IsExternal ? ExternalWorksheetName : null;
 
         public bool IsSpreadsheetCell => !string.IsNullOrEmpty(StringAddress);
 
@@ -54,7 +58,6 @@ namespace Thesis.Models.VertexTypes
         {
             return worksheetName.MakeNameVariableConform() + "_" + variableName.MakeNameVariableConform();
         }
-
 
         public HashSet<Vertex> GetReachableVertices(bool ignoreExternal = true)
         {

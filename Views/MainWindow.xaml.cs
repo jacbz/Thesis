@@ -83,6 +83,11 @@ namespace Thesis.Views
                 : null;
         }
 
+        public IRange GetRangeFromCurrentWorksheet(string range)
+        {
+            return spreadsheet.ActiveSheet.Range[range];
+        }
+
         public void EnableGraphGenerationOptions()
         {
             generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;

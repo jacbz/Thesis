@@ -44,11 +44,92 @@ public static double RoundDown(double value, double digits)
    return Math.Floor(value * power) / power;
 }
 
+public class Matrix
+{
+	public object[,] Items { get; set; }
+	
+	public static Matrix Of(params Row[] rows)
+	{
+		Matrix matrix = new Matrix();
+		int rowCount = rows.Length;
+		int columnCount = rows.Max(c => c.Items.Length);
+		object[,] items = new object[rowCount, columnCount];
+
+		for(int j = 0; j < rowCount; j++)
+		{
+			for(int k = 0; k < columnCount; k++)
+			{
+				items[j, k] = rows[j].Items.Length > k ? rows[j].Items[k] : new EmptyCell();
+			}
+		}
+		matrix.Items = items;
+		return matrix;
+	}
+
+	public static Matrix Of(params Column[] columns)
+	{
+		Matrix matrix = new Matrix();
+		int rowCount = columns.Max(c => c.Items.Length);
+		int columnCount = columns.Length;
+		object[,] items = new object[rowCount, columnCount];
+
+		for(int j = 0; j < rowCount; j++)
+		{
+			for(int k = 0; k < columnCount; k++)
+			{
+				items[j, k] = columns[k].Items.Length > j ? columns[k].Items[j] : new EmptyCell();
+			}
+		}
+		matrix.Items = items;
+		return matrix;
+	}	
+
+	public object[] Flatten()
+	{
+		return Items.Cast<object>().ToArray();
+	}
+
+	public double Sum()
+	{
+		return Flatten().Sum();
+	}
+
+	public double Min()
+	{
+		return Flatten().Min();
+	}
+
+	public double Max()
+	{
+		return Flatten().Max();
+	}
+}
+
+public class Row : Collection
+{
+	public static Row Of(params object[] items)
+	{
+		Row row = new Row();
+		row.Items = items;
+		return row;
+	}
+}
+
+public class Column : Collection
+{	
+	public static Column Of(params object[] items)
+	{
+		Column column = new Column();
+		column.Items = items;
+		return column;
+	}	
+}
+
 public class Collection
 {
 	public object[] Items { get; set; }
 
-	private Collection()
+	protected Collection()
 	{
 		Items = new object[0];
 	}
@@ -74,46 +155,67 @@ public class Collection
 
 	public double Sum()
 	{
-		double result = 0;
-		foreach(object obj in Items)
-		{
-			if(obj.IsNumeric())
-				result += Convert.ToDouble(obj);
-			else if (obj is string s && double.TryParse(s, out double d))
-				result += d;
-		}
-		return result;
+		return Items.Sum();
 	}
 
-	// Calculates the minimum. Ignores everything except numbers and strings
 	public double Min()
 	{
-		var min = Double.MaxValue;
-		foreach(object obj in Items)
-		{
-			if(obj.IsNumeric())
-				min = Math.Min(min, Convert.ToDouble(obj));
-			else if (obj is string s && double.TryParse(s, out double d))
-				min = Math.Min(min, d);
-		}
-		// if no valid arguments were provided, return 0
-		return min == Double.MaxValue ? 0 : min;
+		return Items.Min();
 	}
 
-	// Calculates the minimum. Ignores everything except numbers and strings
 	public double Max()
 	{
-		var max = Double.MinValue;
-		foreach(object obj in Items)
-		{
-			if(obj.IsNumeric())
-				max = Math.Max(max, Convert.ToDouble(obj));
-			else if (obj is string s && double.TryParse(s, out double d))
-				max = Math.Max(max, d);
-		}
-		// if no valid arguments were provided, return 0
-		return max == Double.MinValue ? 0 : max;
+		return Items.Max();
 	}
+}
+
+public static double Sum(this object[] items)
+{
+	double result = 0;
+	foreach(object obj in items)
+	{
+		if(obj is Matrix m)
+			result += m.Sum();
+		else if(obj.IsNumeric())
+			result += Convert.ToDouble(obj);
+		else if (obj is string s && double.TryParse(s, out double d))
+			result += d;
+	}
+	return result;
+}
+
+// Calculates the minimum. Ignores everything except numbers and strings
+public static double Min(this object[] items)
+{
+	var min = Double.MaxValue;
+	foreach(object obj in items)
+	{
+		if(obj is Matrix m)
+			min = Math.Min(min, m.Min());
+		else if(obj.IsNumeric())
+			min = Math.Min(min, Convert.ToDouble(obj));
+		else if (obj is string s && double.TryParse(s, out double d))
+			min = Math.Min(min, d);
+	}
+	// if no valid arguments were provided, return 0
+	return min == Double.MaxValue ? 0 : min;
+}
+
+// Calculates the minimum. Ignores everything except numbers and strings
+public static double Max(this object[] items)
+{
+	var max = Double.MinValue;
+	foreach(object obj in items)
+	{
+		if(obj is Matrix m)
+			max = Math.Max(max, m.Max());
+		else if(obj.IsNumeric())
+			max = Math.Max(max, Convert.ToDouble(obj));
+		else if (obj is string s && double.TryParse(s, out double d))
+			max = Math.Max(max, d);
+	}
+	// if no valid arguments were provided, return 0
+	return max == Double.MinValue ? 0 : max;
 }
 
 public struct EmptyCell

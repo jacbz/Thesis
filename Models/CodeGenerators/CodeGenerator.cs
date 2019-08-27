@@ -14,18 +14,19 @@ namespace Thesis.Models.CodeGenerators
     public abstract class CodeGenerator
     {
         protected ClassCollection ClassCollection;
-        protected Dictionary<string, CellVertex> AddressToVertexDictionary;
+        protected Dictionary<(string worksheet, string address), CellVertex> AddressToVertexDictionary;
+        protected Dictionary<string, RangeVertex> RangeDictionary;
         protected Dictionary<string, Vertex> NameDictionary;
 
         public abstract Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null);
 
-        protected CodeGenerator(
-            ClassCollection classCollection,
-            Dictionary<string, CellVertex> addressToVertexDictionary,
-            Dictionary<string, Vertex> nameDictionary)
+        protected CodeGenerator(ClassCollection classCollection,
+            Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
+            Dictionary<string, RangeVertex> rangeDictionary, Dictionary<string, Vertex> nameDictionary)
         {
             ClassCollection = classCollection;
             AddressToVertexDictionary = addressToVertexDictionary;
+            RangeDictionary = rangeDictionary;
             NameDictionary = nameDictionary;
         }
 
