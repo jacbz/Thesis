@@ -19,6 +19,51 @@ namespace Thesis.ViewModels
     // Extension methods to layout and format objects
     public static class Formatter
     {
+        private static Style _formulaShapeStyle;
+        private static Style _outputShapeStyle;
+        private static Style _constantShapeStyle;
+
+        private static object _formulaShape;
+        private static object _outputShape;
+        private static object _constantShape;
+        private static object _classShape;
+
+        private static DataTemplate _normalLabelTemplate;
+        private static DataTemplate _redLabelTemplate;
+        private static DataTemplate _classLabelTemplate;
+
+        private static Style _connectorGeometryStyle;
+        private static Style _targetDecoratorStyle;
+
+        private static DColor _externalNodeColor;
+        private static DColor _outputNodeColor;
+        private static DColor _formulaNodeColor;
+        private static DColor _constantNodeColor;
+
+        public static void InitXamlStyles()
+        {
+            _formulaShapeStyle = GetNodeShapeStyle(Application.Current.Resources["FormulaColorBrush"] as SolidColorBrush);
+            _outputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["OutputColorBrush"] as SolidColorBrush);
+            _constantShapeStyle = GetNodeShapeStyle(Application.Current.Resources["ConstantColorBrush"] as SolidColorBrush);
+
+            _formulaShape = Application.Current.Resources["Heptagon"];
+            _outputShape = Application.Current.Resources["Trapezoid"];
+            _constantShape = Application.Current.Resources["Ellipse"];
+            _classShape = Application.Current.Resources["Rectangle"];
+
+            _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
+            _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
+            _classLabelTemplate = Application.Current.Resources["classLabel"] as DataTemplate;
+
+            _connectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style;
+            _targetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style;
+
+            _externalNodeColor = ((MColor) Application.Current.Resources["ExternalColor"]).ToDColor();
+            _outputNodeColor = ((MColor)Application.Current.Resources["OutputColor"]).ToDColor();
+            _formulaNodeColor = ((MColor)Application.Current.Resources["FormulaColor"]).ToDColor();
+            _constantNodeColor = ((MColor)Application.Current.Resources["ConstantColor"]).ToDColor();
+        }
+
         private static readonly int DIAGRAM_PADDING = 40;
         private static readonly int VERTEX_BOX = 60; // width and height of a vertex including spacing
         private static readonly int CLASS_PADDING = 20; // padding inside classes
@@ -26,30 +71,22 @@ namespace Thesis.ViewModels
 
         public static DColor GetNodeTypeColor(this CellVertex cellVertex)
         {
-            MColor color;
             if (cellVertex.IsExternal)
             {
-                color = (MColor)Application.Current.Resources["ExternalColor"];
+                return _externalNodeColor;
             }
-            else
+
+            switch (cellVertex.NodeType)
             {
-                switch (cellVertex.NodeType)
-                {
-                    case NodeType.OutputField:
-                        color = (MColor)Application.Current.Resources["OutputColor"];
-                        break;
-                    case NodeType.Formula:
-                        color = (MColor)Application.Current.Resources["FormulaColor"];
-                        break;
-                    case NodeType.Constant:
-                        color = (MColor)Application.Current.Resources["ConstantColor"];
-                        break;
-                    default:
-                        color = Colors.Transparent;
-                        break;
-                }
+                case NodeType.OutputField:
+                    return _outputNodeColor;
+                case NodeType.Formula:
+                    return _formulaNodeColor;
+                case NodeType.Constant:
+                    return _constantNodeColor;
+                default:
+                    return DColor.Transparent;
             }
-            return color.ToDColor();
         }
 
         public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, Graph graph)
@@ -71,19 +108,18 @@ namespace Thesis.ViewModels
                 UnitHeight = size,
                 OffsetX = posX,
                 OffsetY = posY,
-                ShapeStyle = GetNodeShapeStyle(Application.Current.Resources[
-                    cellVertex.NodeType == NodeType.Formula
-                        ? "FormulaColorBrush"
+                ShapeStyle =  cellVertex.NodeType == NodeType.Formula
+                        ? _formulaShapeStyle
                         : cellVertex.NodeType == NodeType.OutputField
-                            ? "OutputColorBrush"
-                            : "ConstantColorBrush"] as SolidColorBrush),
-                Shape = Application.Current.Resources[
+                            ? _outputShapeStyle
+                            : _constantShapeStyle,
+                Shape = 
                     cellVertex.NodeType == NodeType.Formula
-                        ? "Heptagon"
+                        ? _formulaShape
                         : cellVertex.NodeType == NodeType.OutputField
-                            ? "Trapezoid"
-                            : "Ellipse"
-                ],
+                            ? _outputShape
+                            : _constantShape,
+
                 Annotations = new AnnotationCollection
                 {
                     new AnnotationEditorViewModel
@@ -92,9 +128,7 @@ namespace Thesis.ViewModels
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
                         Content = string.IsNullOrEmpty(cellVertex.VariableName) ? cellVertex.StringAddress : cellVertex.VariableName,
-                        ViewTemplate =
-                            Application.Current.Resources[!string.IsNullOrEmpty(cellVertex.VariableName) ? "normalLabel" : "redLabel"]
-                                as DataTemplate,
+                        ViewTemplate =!string.IsNullOrEmpty(cellVertex.VariableName) ? _normalLabelTemplate : _redLabelTemplate,
                         UnitWidth = 200
                     }
                 }
@@ -109,7 +143,7 @@ namespace Thesis.ViewModels
             var shapeStyle = new Style
             {
                 BasedOn = Application.Current.Resources["ShapeStyle"] as Style,
-                TargetType = typeof(Path)
+                TargetType = typeof(Path),
             };
             shapeStyle.Setters.Add(new Setter(Shape.FillProperty, solidColorBrush));
             return shapeStyle;
@@ -189,7 +223,7 @@ namespace Thesis.ViewModels
                 Pivot = new Point(0, 0),
                 OffsetX = posX,
                 OffsetY = posY,
-                Shape = Application.Current.Resources["Rectangle"],
+                Shape = _classShape,
                 Annotations = new AnnotationCollection
                 {
                     new AnnotationEditorViewModel
@@ -198,7 +232,7 @@ namespace Thesis.ViewModels
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
                         Content = @class.Name,
-                        ViewTemplate = Application.Current.Resources["classLabel"] as DataTemplate
+                        ViewTemplate = _classLabelTemplate
                     }
                 },
                 ZIndex = int.MinValue,
@@ -256,8 +290,8 @@ namespace Thesis.ViewModels
             var connector = new ConnectorViewModel
             {
                 SourceNode = from.Node,
-                ConnectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style,
-                TargetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style,
+                ConnectorGeometryStyle = _connectorGeometryStyle,
+                TargetDecoratorStyle = _targetDecoratorStyle,
                 Segments = new ObservableCollection<IConnectorSegment>
                 {
                     new StraightSegment()

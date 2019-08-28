@@ -33,7 +33,7 @@ namespace Thesis.Models.CodeGenerators
             var staticClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            Logger.DispatcherLog(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
+            Logger.Log(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
 
             // base code required for testing, such as the EmptyCell class
             var baseCode = Properties.Resources.CSharpTestingBase;
@@ -46,7 +46,7 @@ namespace Thesis.Models.CodeGenerators
             {
                 try
                 {
-                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + staticClass.ClassName, true);
+                    var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + staticClass.ClassName, true);
 
                     var testStaticClassState = 
                         await testState.ContinueWithAsync(staticClass.FieldsCode);
@@ -57,13 +57,13 @@ namespace Thesis.Models.CodeGenerators
                     {
                         VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
                     }
-                    logItem2.DispatcherAppendElapsedTime();
+                    logItem2.AppendElapsedTime();
 
                     // initialize the static classes state
                     testState = await testState.ContinueWithAsync(staticClass.Code);
                     if (!string.IsNullOrEmpty(staticClass.MethodBodyCode))
                     {
-                        testState = await testState.ContinueWithAsync(staticClass.ClassName + ".Init();");
+                        testState = await testState.ContinueWithAsync(staticClass.ClassName + ".InitXamlStyles();");
                     }
 
                 }
@@ -78,14 +78,14 @@ namespace Thesis.Models.CodeGenerators
             {
                 try
                 {
-                    var logItem2 = Logger.DispatcherLog(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
+                    var logItem2 = Logger.Log(LogItemType.Info, "Testing class " + normalClass.ClassName, true);
                     var testNormalClassState = await testState.ContinueWithAsync(normalClass.FieldsCode);
                     testNormalClassState = await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
                     foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
                     {
                         VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
                     }
-                    logItem2.DispatcherAppendElapsedTime();
+                    logItem2.AppendElapsedTime();
                 }
                 catch (Exception ex)
                 {
@@ -96,7 +96,7 @@ namespace Thesis.Models.CodeGenerators
 
         private static void LogException(Exception ex, string className)
         {
-            Logger.DispatcherLog(LogItemType.Error, ex.GetType().Name + " in " + className + ": " + ex.Message);
+            Logger.Log(LogItemType.Error, ex.GetType().Name + " in " + className + ": " + ex.Message);
         }
 
         public IEnumerable<TestResult> VariablesToTestResults(string className, ScriptState state)
@@ -107,7 +107,7 @@ namespace Thesis.Models.CodeGenerators
 
         public override TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary)
         {
-            Logger.DispatcherLog(LogItemType.Info, "Generating test report...");
+            Logger.Log(LogItemType.Info, "Generating test report...");
 
             int passCount = 0, nullCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
 

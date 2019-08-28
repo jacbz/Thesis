@@ -42,6 +42,8 @@ namespace Thesis.Views
 
         private void SetUpUi()
         {
+            Formatter.InitXamlStyles();
+
             // enable folding in code text box
             _foldingManager = FoldingManager.Install(codeTextBox.TextArea);
             _foldingStrategy = new BraceFoldingStrategy();
@@ -64,8 +66,8 @@ namespace Thesis.Views
             ((IGraphInfo)diagram2.Info).ItemTappedEvent += DiagramItemClicked;
 
             // improve diagram loading performance by virtualization
-            diagram.Constraints = diagram.Constraints | GraphConstraints.Virtualize;
-            diagram2.Constraints = diagram2.Constraints | GraphConstraints.Virtualize;
+            diagram.Constraints |= GraphConstraints.Virtualize;
+            diagram2.Constraints |= GraphConstraints.Virtualize;
         }
 
         public (int rowCount, int columnCount) GetSheetDimensions()

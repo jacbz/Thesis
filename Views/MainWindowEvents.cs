@@ -70,9 +70,11 @@ namespace Thesis.Views
                 {
                     EnableGraphGenerationOptions();
 
-                    this.generateGraphButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    this.generateClassesButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                    this.generateCodeButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    // do everything
+                    _generator.FilterAndLayoutGraph();
+                    _generator.GenerateClasses();
+                    EnableCodeGenerationOptions();
+                    _generator.GenerateCode();
                     generateCodeTab.IsSelected = true;
                 }
             }
@@ -100,9 +102,17 @@ namespace Thesis.Views
             Logger.Clear();
         }
 
-        private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
+        private async void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
-            _generator.FilterAndDisplayGraphIntoUi();
+            generateGraphButton.IsEnabled = false;
+            generateGraphProgressRing.IsActive = true;
+            diagram.Opacity = 0.3f;
+
+            await Task.Run(() => _generator.FilterAndLayoutGraph());
+
+            generateGraphProgressRing.IsActive = false;
+            generateGraphButton.IsEnabled = true;
+            diagram.Opacity = 1;
 
             // scroll to top left
             (diagram.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
@@ -118,7 +128,7 @@ namespace Thesis.Views
             _generator.UnselectAllOutputFields();
         }
 
-        private void GenerateClassesButton_Click(object sender, RoutedEventArgs e)
+        private async void GenerateClassesButton_Click(object sender, RoutedEventArgs e)
         {
             // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
             if (diagram2.Groups != null)
@@ -130,7 +140,17 @@ namespace Thesis.Views
                     }
 
             _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
-            _generator.GenerateClasses();
+
+            generateClassesButton.IsEnabled = false;
+            generateClassesProgressRing.IsActive = true;
+            diagram2.Opacity = 0.3f;
+
+            await Task.Run(() => _generator.GenerateClasses());
+
+            generateClassesProgressRing.IsActive = false;
+            generateClassesButton.IsEnabled = true;
+            diagram2.Opacity = 1;
+
             EnableCodeGenerationOptions();
 
             // scroll to top left

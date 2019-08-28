@@ -36,7 +36,7 @@ namespace Thesis.Models
         {
             await Tester.PerformTestAsync();
             var testReport = Tester.GenerateTestReport(VariableNameToVertexDictionary);
-            Logger.DispatcherLog(LogItemType.Info, "Generating code with test results as comments...");
+            Logger.Log(LogItemType.Info, "Generating code with test results as comments...");
             testReport.Code = (await CodeGenerator.GenerateCodeAsync(Tester.VariableToTestResultDictionary)).SourceCode;
             return testReport;
         }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Navigation;
+using System.Windows.Threading;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
@@ -99,7 +100,7 @@ namespace Thesis.ViewModels
         /// <summary>
         /// Filters by selected output vertices, displays graph, and colors spreadsheet cells
         /// </summary>
-        public void FilterAndDisplayGraphIntoUi()
+        public void FilterAndLayoutGraph()
         {
             if (_window.spreadsheet.ActiveSheet.Name != ActiveWorksheet)
             {
@@ -107,21 +108,23 @@ namespace Thesis.ViewModels
                 GenerateGraph();
             }
 
-            _window.EnableClassGenerationOptions();
+            Application.Current.Dispatcher.Invoke(() => _window.EnableClassGenerationOptions(), DispatcherPriority.Background);
 
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
-            var includedVertixStrings = includedVertices.Select(v => v.StringAddress).ToList();
-            App.Settings.SelectedOutputFields = includedVertixStrings;
+            var includedVertexStrings = includedVertices.Select(v => v.StringAddress).ToList();
+            App.Settings.SelectedOutputFields = includedVertexStrings;
             App.Settings.Persist();
 
             Logger.Log(LogItemType.Info,
-                $"Selected output fields: {string.Join(", ", includedVertixStrings)}");
+                $"Selected output fields: {string.Join(", ", includedVertexStrings)}");
 
             Graph.PerformTransitiveFilter(includedVertices);
 
-            LayoutGraph();
-
-            _window.ResetAndColorAllCells(Graph.AllVertices);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                LayoutGraph();
+                _window.ResetAndColorAllCells(Graph.AllVertices);
+            }, DispatcherPriority.Background);
 
             Logger.Log(LogItemType.Success, "Graph generation complete.");
         }
@@ -130,15 +133,15 @@ namespace Thesis.ViewModels
         {
             var logItem = Logger.Log(LogItemType.Info, "Layouting graph...", true);
 
-            _window.diagram.Nodes = new NodeCollection();
-            _window.diagram.Connectors = new ConnectorCollection();
+            _window.diagram.Nodes = new ObservableCollection<NodeViewModel>();
+            _window.diagram.Connectors = new ObservableCollection<ConnectorViewModel>();
 
             var graphCellVertices = Graph.Vertices.GetCellVertices();
             foreach (var vertex in graphCellVertices)
-                ((NodeCollection) _window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
+                ((ObservableCollection<NodeViewModel>)_window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
             foreach (var vertex in graphCellVertices)
-                foreach (var child in vertex.Children)
-                    ((ConnectorCollection) _window.diagram.Connectors).Add(vertex.FormatEdge(child));
+            foreach (var child in vertex.Children)
+                ((ObservableCollection<ConnectorViewModel>)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
 
             logItem.AppendElapsedTime();
         }
@@ -186,18 +189,22 @@ namespace Thesis.ViewModels
             ClassCollection = ClassCollection.FromGraph(Graph);
 
             logItem.AppendElapsedTime();
-            _window.ResetSpreadsheetColors();
-            foreach (var generatedClass in ClassCollection.Classes)
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal).GetCellVertices(), 
-                    (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); }, 
-                    _window.StyleBorderByNodeType);
-            }
+                _window.ResetSpreadsheetColors();
+                foreach (var generatedClass in ClassCollection.Classes)
+                {
+                    _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal).GetCellVertices(),
+                        (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); },
+                        _window.StyleBorderByNodeType);
+                }
 
-            _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);
-            _window.spreadsheet.ActiveGrid.InvalidateCells();
+                _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);
+                _window.spreadsheet.ActiveGrid.InvalidateCells();
 
-            LayoutClasses();
+                LayoutClasses();
+            }, DispatcherPriority.Background);
 
             Logger.Log(LogItemType.Success, $"Generated {ClassCollection.Classes.Count} classes.");
         }

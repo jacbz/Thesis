@@ -2,7 +2,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Thesis.ViewModels
 {
@@ -10,7 +12,7 @@ namespace Thesis.ViewModels
     {
         private string _message;
         private DateTime _time;
-        private Stopwatch _stopwatch;
+        private readonly Stopwatch _stopwatch;
 
         public LogItem(LogItemType type, string message, bool useStopwatch)
         {
@@ -45,19 +47,22 @@ namespace Thesis.ViewModels
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public void DispatcherAppendElapsedTime()
-        {
-            Application.Current.Dispatcher.Invoke(AppendElapsedTime);
-        }
-
         public void AppendElapsedTime()
         {
-            if (_stopwatch == null)
-                return;
-            Message += $" (elapsed {_stopwatch.ElapsedMilliseconds} ms)";
-            Time = DateTime.Now;
+            var action = new Action(() =>
+            {
+                if (_stopwatch == null)
+                    return;
+                Message += $" (elapsed {_stopwatch.ElapsedMilliseconds} ms)";
+                Time = DateTime.Now;
 
-            _stopwatch.Stop();
+                _stopwatch.Stop();
+            });
+
+            if (Thread.CurrentThread == Application.Current.Dispatcher.Thread)
+                action();
+            else
+                Application.Current.Dispatcher.Invoke(action, DispatcherPriority.Background);
         }
 
         public void Append(string message)

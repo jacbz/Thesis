@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Thesis.Models;
 
 namespace Thesis.ViewModels
@@ -16,9 +19,9 @@ namespace Thesis.ViewModels
         public static void Instantiate(ListView logView, Action selectLogTab)
         {
             _log = new ObservableCollection<LogItem>();
-            Logger._logView = logView;
+            _logView = logView;
             logView.ItemsSource = _log;
-            Logger._selectLogTab = selectLogTab;
+            _selectLogTab = selectLogTab;
         }
 
         public static void Clear()
@@ -28,19 +31,21 @@ namespace Thesis.ViewModels
 
         public static LogItem Log(LogItemType type, string message, bool useStopwatch = false)
         {
-            if (type == LogItemType.Error) _selectLogTab();
+            var createLogItem = new Func<LogItem>(() =>
+            {
+                if (type == LogItemType.Error) _selectLogTab();
 
-            var logItem = new LogItem(type, message, useStopwatch);
-            _log.Add(logItem);
-            _logView.SelectedIndex = _logView.Items.Count - 1;
-            _logView.ScrollIntoView(_logView.SelectedItem);
+                var logItem = new LogItem(type, message, useStopwatch);
+                _log.Add(logItem);
+                _logView.SelectedIndex = _logView.Items.Count - 1;
+                _logView.ScrollIntoView(_logView.SelectedItem);
 
-            return logItem;
-        }
+                return logItem;
+            });
 
-        public static LogItem DispatcherLog(LogItemType type, string message, bool useStopwatch = false)
-        {
-            return Application.Current.Dispatcher.Invoke(() => Log(type, message, useStopwatch));
+            if (Thread.CurrentThread == Application.Current.Dispatcher.Thread)
+                return createLogItem();
+            return Application.Current.Dispatcher.Invoke(createLogItem, DispatcherPriority.Background);
         }
     }
 }
