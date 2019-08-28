@@ -46,14 +46,14 @@ public static double RoundDown(double value, double digits)
 
 public class Matrix
 {
-	public object[,] Items { get; set; }
+	public dynamic[,] Items { get; set; }
 	
 	public static Matrix Of(params Row[] rows)
 	{
 		Matrix matrix = new Matrix();
 		int rowCount = rows.Length;
 		int columnCount = rows.Max(c => c.Items.Length);
-		object[,] items = new object[rowCount, columnCount];
+		dynamic[,] items = new dynamic[rowCount, columnCount];
 
 		for(int j = 0; j < rowCount; j++)
 		{
@@ -71,7 +71,7 @@ public class Matrix
 		Matrix matrix = new Matrix();
 		int rowCount = columns.Max(c => c.Items.Length);
 		int columnCount = columns.Length;
-		object[,] items = new object[rowCount, columnCount];
+		dynamic[,] items = new dynamic[rowCount, columnCount];
 
 		for(int j = 0; j < rowCount; j++)
 		{
@@ -84,9 +84,9 @@ public class Matrix
 		return matrix;
 	}	
 
-	public object[] Flatten()
+	public dynamic[] Flatten()
 	{
-		return Items.Cast<object>().ToArray();
+		return Items.Cast<dynamic>().ToArray();
 	}
 
 	public double Sum()
@@ -102,6 +102,154 @@ public class Matrix
 	public double Max()
 	{
 		return Flatten().Max();
+	}
+	
+	public dynamic VLookUp(dynamic lookupValue, int column, dynamic matchMode = null)
+	{
+		if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+		{
+			// approximate match
+			return Items[ApproximateMatchRowIndex(lookupValue, 0), column - 1];
+		}
+		else if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+		{
+			// exact match
+			return Items[ExactMatchRowIndex(lookupValue, 0), column - 1];
+		}
+		throw new ArgumentException("Match mode has invalid value");
+	}
+	
+	public dynamic HLookUp(dynamic lookupValue, int row, dynamic matchMode = null)
+	{
+		if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+		{
+			// approximate match
+			return Items[row - 1, ApproximateMatchColumnIndex(lookupValue, 0)];
+		}
+		else if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+		{
+			// exact match
+			return Items[row - 1, ExactMatchColumnIndex(lookupValue, 0)];
+		}
+		throw new ArgumentException("Match mode has invalid value");
+	}
+
+	public int ExactMatchRowIndex(dynamic value, int column)
+	{
+		if(IsNumeric(value))
+		{
+			decimal valueNum = Convert.ToDecimal(value);
+			for(int i = 0; i < Items.GetLength(0); i++)
+			{
+				dynamic curr = Items[i, column];
+				if (IsNumeric(curr) && Convert.ToDecimal(curr) == valueNum)
+					return i;
+			}
+		}
+		else if (value is string valueString)
+		{
+			for(int i = 0; i < Items.GetLength(0); i++)
+			{
+				dynamic curr = Items[i, column];
+				if (curr is string currString && currString == valueString)
+					return i;
+			}
+		}
+		return -1;
+	}
+
+	public int ExactMatchColumnIndex(dynamic value, int row)
+	{
+		if(IsNumeric(value))
+		{
+			decimal valueNum = Convert.ToDecimal(value);
+			for(int i = 0; i < Items.GetLength(1); i++)
+			{
+				dynamic curr = Items[row, i];
+				if (IsNumeric(curr) && Convert.ToDecimal(curr) == valueNum)
+					return i;
+			}
+		}
+		else if (value is string valueString)
+		{
+			for(int i = 0; i < Items.GetLength(1); i++)
+			{
+				dynamic curr = Items[row, i];
+				if (curr is string currString && currString == valueString)
+					return i;
+			}
+		}
+		return -1;
+	}
+
+	public int ApproximateMatchRowIndex(dynamic value, int column)
+	{
+		if(IsNumeric(value))
+		{
+			decimal valueNum = Convert.ToDecimal(value);
+			for(int i = 0; i < Items.GetLength(0); i++)
+			{
+				dynamic curr = Items[i, column];
+				if (!IsNumeric(Items[i,column]) && !(curr is EmptyCell))
+					return -1;
+				decimal currNum = Convert.ToDecimal(curr);
+				if (currNum == valueNum)
+					return i;
+				if (currNum > valueNum)
+					return i - 1;
+			}
+		}
+		else if (value is string valueString)
+		{
+			for(int i = 0; i < Items.GetLength(0); i++)
+			{
+				dynamic curr = Items[i, column];
+				if (curr is string currString)
+				{
+					int compare = valueString.CompareTo(currString);
+					if (compare == 0)
+						return i;
+					if (compare == -1)
+						return i - 1;
+				}
+			}
+		}
+		return -1;
+	}
+
+	public int ApproximateMatchColumnIndex(dynamic value, int row)
+	{
+		if(IsNumeric(value))
+		{
+			decimal valueNum = Convert.ToDecimal(value);
+			for(int i = 0; i < Items.GetLength(1); i++)
+			{
+				dynamic curr = Items[row, i];
+				if (!IsNumeric(curr) && !(curr is EmptyCell))
+					return -1;
+				decimal currNum = Convert.ToDecimal(curr);
+				if (currNum == valueNum)
+					return i;
+				if (currNum > valueNum)
+					return i - 1;
+			}
+		}
+		else if (value is string valueString)
+		{
+			for(int i = 0; i < Items.GetLength(1); i++)
+			{
+				dynamic curr = Items[row, i];
+				if (curr is string currString)
+				{
+					int compare = valueString.CompareTo(currString);
+					if (compare == 0)
+						return i;
+					if (compare == -1)
+						return i - 1;
+				}
+			}
+		}
+		return -1;
 	}
 }
 
@@ -169,14 +317,14 @@ public class Collection
 	}
 }
 
-public static double Sum(this object[] items)
+public static double Sum(this dynamic[] items)
 {
 	double result = 0;
-	foreach(object obj in items)
+	foreach(dynamic obj in items)
 	{
 		if(obj is Matrix m)
 			result += m.Sum();
-		else if(obj.IsNumeric())
+		else if(IsNumeric(obj))
 			result += Convert.ToDouble(obj);
 		else if (obj is string s && double.TryParse(s, out double d))
 			result += d;
@@ -185,14 +333,14 @@ public static double Sum(this object[] items)
 }
 
 // Calculates the minimum. Ignores everything except numbers and strings
-public static double Min(this object[] items)
+public static double Min(this dynamic[] items)
 {
 	var min = Double.MaxValue;
-	foreach(object obj in items)
+	foreach(dynamic obj in items)
 	{
 		if(obj is Matrix m)
 			min = Math.Min(min, m.Min());
-		else if(obj.IsNumeric())
+		else if(IsNumeric(obj))
 			min = Math.Min(min, Convert.ToDouble(obj));
 		else if (obj is string s && double.TryParse(s, out double d))
 			min = Math.Min(min, d);
@@ -202,14 +350,14 @@ public static double Min(this object[] items)
 }
 
 // Calculates the minimum. Ignores everything except numbers and strings
-public static double Max(this object[] items)
+public static double Max(this dynamic[] items)
 {
 	var max = Double.MinValue;
-	foreach(object obj in items)
+	foreach(dynamic obj in items)
 	{
 		if(obj is Matrix m)
 			max = Math.Max(max, m.Max());
-		else if(obj.IsNumeric())
+		else if(IsNumeric(obj))
 			max = Math.Max(max, Convert.ToDouble(obj));
 		else if (obj is string s && double.TryParse(s, out double d))
 			max = Math.Max(max, d);

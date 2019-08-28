@@ -75,6 +75,7 @@ namespace Thesis.Views
                     _generator.GenerateClasses();
                     EnableCodeGenerationOptions();
                     _generator.GenerateCode();
+                    testCodeButton.IsEnabled = true;
                     generateCodeTab.IsSelected = true;
                 }
             }
@@ -133,11 +134,12 @@ namespace Thesis.Views
             // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
             if (diagram2.Groups != null)
                 foreach (var group in (GroupCollection)diagram2.Groups)
-                foreach (var node in (NodeCollection)group.Nodes)
-                    if (node.Content is Vertex)
-                    {
-                        node.IsSelected = false;
-                    }
+                {
+                    foreach (var node in (NodeCollection)group.Nodes)
+                        if (node.Content is Vertex)
+                            node.IsSelected = false;
+                    group.IsSelected = false;
+                }
 
             _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
 

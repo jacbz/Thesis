@@ -152,7 +152,11 @@ namespace Thesis.ViewModels
 
             _window.diagram2.Nodes = new NodeCollection();
             _window.diagram2.Connectors = new ConnectorCollection();
-            _window.diagram2.Groups = new GroupCollection();
+
+            if (_window.diagram2.Groups != null)
+                ((GroupCollection)_window.diagram2.Groups).Clear();
+            else
+                _window.diagram2.Groups = new GroupCollection();
 
             double nextPos = 0;
             foreach (var generatedClass in ClassCollection.Classes)

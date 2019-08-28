@@ -376,6 +376,8 @@ namespace Thesis.Models.CodeGenerators
                             currentVertex.CellType = CellType.Number;
                             constant = constant.Replace("%", "*0.01").Replace("\"", "");
                         }
+                        if (constant == "TRUE") return LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                        if (constant == "FALSE") return LiteralExpression(SyntaxKind.FalseLiteralExpression);
                         return ParseExpression(constant);
                     case "FormulaWithEq":
                         return TreeNodeToExpression(node.ChildNodes[1], currentVertex);
@@ -385,10 +387,7 @@ namespace Thesis.Models.CodeGenerators
                     case "FunctionCall":
                         return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), currentVertex);
                     case "NamedRange":
-                        var namedRangeName = node.FindTokenAndGetText();
-                        return NameDictionary.TryGetValue(namedRangeName, out var namedRangeVertex) 
-                            ? VariableReferenceToExpression(namedRangeVertex, currentVertex) 
-                            : CommentExpression($"Did not find variable for named range {namedRangeName}", true);
+                        return NamedRangeToExpression(node, currentVertex);
                     case "Reference":
                         if (node.ChildNodes.Count == 1)
                             return TreeNodeToExpression(node.ChildNodes[0], currentVertex);
@@ -408,11 +407,12 @@ namespace Thesis.Models.CodeGenerators
                     case "ReferenceItem":
                         return node.ChildNodes.Count == 1 ? TreeNodeToExpression(node.ChildNodes[0], currentVertex) : RuleNotImplemented(nt);
                     case "ReferenceFunctionCall":
-                        var range = node.NodeToString(currentVertex.Formula);
+                        var function = node.GetFunction();
+                        if (function != ":")
+                            return FunctionToExpression(function, node.GetFunctionArguments().ToArray(), currentVertex);
 
-                        if (RangeDictionary.TryGetValue(range, out var rangeVertex))
-                            return VariableReferenceToExpression(rangeVertex, currentVertex);
-                        return CommentExpression($"Range {range} not found!");
+                        // node is a range
+                        return RangeToExpression(node, currentVertex);
                     case "UDFunctionCall":
                         return ParseExpression($"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToExpression(a, currentVertex)))})");
                     // Not implemented
@@ -506,7 +506,35 @@ namespace Thesis.Models.CodeGenerators
                         IdentifierName(functionName.ToTitleCase())));
                 }
 
-                // logicial functions
+                // reference functions
+                case "VLOOKUP":
+                case "HLOOKUP":
+                    {
+                    if (arguments.Length != 3 && arguments.Length != 4)
+                        return FunctionError(functionName, arguments);
+
+                    var matrix = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
+
+                    var lookupValue = TreeNodeToExpression(arguments[0], currentVertex);
+                    var columnIndex = TreeNodeToExpression(arguments[2], currentVertex);
+
+                    var function = functionName == "VLOOKUP" ? "VLookUp" : "HLookUp";
+                    var expression = InvocationExpression(
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                matrix,
+                                IdentifierName(function)))
+                        .AddArgumentListArguments(
+                            Argument(lookupValue),
+                            Argument(columnIndex));
+
+                    if (arguments.Length == 4)
+                        expression = expression.AddArgumentListArguments(
+                            Argument(TreeNodeToExpression(arguments[3], currentVertex)));
+                    return expression;
+                }
+
+                // logical functions
                 case "IF":
                 {
                     if (arguments.Length != 2 && arguments.Length != 3)
@@ -722,6 +750,12 @@ namespace Thesis.Models.CodeGenerators
             { "SUM", CellType.Number },
             { "MIN", CellType.Number },
             { "MAX", CellType.Number },
+
+            { "HLOOKUP", CellType.Unknown },
+            { "VLOOKUP", CellType.Unknown },
+            { "CHOOSE", CellType.Unknown },
+            { "MATCH", CellType.Number },
+            { "INDEX", CellType.Unknown },
 
             { "IF", CellType.Unknown },
             { "AND", CellType.Bool },
@@ -946,6 +980,36 @@ namespace Thesis.Models.CodeGenerators
                 : MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(variableVertex.Class.Name), IdentifierName(variableVertex.VariableName));
         }
+
+        private ExpressionSyntax RangeOrNamedRangeToExpression(ParseTreeNode node, CellVertex currentVertex)
+        {
+            if (node.Term.Name == "NamedRange")
+                return NamedRangeToExpression(node, currentVertex);
+            if (node.Term.Name == "ReferenceFunctionCall" && node.GetFunction() == ":")
+                return RangeToExpression(node, currentVertex);
+            if (node.ChildNodes.Count == 1)
+                return RangeOrNamedRangeToExpression(node.ChildNodes[0], currentVertex);
+            return CommentExpression($"Argument is not a (named) range!", true);
+        }
+
+        // node is ReferenceFunctionCall with function :
+        private ExpressionSyntax RangeToExpression(ParseTreeNode node, CellVertex currentVertex)
+        {
+            var range = node.NodeToString(currentVertex.Formula);
+            if (RangeDictionary.TryGetValue(range, out var rangeVertex))
+                return VariableReferenceToExpression(rangeVertex, currentVertex);
+            return CommentExpression($"Did not find variable for range {range}", true);
+        }
+
+        // node is NamedRange
+        private ExpressionSyntax NamedRangeToExpression(ParseTreeNode node, CellVertex currentVertex)
+        {
+            var namedRangeName = node.FindTokenAndGetText();
+            return NameDictionary.TryGetValue(namedRangeName, out var namedRangeVertex)
+                ? VariableReferenceToExpression(namedRangeVertex, currentVertex)
+                : CommentExpression($"Did not find variable for named range {namedRangeName}", true);
+        }
+
 
         private ExpressionSyntax RuleNotImplemented(NonTerminal nt)
         {

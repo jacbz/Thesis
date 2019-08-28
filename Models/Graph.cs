@@ -112,8 +112,8 @@ namespace Thesis.Models
             foreach (var cellVertex in graph.Vertices.OfType<CellVertex>())
             {
                 if (cellVertex.ParseTree == null) continue;
-                try
-                {
+//                try
+//                {
                     var (referencedCells, externalReferencedCells, referencedNames) =
                         graph.GetListOfReferencedCells(
                             cellVertex,
@@ -164,12 +164,12 @@ namespace Thesis.Models
                             Logger.Log(LogItemType.Warning, "Could not find named range " + nameName);
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log(LogItemType.Error,
-                        $"Error processing formula in {cellVertex.StringAddress} ({cellVertex.Formula}): {ex.GetType().Name} ({ex.Message})");
-                }
+//                }
+//                catch (Exception ex)
+//                {
+//                    Logger.Log(LogItemType.Error,
+//                        $"Error processing formula in {cellVertex.StringAddress} ({cellVertex.Formula}): {ex.GetType().Name} ({ex.Message})");
+//                }
             }
 
             if (graph.ExternalVertices.Count > 0)
@@ -384,6 +384,9 @@ namespace Thesis.Models
                 {
                     case "ReferenceFunctionCall":
                     {
+                        if (node.GetFunction() != ":")
+                            break;
+
                         string range = node.NodeToString(cellVertex.Formula);
 
                         if (!RangeDictionary.TryGetValue(range, out var rangeVertex))
