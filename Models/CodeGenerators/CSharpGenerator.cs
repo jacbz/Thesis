@@ -438,6 +438,10 @@ namespace Thesis.Models.CodeGenerators
                 case "+":
                 case "-":
                 {
+                    if (arguments.Length == 1)
+                        return PrefixUnaryExpression( SyntaxKind.UnaryMinusExpression,
+                            TreeNodeToExpression(arguments[0], currentVertex));
+
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
                     // adding a Date and a number yields Date.AddDays(number)
@@ -520,8 +524,7 @@ namespace Thesis.Models.CodeGenerators
 
                     var function = functionName == "VLOOKUP" ? "VLookUp" : "HLookUp";
                     var expression = InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                 matrix,
                                 IdentifierName(function)))
                         .AddArgumentListArguments(
@@ -531,6 +534,38 @@ namespace Thesis.Models.CodeGenerators
                     if (arguments.Length == 4)
                         expression = expression.AddArgumentListArguments(
                             Argument(TreeNodeToExpression(arguments[3], currentVertex)));
+                    return expression;
+                }
+                case "CHOOSE":
+                {
+                    if (arguments.Length < 2)
+                        return FunctionError(functionName, arguments);
+                    var collection = CollectionOf(arguments
+                        .Skip(1)
+                        .Select(a => TreeNodeToExpression(a, currentVertex))
+                        .ToArray());
+
+                    // collection[arguments[0]]
+                    return ElementAccessExpression(collection)
+                        .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
+                                    Argument(TreeNodeToExpression(arguments[0], currentVertex)))));
+                }
+                case "MATCH":
+                {
+                    if (arguments.Length != 2 && arguments.Length != 3)
+                        return FunctionError(functionName, arguments);
+                    var collection = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
+
+                    var expression = InvocationExpression(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                collection,
+                                IdentifierName("Match")))
+                        .AddArgumentListArguments(
+                            Argument(TreeNodeToExpression(arguments[0], currentVertex)));
+                    if (arguments.Length == 3)
+                        expression = expression.AddArgumentListArguments(
+                            Argument(TreeNodeToExpression(arguments[2], currentVertex)));
+
                     return expression;
                 }
 

@@ -7,11 +7,11 @@ public static bool IsNumeric(this object o) => o is double || o is int || o is u
 												  o is decimal;
 
 // same as Object.Equals, but returns true for numbers of different types
-public static bool Equals(object a, object b)
+public static bool Compare(dynamic a, dynamic b)
 {
 	if (IsNumeric(a) && IsNumeric(b))
 	{
-		return double.Equals(Convert.ToDouble(a), Convert.ToDouble(b));
+		return a == b;
 	}
 	return Object.Equals(a, b);
 }
@@ -255,7 +255,7 @@ public class Matrix
 
 public class Row : Collection
 {
-	public static Row Of(params object[] items)
+	public static Row Of(params dynamic[] items)
 	{
 		Row row = new Row();
 		row.Items = items;
@@ -265,7 +265,7 @@ public class Row : Collection
 
 public class Column : Collection
 {	
-	public static Column Of(params object[] items)
+	public static Column Of(params dynamic[] items)
 	{
 		Column column = new Column();
 		column.Items = items;
@@ -275,7 +275,7 @@ public class Column : Collection
 
 public class Collection
 {
-	public object[] Items { get; set; }
+	public dynamic[] Items { get; set; }
 
 	protected Collection()
 	{
@@ -283,13 +283,13 @@ public class Collection
 	}
 
 	// flatten on arrival
-	public static Collection Of(params object[] items)
+	public static Collection Of(params dynamic[] items)
 	{
 		Collection collection = new Collection();
 		if (items == null) return collection;
 
-		var flattenedItems = new List<object>();
-		foreach(object obj in items)
+		var flattenedItems = new List<dynamic>();
+		foreach(dynamic obj in items)
 		{
 			if (obj == null) continue;
 			if (obj is Collection ic)
@@ -314,8 +314,46 @@ public class Collection
 	public double Max()
 	{
 		return Items.Max();
+	}	
+
+	public int Match(dynamic lookupValue, int matchType = 1)
+	{
+		for(int i = 0; i < Items.Length; i++)
+		{
+			dynamic curr = Items[i];
+			if (Compare(lookupValue, curr)) // exact match
+				return i + 1;
+			
+			if(IsNumeric(lookupValue) && IsNumeric(curr))
+			{
+				decimal valueNum = Convert.ToDecimal(lookupValue);
+				decimal currNum = Convert.ToDecimal(curr);
+				if (currNum > valueNum && matchType != 0)
+					return matchType == 1 ? i : i + 1;
+			}
+			else if (IsNumeric(lookupValue) && !IsNumeric(curr))
+			{
+				if (matchType == 1)
+					return i;
+				if (matchType == -1)
+					throw new ArgumentException("Can not use match type -1 when list is of mixed type");
+			}
+			else if (lookupValue is string valueString && curr is string currString && matchType != 0)
+			{
+				int compare = currString.CompareTo(valueString);
+				if(compare == 1)
+					return matchType == 1 ? i : i + 1;				
+			}
+		}
+		return -1;
 	}
-}
+
+	// Excel arrays begin at 1
+	public dynamic this[int index]
+	{
+		get => Items[index - 1];
+	}
+	}
 
 public static double Sum(this dynamic[] items)
 {
@@ -368,81 +406,21 @@ public static double Max(this dynamic[] items)
 
 public struct EmptyCell
 {
-    public static dynamic operator +(dynamic a, EmptyCell b)
-    {
-        return a;
-    }
-
-    public static dynamic operator +(EmptyCell a, dynamic b)
-    {
-        return b;
-    }
-
-    public static EmptyCell operator +(EmptyCell a, EmptyCell b)
-    {
-        return a;
-    }
-
-    public static dynamic operator -(dynamic a, EmptyCell b)
-    {
-        return a;
-    }
-
-    public static dynamic operator -(EmptyCell a, dynamic b)
-    {
-        return 0 - b;
-    }
-
-    public static dynamic operator -(EmptyCell a, EmptyCell b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator *(dynamic a, EmptyCell b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator *(EmptyCell a, dynamic b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator *(EmptyCell a, EmptyCell b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator /(dynamic a, EmptyCell b)
-    {
-        throw new System.DivideByZeroException();
-    }
-
-    public static dynamic operator /(EmptyCell a, dynamic b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator /(EmptyCell a, EmptyCell b)
-    {
-        throw new System.DivideByZeroException();
-    }
-
-    public static dynamic operator %(dynamic a, EmptyCell b)
-    {
-        throw new System.DivideByZeroException();
-    }
-
-    public static dynamic operator %(EmptyCell a, dynamic b)
-    {
-        return 0;
-    }
-
-    public static dynamic operator %(EmptyCell a, EmptyCell b)
-    {
-        throw new System.DivideByZeroException();
-    }
-
+    public static dynamic operator +(dynamic a, EmptyCell b) { return a; }
+    public static dynamic operator +(EmptyCell a, dynamic b) { return b; }
+    public static EmptyCell operator +(EmptyCell a, EmptyCell b) { return a; }
+	public static dynamic operator -(dynamic a, EmptyCell b) { return a; }
+    public static dynamic operator -(EmptyCell a, dynamic b) { return 0 - b; }
+    public static dynamic operator -(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator *(dynamic a, EmptyCell b) { return 0; }
+    public static dynamic operator *(EmptyCell a, dynamic b) { return 0; }
+    public static dynamic operator *(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator /(dynamic a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator /(EmptyCell a, dynamic b) { return 0; }
+    public static dynamic operator /(EmptyCell a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator %(dynamic a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator %(EmptyCell a, dynamic b) { return 0; }
+    public static dynamic operator %(EmptyCell a, EmptyCell b) { throw new System.DivideByZeroException(); }
     public static bool operator ==(dynamic a, EmptyCell empty)
     {
         if (IsNumeric(a)) return a == 0;
@@ -456,108 +434,29 @@ public struct EmptyCell
                 return false;
         }
     }
-
-    public static bool operator ==(EmptyCell a, dynamic b)
-    {
-        return b == a;
-    }
-
-    public static bool operator ==(EmptyCell a, EmptyCell b)
-    {
-        return true;
-    }
-
-    public static bool operator !=(dynamic a, EmptyCell b)
-    {
-        return !(a == b);
-    }
-
-    public static bool operator !=(EmptyCell a, dynamic b)
-    {
-        return !(b == a);
-    }
-
-    public static bool operator !=(EmptyCell a, EmptyCell b)
-    {
-        return false;
-    }
-
-    public static bool operator <(dynamic a, EmptyCell b)
-    {
-        return a < 0;
-    }
-
-    public static bool operator <(EmptyCell a, dynamic b)
-    {
-        return 0 < b;
-    }
-
-    public static bool operator <(EmptyCell a, EmptyCell b)
-    {
-        return false;
-    }
-
-    public static bool operator >(dynamic a, EmptyCell b)
-    {
-        return a > 0;
-    }
-
-    public static bool operator >(EmptyCell a, dynamic b)
-    {
-        return 0 > b;
-    }
-
-    public static bool operator >(EmptyCell a, EmptyCell b)
-    {
-        return false;
-    }
-
-    public static bool operator <=(dynamic a, EmptyCell b)
-    {
-        return a <= 0;
-    }
-
-    public static bool operator <=(EmptyCell a, dynamic b)
-    {
-        return 0 <= b;
-    }
-
-    public static bool operator <=(EmptyCell a, EmptyCell b)
-    {
-        return true;
-    }
-
-    public static bool operator >=(dynamic a, EmptyCell b)
-    {
-        return a >= 0;
-    }
-
-    public static bool operator >=(EmptyCell a, dynamic b)
-    {
-        return 0 >= b;
-    }
-
-    public static bool operator >=(EmptyCell a, EmptyCell b)
-    {
-        return true;
-    }
-
-    public static dynamic operator !(EmptyCell a)
-    {
-        return true;
-    }
+    public static bool operator ==(EmptyCell a, dynamic b) { return b == a; }
+    public static bool operator ==(EmptyCell a, EmptyCell b) { return true; }
+    public static bool operator !=(dynamic a, EmptyCell b) { return !(a == b); }
+    public static bool operator !=(EmptyCell a, dynamic b) { return !(b == a); }
+    public static bool operator !=(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator <(dynamic a, EmptyCell b) { return a < 0; }
+    public static bool operator <(EmptyCell a, dynamic b) { return 0 < b; }
+    public static bool operator <(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator >(dynamic a, EmptyCell b) { return a > 0; }
+    public static bool operator >(EmptyCell a, dynamic b) { return 0 > b; }
+    public static bool operator >(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator <=(dynamic a, EmptyCell b) { return a <= 0; }
+    public static bool operator <=(EmptyCell a, dynamic b) { return 0 <= b; }
+    public static bool operator <=(EmptyCell a, EmptyCell b) { return true; }
+    public static bool operator >=(dynamic a, EmptyCell b) { return a >= 0; }
+    public static bool operator >=(EmptyCell a, dynamic b) { return 0 >= b; }
+    public static bool operator >=(EmptyCell a, EmptyCell b) { return true; }
+    public static dynamic operator !(EmptyCell a) { return true; }
 
     public static implicit operator double(EmptyCell a) => 0;
     public static implicit operator string(EmptyCell a) => "";
     public static implicit operator bool(EmptyCell a) => false;
 
-    public override bool Equals(object obj)
-    {
-        return obj == this;
-    }
-
-    public override int GetHashCode()
-    {
-        return 0;
-    }
+    public override bool Equals(object obj) { return obj == this; }
+    public override int GetHashCode() { return 0; }
 }
