@@ -324,6 +324,10 @@ namespace Thesis.Models.CodeGenerators
         {
             switch (rangeVertex.Type)
             {
+                case RangeVertex.RangeType.Single:
+                {
+                    return CellVertexToConstantOrVariable(rangeVertex.GetSingleElement(), rangeVertex);
+                }
                 case RangeVertex.RangeType.Column:
                 {
                     var columnArray = rangeVertex.GetColumnArray();
@@ -1107,10 +1111,20 @@ namespace Thesis.Models.CodeGenerators
         {
             if (_useDynamic.Contains(vertex)) return "dynamic";
 
+            CellVertex cellVertex;
             if (vertex is RangeVertex rangeVertex)
-                return rangeVertex.Type.ToString();
-            
-            switch (((CellVertex) vertex).CellType)
+            {
+                if (rangeVertex.Type == RangeVertex.RangeType.Single)
+                    cellVertex = rangeVertex.GetSingleElement();
+                else
+                    return rangeVertex.Type.ToString();
+            }
+            else
+            {
+                cellVertex = (CellVertex)vertex;
+            }
+
+            switch (cellVertex.CellType)
             {
                 case CellType.Bool:
                     return "bool";
@@ -1129,10 +1143,20 @@ namespace Thesis.Models.CodeGenerators
 
         private ExpressionSyntax VertexValueToExpression(Vertex vertex)
         {
-            if (vertex is RangeVertex rangeVertex)
-                return RangeVertexToExpression(rangeVertex);
+            CellVertex cellVertex;
 
-            var cellVertex = (CellVertex) vertex;
+            if (vertex is RangeVertex rangeVertex)
+            {
+                if (rangeVertex.Type == RangeVertex.RangeType.Single)
+                    cellVertex = rangeVertex.GetSingleElement();
+                else
+                    return RangeVertexToExpression(rangeVertex);
+            }
+            else
+            {
+                cellVertex = (CellVertex) vertex;
+            }
+
             var vertexValue = cellVertex.Value;
             switch (cellVertex.CellType)
             {

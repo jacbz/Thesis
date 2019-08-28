@@ -44,7 +44,9 @@ namespace Thesis.Models.VertexTypes
             RowCount = maxRow - minRow + 1;
             ColumnCount = maxColumn - minColumn + 1;
             Type = minRow == maxRow
-                ? RangeType.Row
+                ? minColumn == maxColumn
+                  ? RangeType.Single
+                  : RangeType.Row
                 : minColumn == maxColumn
                     ? RangeType.Column
                     : RangeType.Matrix;
@@ -53,6 +55,11 @@ namespace Thesis.Models.VertexTypes
         public (string sheetName, string address)[] GetAddresses()
         {
             return CellsInRange.Select(c => (IsExternal ? ExternalWorksheetName : null, c.AddressLocal)).ToArray();
+        }
+
+        public CellVertex GetSingleElement()
+        {
+            return new CellVertex(AddressToCellDictionary[(StartAddress.row, StartAddress.column)]);
         }
 
         public CellVertex[] GetColumnArray()
@@ -91,6 +98,7 @@ namespace Thesis.Models.VertexTypes
 
         public enum RangeType
         {
+            Single,
             Column,
             Row,
             Matrix
