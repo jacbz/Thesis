@@ -178,16 +178,25 @@ namespace Thesis.Models
             var rangeVertices = graph.RangeDictionary.Values.ToList();
             // add all range vertices
             graph.Vertices.AddRange(rangeVertices);
-            foreach (var rangeVertex in rangeVertices)
-            {
-                
-            }
-
             graph.GenerateLabels();
 
             graph.AllVertices = graph.Vertices.ToList();
 
             graph.PerformTransitiveFilter(graph.GetOutputFields());
+
+            // add parent/child for cells in ranges
+            var vertexDict = graph.Vertices.OfType<CellVertex>().ToDictionary(v => v.GlobalAddress);
+            foreach (var rangeVertex in rangeVertices)
+            {
+                foreach (var address in rangeVertex.GetAddresses())
+                {
+                    if (vertexDict.TryGetValue(address, out var vertex))
+                    {
+                        rangeVertex.Children.Add(vertex);
+                        vertex.Parents.Add(rangeVertex);
+                    }
+                }
+            }
 
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
