@@ -73,7 +73,7 @@ namespace Thesis.Views
         {
             if (diagram.Nodes == null || !(vertex is CellVertex cell)) return;
 
-            foreach (var node in (DiagramCollection<NodeViewModel>)diagram.Nodes)
+            foreach (var node in (NodeCollection)diagram.Nodes)
                 if (node.Content is CellVertex nodeCell)
                 {
                     if (nodeCell.Address.row == cell.Address.row &&
@@ -90,8 +90,8 @@ namespace Thesis.Views
                 }
 
             if (diagram2.Groups == null) return;
-            foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
-            foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+            foreach (var group in (GroupCollection)diagram2.Groups)
+            foreach (var node in (NodeCollection)group.Nodes)
                 if (node.Content is CellVertex nodeCell)
                 {
                     if (nodeCell.Address.row == cell.Address.row &&

@@ -157,7 +157,7 @@ namespace Thesis.ViewModels
                 ? 0 
                 : graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
 
-            var nodes = new ObservableCollection<NodeViewModel>();
+            var nodes = new NodeCollection();
             var group = new GroupViewModel
             {
                 Nodes = nodes

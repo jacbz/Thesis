@@ -133,15 +133,15 @@ namespace Thesis.ViewModels
         {
             var logItem = Logger.Log(LogItemType.Info, "Layouting graph...", true);
 
-            _window.diagram.Nodes = new ObservableCollection<NodeViewModel>();
-            _window.diagram.Connectors = new ObservableCollection<ConnectorViewModel>();
+            _window.diagram.Nodes = new NodeCollection();
+            _window.diagram.Connectors = new ConnectorCollection();
 
             var graphCellVertices = Graph.Vertices.GetCellVertices();
             foreach (var vertex in graphCellVertices)
-                ((ObservableCollection<NodeViewModel>)_window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
+                ((NodeCollection)_window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
             foreach (var vertex in graphCellVertices)
             foreach (var child in vertex.Children)
-                ((ObservableCollection<ConnectorViewModel>)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
+                ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
 
             logItem.AppendElapsedTime();
         }
@@ -159,14 +159,14 @@ namespace Thesis.ViewModels
             {
                 var (group, nextPosX) = generatedClass.FormatClass(nextPos);
                 nextPos = nextPosX;
-                (_window.diagram2.Groups as GroupCollection).Add(group);
+                ((GroupCollection)_window.diagram2.Groups).Add(group);
             }
             
             foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
             {
                 if (HideConnections && vertex.Class != child.Class) continue;
-                ((ConnectorCollection) _window.diagram2.Connectors).Add(vertex.FormatEdge(child));
+                ((ConnectorCollection)_window.diagram2.Connectors).Add(vertex.FormatEdge(child));
             }
 
             logItem.AppendElapsedTime();

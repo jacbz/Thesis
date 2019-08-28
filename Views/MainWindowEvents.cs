@@ -132,8 +132,8 @@ namespace Thesis.Views
         {
             // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
             if (diagram2.Groups != null)
-                foreach (var group in (DiagramCollection<GroupViewModel>)diagram2.Groups)
-                foreach (var node in (ObservableCollection<NodeViewModel>)group.Nodes)
+                foreach (var group in (GroupCollection)diagram2.Groups)
+                foreach (var node in (NodeCollection)group.Nodes)
                     if (node.Content is Vertex)
                     {
                         node.IsSelected = false;
