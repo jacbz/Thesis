@@ -48,6 +48,11 @@ namespace Thesis.Models.VertexTypes
             Include = true;
         }
 
+        public void MarkAsExternal(string worksheetName)
+        {
+            ExternalWorksheetName = worksheetName;
+        }
+
         public void MarkAsExternal(string worksheetName, string variableName)
         {
             ExternalWorksheetName = worksheetName;

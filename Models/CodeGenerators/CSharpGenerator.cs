@@ -408,7 +408,11 @@ namespace Thesis.Models.CodeGenerators
                     case "ReferenceItem":
                         return node.ChildNodes.Count == 1 ? TreeNodeToExpression(node.ChildNodes[0], currentVertex) : RuleNotImplemented(nt);
                     case "ReferenceFunctionCall":
-                        return FunctionToExpression(node.GetFunction(), node.GetFunctionArguments().ToArray(), currentVertex);
+                        var range = node.NodeToString(currentVertex.Formula);
+
+                        if (RangeDictionary.TryGetValue(range, out var rangeVertex))
+                            return VariableReferenceToExpression(rangeVertex, currentVertex);
+                        return CommentExpression($"Range {range} not found!");
                     case "UDFunctionCall":
                         return ParseExpression($"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToExpression(a, currentVertex)))})");
                     // Not implemented
@@ -662,17 +666,6 @@ namespace Thesis.Models.CodeGenerators
                     return FoldBinaryExpression("+", arguments, currentVertex);
                 }
 
-                case ":":
-                {
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-
-                    var range = arguments[0].FindTokenAndGetText() + ":" + arguments[1].FindTokenAndGetText();
-
-                    if (RangeDictionary.TryGetValue(range, out var rangeVertex))
-                        return RangeVertexToExpression(rangeVertex);
-                    return CommentExpression($"Range {range} not found!");
-                }
-
                 // other
                 case "DATE":
                 {
@@ -753,7 +746,6 @@ namespace Thesis.Models.CodeGenerators
 
             { "&", CellType.Text },
             { "CONCATENATE", CellType.Text },
-            { ":", CellType.Unknown },
 
             { "DATE", CellType.Date },
             { "SECOND", CellType.Date },

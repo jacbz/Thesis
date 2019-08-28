@@ -21,7 +21,6 @@ namespace Thesis.Models.VertexTypes
         public RangeVertex(IRange[] cellsInRange, string addressOrName)
         {
             CellsInRange = cellsInRange;
-            AddressToCellDictionary = CellsInRange.ToDictionary(c => (c.Row, c.Column));
 
             VariableName = addressOrName.MakeNameVariableConform();
 
@@ -30,12 +29,14 @@ namespace Thesis.Models.VertexTypes
             int maxRow = int.MinValue;
             int maxColumn = int.MinValue;
 
+            AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
             foreach (IRange iRange in CellsInRange)
             {
                 minRow = Math.Min(iRange.Row, minRow);
                 minColumn = Math.Min(iRange.Column, minColumn);
                 maxRow = Math.Max(iRange.LastRow, maxRow);
                 maxColumn = Math.Max(iRange.LastColumn, maxColumn);
+                AddressToCellDictionary.Add((iRange.Row, iRange.Column), iRange);
             }
 
             StartAddress = (minRow, minColumn);
@@ -47,6 +48,11 @@ namespace Thesis.Models.VertexTypes
                 : minColumn == maxColumn
                     ? RangeType.Column
                     : RangeType.Matrix;
+        }
+
+        public (string sheetName, string address)[] GetAddresses()
+        {
+            return CellsInRange.Select(c => (IsExternal ? ExternalWorksheetName : null, c.AddressLocal)).ToArray();
         }
 
         public CellVertex[] GetColumnArray()

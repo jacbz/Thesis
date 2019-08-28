@@ -175,8 +175,13 @@ namespace Thesis.Models
             if (graph.ExternalVertices.Count > 0)
                 Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
 
+            var rangeVertices = graph.RangeDictionary.Values.ToList();
             // add all range vertices
-            graph.Vertices.AddRange(graph.RangeDictionary.Values.ToList());
+            graph.Vertices.AddRange(rangeVertices);
+            foreach (var rangeVertex in rangeVertices)
+            {
+                
+            }
 
             graph.GenerateLabels();
 
@@ -320,17 +325,56 @@ namespace Thesis.Models
             // maps a Reference node to an external sheet
             var referenceNodeToExternalSheet = new HashSet<(ParseTreeNode node, string sheetName)>();
 
+            // first 
+
             while (stack.Count > 0)
             {
                 var node = stack.Pop();
                 if (visited.Contains(node)) continue;
 
                 visited.Add(node);
+                if (node.Term.Name == "Prefix")
+                {
+                    // SheetNameToken vs ParsedSheetNameToken
+                    string sheetName = node.ChildNodes.Count == 2
+                        ? node.ChildNodes[1].FindTokenAndGetText()
+                        : node.FindTokenAndGetText();
+                    // remove ! at end of sheet name
+                    sheetName = sheetName.FormatSheetName();
 
-                bool processChildren = true;
+                    // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
+                    ParseTreeNode reference = node.Parent(cellVertex.ParseTree);
+                    var traverse = node;
+                    while (traverse != cellVertex.ParseTree)
+                    {
+                        traverse = traverse.Parent(cellVertex.ParseTree);
+                        if (traverse.Term.Name == "Reference")
+                            reference = traverse;
+                    }
+                    MarkChildNodesAsExternal(referenceNodeToExternalSheet, reference, sheetName);
+                }
+
+                for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
+                {
+                    stack.Push(node.ChildNodes[i]);
+                }
+            }
+
+            visited.Clear();
+            stack.Push(cellVertex.ParseTree);
+
+            while (stack.Count > 0)
+            {
+                var node = stack.Pop();
+                if (visited.Contains(node)) continue;
+
+                visited.Add(node);
+                bool continueWithChildren = true;
+
                 switch (node.Term.Name)
                 {
                     case "ReferenceFunctionCall":
+                    {
                         string range = node.NodeToString(cellVertex.Formula);
 
                         if (!RangeDictionary.TryGetValue(range, out var rangeVertex))
@@ -338,42 +382,32 @@ namespace Thesis.Models
                             rangeVertex = new RangeVertex(getRangeFunc(range).Cells, range);
                             RangeDictionary.Add(range, rangeVertex);
                         }
+                        var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
+                        if (!externalMatch.Equals(default))
+                            rangeVertex.MarkAsExternal(externalMatch.sheetName);
 
                         rangeVertex.Parents.Add(cellVertex);
                         cellVertex.Children.Add(rangeVertex);
 
+                        continueWithChildren = false;
+
                         break;
+                    }
                     case "Cell":
+                    {
                         var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
                         if (!externalMatch.Equals(default))
                             externalReferencedCells.Add((externalMatch.sheetName, node.FindTokenAndGetText()));
                         else
                             referencedCells.Add(node.FindTokenAndGetText());
                         break;
+                    }
                     case "NamedRange":
+                    {
                         var name = node.FindTokenAndGetText();
                         referencedNames.Add(name);
-                        processChildren = false;
                         break;
-                    case "Prefix":
-                        // SheetNameToken vs ParsedSheetNameToken
-                        string sheetName = node.ChildNodes.Count == 2 
-                            ? node.ChildNodes[1].FindTokenAndGetText() 
-                            : node.FindTokenAndGetText();
-                        // remove ! at end of sheet name
-                        sheetName = sheetName.FormatSheetName();
-
-                        // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
-                        ParseTreeNode reference = node.Parent(cellVertex.ParseTree);
-                        var traverse = node;
-                        while (traverse != cellVertex.ParseTree)
-                        {
-                            traverse = traverse.Parent(cellVertex.ParseTree);
-                            if (traverse.Term.Name == "Reference")
-                                reference = traverse;
-                        }
-                        MarkChildNodesAsExternal(referenceNodeToExternalSheet, reference, sheetName);
-                        break;
+                    }
                 }
 
                 if (node.Term.Name == "UDFunctionCall")
@@ -381,7 +415,7 @@ namespace Thesis.Models
                     Logger.Log(LogItemType.Warning,
                         $"Skipping user defined function {node.FindTokenAndGetText()} in {cellVertex.Address}");
                 }
-                else if (processChildren)
+                else if (continueWithChildren)
                 {
                     for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
                     {
