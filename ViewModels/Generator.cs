@@ -102,13 +102,16 @@ namespace Thesis.ViewModels
         /// </summary>
         public void FilterAndLayoutGraph()
         {
-            if (_window.spreadsheet.ActiveSheet.Name != ActiveWorksheet)
-            {
-                App.Settings.ResetWorkbookSpecificSettings();
-                GenerateGraph();
-            }
+            Application.Current.Dispatcher.Invoke(() => {
 
-            Application.Current.Dispatcher.Invoke(() => _window.EnableClassGenerationOptions(), DispatcherPriority.Background);
+                if (_window.spreadsheet.ActiveSheet.Name != ActiveWorksheet)
+                {
+                    App.Settings.ResetWorkbookSpecificSettings();
+                    GenerateGraph();
+                }
+                _window.EnableClassGenerationOptions();
+
+            }, DispatcherPriority.Background);
 
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
             var includedVertexStrings = includedVertices.Select(v => v.StringAddress).ToList();

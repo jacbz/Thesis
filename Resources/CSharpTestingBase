@@ -251,6 +251,11 @@ public class Matrix
 		}
 		return -1;
 	}
+
+	public dynamic this[int row, int column]
+	{
+		get => Items[row - 1, column - 1];
+	}
 }
 
 public class Row : Collection
@@ -260,6 +265,15 @@ public class Row : Collection
 		Row row = new Row();
 		row.Items = items;
 		return row;
+	}
+
+	public dynamic this[int row, int column]
+	{
+		get
+		{
+			if (row != 1) throw new IndexOutOfRangeException("Row number must be 1");
+			return Items[column - 1];
+		}
 	}
 }
 
@@ -271,6 +285,15 @@ public class Column : Collection
 		column.Items = items;
 		return column;
 	}	
+
+	public dynamic this[int row, int column]
+	{
+		get
+		{
+			if (column != 1) throw new IndexOutOfRangeException("Column number must be 1");
+			return Items[row - 1];
+		}
+	}
 }
 
 public class Collection
@@ -348,12 +371,11 @@ public class Collection
 		return -1;
 	}
 
-	// Excel arrays begin at 1
 	public dynamic this[int index]
 	{
 		get => Items[index - 1];
 	}
-	}
+}
 
 public static double Sum(this dynamic[] items)
 {

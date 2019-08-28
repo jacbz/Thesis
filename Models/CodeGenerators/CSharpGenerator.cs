@@ -550,6 +550,23 @@ namespace Thesis.Models.CodeGenerators
                         .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
                                     Argument(TreeNodeToExpression(arguments[0], currentVertex)))));
                 }
+                case "INDEX":
+                {
+                    if (arguments.Length != 2 && arguments.Length != 3)
+                        return FunctionError(functionName, arguments);
+                    var matrixOrCollection = RangeOrNamedRangeToExpression(arguments[0], currentVertex);
+
+                    var argumentList = new List<SyntaxNodeOrToken>();
+                    argumentList.Add(Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+                    if (arguments.Length == 3)
+                    {
+                        argumentList.Add(Token(SyntaxKind.CommaToken));
+                        argumentList.Add(Argument(TreeNodeToExpression(arguments[2], currentVertex)));
+                    }
+
+                    return ElementAccessExpression(matrixOrCollection)
+                        .WithArgumentList(BracketedArgumentList(SeparatedList<ArgumentSyntax>(argumentList.ToArray())));
+                }
                 case "MATCH":
                 {
                     if (arguments.Length != 2 && arguments.Length != 3)
