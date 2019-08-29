@@ -1,5 +1,8 @@
-﻿using Irony.Parsing;
+﻿using System.Globalization;
+using System.Threading;
+using Irony.Parsing;
 using Syncfusion.XlsIO;
+using Thesis.ViewModels;
 
 namespace Thesis.Models.VertexTypes
 {
@@ -71,8 +74,9 @@ namespace Thesis.Models.VertexTypes
 
         private string FormatFormula(string formula)
         {
-            // for German formulas
-            return formula.Replace(",", ".").Replace(";", ",").Replace("$", "");
+            if (Formatter.CurrentCultureInfo.NumberFormat.NumberDecimalSeparator == ",")
+                formula = formula.Replace(",", ".").Replace(";", ",");
+            return formula.Replace("$", "");
         }
 
         public override string ToString()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
@@ -16,6 +17,8 @@ namespace Thesis.ViewModels
     // Extension methods to layout and format objects
     public static class Formatter
     {
+        public static CultureInfo CurrentCultureInfo;
+
         private static Style _formulaShapeStyle;
         private static Style _outputShapeStyle;
         private static Style _constantShapeStyle;
@@ -44,6 +47,8 @@ namespace Thesis.ViewModels
 
         public static void InitXamlStyles()
         {
+            CurrentCultureInfo = CultureInfo.CurrentCulture;
+
             _formulaShapeStyle = GetNodeShapeStyle(Application.Current.Resources["FormulaColorBrush"] as SolidColorBrush);
             _outputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["OutputColorBrush"] as SolidColorBrush);
             _constantShapeStyle = GetNodeShapeStyle(Application.Current.Resources["ConstantColorBrush"] as SolidColorBrush);
