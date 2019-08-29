@@ -324,6 +324,10 @@ namespace Thesis.Models.CodeGenerators
         {
             switch (rangeVertex.Type)
             {
+                case RangeVertex.RangeType.Empty:
+                {
+                    return MatrixOf();
+                }
                 case RangeVertex.RangeType.Single:
                 {
                     return CellVertexToConstantOrVariable(rangeVertex.GetSingleElement(), rangeVertex);
@@ -1144,6 +1148,8 @@ namespace Thesis.Models.CodeGenerators
             CellVertex cellVertex;
             if (vertex is RangeVertex rangeVertex)
             {
+                if (rangeVertex.Type == RangeVertex.RangeType.Empty)
+                    return "Matrix";
                 if (rangeVertex.Type == RangeVertex.RangeType.Single)
                     cellVertex = rangeVertex.GetSingleElement();
                 else

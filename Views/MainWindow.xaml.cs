@@ -15,6 +15,7 @@ using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
+using Syncfusion.XlsIO.Implementation;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
@@ -87,7 +88,17 @@ namespace Thesis.Views
 
         public IRange GetRangeFromCurrentWorksheet(string range)
         {
-            return spreadsheet.ActiveSheet.Range[range];
+            try
+            {
+                // will throw error for multi-ranges (e.g. A1:B2:C3:D4) and entire rows/columns (e.g. A:C, 1:3)
+                // has been reported to Syncfusion, solution in the future
+                return spreadsheet.ActiveSheet.Range[range];
+            }
+            catch (Exception)
+            {
+                Logger.Log(LogItemType.Error, $"Could not get range {range}. Entire rows/column currently not implemented.");
+                return null;
+            }
         }
 
         public void EnableGraphGenerationOptions()

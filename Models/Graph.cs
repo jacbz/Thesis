@@ -112,7 +112,7 @@ namespace Thesis.Models
                 var nameTitle = name.Name;
                 var nameAddress = name.AddressLocal;
 
-                if (nameAddress == null || name.Cells.Length == 0 || nameTitle == "_xlnm._FilterDatabase") continue;
+                if (nameAddress == null || name.Cells.Length == 0 || nameTitle.StartsWith("_xlnm")) continue;
 
                 // if the named range does not apply globally (which would mean name.Worksheet = null),
                 // but to a specific worksheet, check if is valid currently
@@ -241,8 +241,9 @@ namespace Thesis.Models
 
                         if (!RangeDictionary.TryGetValue(range, out var rangeVertex))
                         {
-                            // getRangeFunc can also get cells from other spreadsheets
-                            rangeVertex = new RangeVertex(getRangeFunc(range).Cells, range);
+                            var iRange = getRangeFunc(range);
+                            var cells = iRange != null ? iRange.Cells : new IRange[0];
+                            rangeVertex = new RangeVertex(cells, range);
                             RangeDictionary.Add(range, rangeVertex);
                         }
                         if (nodeToExternalSheetDictionary.TryGetValue(node, out var sheetName))
@@ -368,6 +369,7 @@ namespace Thesis.Models
         {
             foreach (var child in node.ChildNodes)
             {
+                if (nodeToExternalSheetDictionary.ContainsKey(child)) return;
                 nodeToExternalSheetDictionary.Add(child, sheetName);
                 MarkChildNodesAsExternal(nodeToExternalSheetDictionary, child, sheetName);
             }

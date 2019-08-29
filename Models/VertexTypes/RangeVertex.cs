@@ -21,15 +21,20 @@ namespace Thesis.Models.VertexTypes
         public RangeVertex(IRange[] cellsInRange, string addressOrName)
         {
             CellsInRange = cellsInRange;
-
             VariableName = addressOrName.MakeNameVariableConform();
+            AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
+
+            if (cellsInRange.Length == 0)
+            {
+                Type = RangeType.Empty;
+                return;
+            }
 
             int minRow = int.MaxValue;
             int minColumn = int.MaxValue;
             int maxRow = int.MinValue;
             int maxColumn = int.MinValue;
 
-            AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
             foreach (IRange iRange in CellsInRange)
             {
                 minRow = Math.Min(iRange.Row, minRow);
@@ -98,6 +103,7 @@ namespace Thesis.Models.VertexTypes
 
         public enum RangeType
         {
+            Empty,
             Single,
             Column,
             Row,

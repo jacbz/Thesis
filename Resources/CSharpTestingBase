@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 public class FormulaError
 {
 	public string Message { get; }
@@ -60,6 +56,13 @@ public static double RoundDown(double value, double digits)
 public class Matrix
 {
 	public dynamic[,] Items { get; set; }
+
+	public static Matrix Of()
+	{
+		Matrix matrix = new Matrix();
+		matrix.Items = new dynamic[0, 0];
+		return matrix;		
+	}
 	
 	public static Matrix Of(params Row[] rows)
 	{
@@ -281,7 +284,7 @@ public class Matrix
 
 	public dynamic this[int row, int column]
 	{
-		get => Items.GetLength(0) <= row && Items.GetLength(1) <= column
+		get => Items.GetLength(0) < row && Items.GetLength(1) < column
                ? new FormulaError("Index out of range")
 		        : Items [row - 1, column - 1];
 	}
@@ -302,7 +305,7 @@ public class Row : Collection
 		{
 			if (row != 1)
                 return new FormulaError("Row number must be 1");
-			return Items.Length <= column ? new FormulaError("Column number out of range") : Items[column - 1];
+			return Items.Length < column ? new FormulaError("Column number out of range") : Items[column - 1];
 		}
 	}
 }
@@ -321,7 +324,7 @@ public class Column : Collection
 		get
 		{
 			if (column != 1) throw new IndexOutOfRangeException("Column number must be 1");
-            return Items.Length <= row ? new FormulaError("Row number out of range") : Items[row - 1];
+            return Items.Length < row ? new FormulaError("Row number out of range") : Items[row - 1];
         }
 	}
 }
@@ -403,7 +406,7 @@ public class Collection
 
 	public dynamic this[int index]
 	{
-		get => Items.Length <= index ? new FormulaError("Index out of range") : Items[index - 1];
+		get => Items.Length < index ? new FormulaError("Index out of range") : Items[index - 1];
 	}
 }
 
