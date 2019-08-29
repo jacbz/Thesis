@@ -121,7 +121,7 @@
   <data name="CSharpSyntaxHighlighting" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\resources\csharpsyntaxhighlighting.xshd;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
-  <data name="CSharpTestingBase" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\CSharpTestingBase;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
+  <data name="CSharpTestingFramework" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\CSharpTestingFramework;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
 </root>

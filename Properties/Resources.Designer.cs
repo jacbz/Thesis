@@ -66,8 +66,7 @@ namespace Thesis.Properties {
         ///	&lt;!-- The named colors &apos;Comment&apos; and &apos;String&apos; are used in SharpDevelop to detect if a line is inside a multiline string/comment --&gt;	
         ///	&lt;Color name=&quot;Comment&quot; foreground=&quot;#008000&quot; exampleText=&quot;// comment&quot; /&gt;
         ///	&lt;Color name=&quot;Class&quot; foreground=&quot;#2B91AF&quot; exampleText=&quot;class Test&quot; /&gt;
-        ///	&lt;Color name=&quot;String&quot; foreground=&quot;#A31515&quot; exampleText=&quot;string text = &amp;quot;Hello, World!&amp;quot;&quot;/&gt;
-        ///	&lt;Co [rest of string was truncated]&quot;;.
+        ///	&lt;Color name=&quot;String&quot; foreground=&quot;#A31515&quot; exampleText=&quot;string text = &amp;quot;Hello, World!&amp;quot;&quot;/&gt; [rest of string was truncated]&quot;;.
         /// </summary>
         public static string CSharpSyntaxHighlighting {
             get {
@@ -76,38 +75,28 @@ namespace Thesis.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to public static bool Equals(dynamic left, dynamic right)
+        ///   Looks up a localized string similar to public class FormulaError
         ///{
-        ///
+        ///	public string Message { get; }
+        ///	public FormulaError(string message)
+        ///	{
+        ///		Message = message;
+        ///	}
         ///}
         ///
-        ///public struct EmptyCell
-        ///{
-        ///    public static dynamic operator +(dynamic a, EmptyCell b)
-        ///    {
-        ///        return a;
-        ///    }
+        ///public static bool CIEquals(this String a, String b) {
+        ///    return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
+        ///}
         ///
-        ///    public static dynamic operator +(EmptyCell a, dynamic b)
-        ///    {
-        ///        return b;
-        ///    }
+        ///public static bool IsNumeric(this object o) =&gt; o is double || o is int || o is ushort || o is uint || o is ulong ||
+        ///												  o is short || o is sbyte || o is long || o is float || o is byte ||
+        ///												  o is decimal;
         ///
-        ///    public static dynamic operator +(EmptyCell a, EmptyCell b)
-        ///    {
-        ///        return a;
-        ///    }
-        ///
-        ///    public static dynamic operator -(dynamic a, EmptyCell b)
-        ///    {
-        ///        return a;
-        ///    }
-        ///
-        ///    public static dynamic op [rest of string was truncated]&quot;;.
+        ///// same as Objec [rest of string was truncated]&quot;;.
         /// </summary>
-        public static string CSharpTestingBase {
+        public static string CSharpTestingFramework {
             get {
-                return ResourceManager.GetString("CSharpTestingBase", resourceCulture);
+                return ResourceManager.GetString("CSharpTestingFramework", resourceCulture);
             }
         }
     }

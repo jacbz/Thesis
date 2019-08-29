@@ -33,11 +33,20 @@ namespace Thesis.Models.CodeGenerators
 
             Logger.Log(LogItemType.Info, "Initializing the Roslyn C# scripting engine...", true);
 
-            // base code required for testing, such as the EmptyCell class
-            var baseCode = Properties.Resources.CSharpTestingBase;
+            // framework required for testing, such as the EmptyCell class
+            var framework = Properties.Resources.CSharpTestingFramework;
 
             // create a state with all static classes initiated
-            ScriptState testState = await CSharpScript.RunAsync(baseCode, _scriptOptions);
+            ScriptState testState;
+            try
+            {
+                testState = await CSharpScript.RunAsync(framework, _scriptOptions);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log(LogItemType.Error, "Error loading testing framework: " + ex.Message);
+                return;
+            }
 
             // test each static class separately
             foreach (var staticClass in staticClasses)
@@ -129,7 +138,7 @@ namespace Thesis.Models.CodeGenerators
                         var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
                         var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
 
-                        if (testResult.ActualValue == null)
+                        if (object.ReferenceEquals(testResult.ActualValue, null))
                         {
                             testResult.TestResultType = TestResultType.Null;
                             nullCount++;

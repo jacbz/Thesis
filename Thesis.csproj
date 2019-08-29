@@ -288,7 +288,7 @@
     <Analyzer Include="packages\Microsoft.CodeAnalysis.Analyzers.2.9.4\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\CSharpTestingBase" />
+    <None Include="Resources\CSharpTestingFramework" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

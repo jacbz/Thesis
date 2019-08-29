@@ -154,11 +154,16 @@ namespace Thesis.ViewModels
 
             _window.diagram2.Nodes = new NodeCollection();
             _window.diagram2.Connectors = new ConnectorCollection();
-
-            if (_window.diagram2.Groups != null)
-                ((GroupCollection)_window.diagram2.Groups).Clear();
-            else
+            try
+            {
                 _window.diagram2.Groups = new GroupCollection();
+            }
+            catch (System.Exception)
+            {
+                // error in Syncfusion SfDiagram, rarely triggered, but unknown cause
+                Logger.Log(LogItemType.Error, "Error in diagram control!");
+                return;
+            }
 
             double nextPos = 0;
             foreach (var generatedClass in ClassCollection.Classes)
