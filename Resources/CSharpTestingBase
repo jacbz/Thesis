@@ -1,3 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class FormulaError
+{
+	public string Message { get; }
+	public FormulaError(string message)
+	{
+		Message = message;
+	}
+}
+
 public static bool CIEquals(this String a, String b) {
     return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
 }
@@ -106,32 +119,46 @@ public class Matrix
 	
 	public dynamic VLookUp(dynamic lookupValue, int column, dynamic matchMode = null)
 	{
-		if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
-		{
-			// approximate match
-			return Items[ApproximateMatchRowIndex(lookupValue, 0), column - 1];
-		}
-		else if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
-		{
-			// exact match
-			return Items[ExactMatchRowIndex(lookupValue, 0), column - 1];
-		}
-		throw new ArgumentException("Match mode has invalid value");
-	}
+        try
+        {
+            if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+            {
+                // approximate match
+                return Items[ApproximateMatchRowIndex(lookupValue, 0), column - 1];
+            }
+            if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+            {
+                // exact match
+                return Items[ExactMatchRowIndex(lookupValue, 0), column - 1];
+            }
+            throw new ArgumentException("Match mode has invalid value");
+        }
+        catch (Exception)
+        {
+            return new FormulaError("VLookUp failed");
+        }
+    }
 	
 	public dynamic HLookUp(dynamic lookupValue, int row, dynamic matchMode = null)
 	{
-		if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
-		{
-			// approximate match
-			return Items[row - 1, ApproximateMatchColumnIndex(lookupValue, 0)];
-		}
-		else if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
-		{
-			// exact match
-			return Items[row - 1, ExactMatchColumnIndex(lookupValue, 0)];
-		}
-		throw new ArgumentException("Match mode has invalid value");
+        try
+        {
+            if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+            {
+                // approximate match
+                return Items[row - 1, ApproximateMatchColumnIndex(lookupValue, 0)];
+            }
+            if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+            {
+                // exact match
+                return Items[row - 1, ExactMatchColumnIndex(lookupValue, 0)];
+            }
+            throw new ArgumentException("Match mode has invalid value");
+        }
+        catch (Exception)
+        {
+            return new FormulaError("VLookUp failed");
+        }
 	}
 
 	public int ExactMatchRowIndex(dynamic value, int column)
@@ -254,7 +281,9 @@ public class Matrix
 
 	public dynamic this[int row, int column]
 	{
-		get => Items[row - 1, column - 1];
+		get => Items.GetLength(0) <= row && Items.GetLength(1) <= column
+               ? new FormulaError("Index out of range")
+		        : Items [row - 1, column - 1];
 	}
 }
 
@@ -271,8 +300,9 @@ public class Row : Collection
 	{
 		get
 		{
-			if (row != 1) throw new IndexOutOfRangeException("Row number must be 1");
-			return Items[column - 1];
+			if (row != 1)
+                return new FormulaError("Row number must be 1");
+			return Items.Length <= column ? new FormulaError("Column number out of range") : Items[column - 1];
 		}
 	}
 }
@@ -291,8 +321,8 @@ public class Column : Collection
 		get
 		{
 			if (column != 1) throw new IndexOutOfRangeException("Column number must be 1");
-			return Items[row - 1];
-		}
+            return Items.Length <= row ? new FormulaError("Row number out of range") : Items[row - 1];
+        }
 	}
 }
 
@@ -339,7 +369,7 @@ public class Collection
 		return Items.Max();
 	}	
 
-	public int Match(dynamic lookupValue, int matchType = 1)
+	public dynamic Match(dynamic lookupValue, int matchType = 1)
 	{
 		for(int i = 0; i < Items.Length; i++)
 		{
@@ -359,7 +389,7 @@ public class Collection
 				if (matchType == 1)
 					return i;
 				if (matchType == -1)
-					throw new ArgumentException("Can not use match type -1 when list is of mixed type");
+					return new FormulaError("Can not use match type -1 when list is of mixed type");
 			}
 			else if (lookupValue is string valueString && curr is string currString && matchType != 0)
 			{
@@ -368,12 +398,12 @@ public class Collection
 					return matchType == 1 ? i : i + 1;				
 			}
 		}
-		return -1;
+		return new FormulaError("Error in Match");
 	}
 
 	public dynamic this[int index]
 	{
-		get => Items[index - 1];
+		get => Items.Length <= index ? new FormulaError("Index out of range") : Items[index - 1];
 	}
 }
 
@@ -437,12 +467,12 @@ public struct EmptyCell
     public static dynamic operator *(dynamic a, EmptyCell b) { return 0; }
     public static dynamic operator *(EmptyCell a, dynamic b) { return 0; }
     public static dynamic operator *(EmptyCell a, EmptyCell b) { return 0; }
-    public static dynamic operator /(dynamic a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator /(dynamic a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static dynamic operator /(EmptyCell a, dynamic b) { return 0; }
-    public static dynamic operator /(EmptyCell a, EmptyCell b) { throw new System.DivideByZeroException(); }
-    public static dynamic operator %(dynamic a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator /(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
+    public static dynamic operator %(dynamic a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static dynamic operator %(EmptyCell a, dynamic b) { return 0; }
-    public static dynamic operator %(EmptyCell a, EmptyCell b) { throw new System.DivideByZeroException(); }
+    public static dynamic operator %(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static bool operator ==(dynamic a, EmptyCell empty)
     {
         if (IsNumeric(a)) return a == 0;

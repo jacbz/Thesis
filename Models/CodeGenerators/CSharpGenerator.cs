@@ -694,6 +694,15 @@ namespace Thesis.Models.CodeGenerators
                     var rightExpression = PredefinedType(Token(SyntaxKind.StringKeyword));
                     return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
                 }
+                case "ISERR":
+                case "ISERROR":
+                case "ISNA":
+                {
+                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
+                    var rightExpression = IdentifierName("FormulaError");
+                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                }
 
                 // comparators
                 case "=":
@@ -826,6 +835,9 @@ namespace Thesis.Models.CodeGenerators
             { "ISNOTEXT", CellType.Bool },
             { "ISNUMBER", CellType.Bool },
             { "ISTEXT", CellType.Bool },
+            { "ISERR", CellType.Unknown },
+            { "ISERROR", CellType.Unknown },
+            { "ISNA", CellType.Unknown },
 
             { "=", CellType.Bool },
             { "<>", CellType.Number },
@@ -977,6 +989,9 @@ namespace Thesis.Models.CodeGenerators
             {"ISNOTEXT", (SyntaxKind.IsExpression, false)},
             {"ISNUMBER", (SyntaxKind.IsExpression, false)},
             {"ISTEXT", (SyntaxKind.IsExpression, false)},
+            {"ISERR", (SyntaxKind.IsExpression, false)},
+            {"ISERROR", (SyntaxKind.IsExpression, false)},
+            {"ISNA", (SyntaxKind.IsExpression, false)},
 
             {"<>", (SyntaxKind.NotEqualsExpression, false)},
             {"<", (SyntaxKind.LessThanExpression, false)},
