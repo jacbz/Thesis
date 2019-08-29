@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
 using Thesis.Models;
@@ -169,7 +170,7 @@ namespace Thesis.Views
         /// <param name="styleBorder">Border styling function</param>
         public void ColorSpreadsheetCells(IEnumerable<CellVertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
         {
-            foreach (var vertex in vertices.Where(v => v.IsSpreadsheetCell))
+            foreach (var vertex in vertices)
             {
                 var range = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
 
@@ -180,11 +181,23 @@ namespace Thesis.Views
 
         public void ColorSpreadsheetExternalCells(List<Vertex> externalVertices)
         {
-            foreach(var externalVertex in externalVertices.Where(v => v.IsSpreadsheetCell))
+            foreach(var externalVertex in externalVertices)
             {
-                if(spreadsheet.GridCollection.TryGetValue(externalVertex.ExternalWorksheetName, out var grid))
+                if (!spreadsheet.GridCollection.TryGetValue(externalVertex.ExternalWorksheetName, out var grid))
+                    continue;
+
+                if (externalVertex is CellVertex cellVertex)
                 {
-                    grid.Worksheet.Range[externalVertex.StringAddress].CellStyle.Color = Class.ExternalColor;
+                    grid.Worksheet.Range[cellVertex.StringAddress].CellStyle.Color = Class.ExternalColor;
+                    grid.InvalidateCell(cellVertex.Address.row, cellVertex.Address.col);
+                }
+                else if (externalVertex is RangeVertex rangeVertex)
+                {
+                    foreach (var cell in rangeVertex.CellsInRange)
+                    {
+                        cell.CellStyle.Color = Class.ExternalColor;
+                        grid.InvalidateCell(cell.Row, cell.Column);
+                    }
                 }
             }
             // we don't reset the colors because that will take too long for all sheets

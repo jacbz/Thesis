@@ -23,13 +23,16 @@ namespace Thesis.Models
             Name = name;
             OutputVertex = outputVertex;
             Vertices = vertices;
-            Vertices.ForEach(v =>
+            foreach (var vertex in Vertices)
             {
-                v.VariableName = string.IsNullOrWhiteSpace(v.VariableName)
-                    ? "_" + v.StringAddress
-                    : v.VariableName.MakeNameVariableConform();
-                v.Class = this;
-            });
+                vertex.VariableName = vertex is CellVertex cellVertex 
+                    ? string.IsNullOrWhiteSpace(vertex.VariableName)
+                        ? "_" + cellVertex.StringAddress
+                        : vertex.VariableName.MakeNameVariableConform()
+                    : vertex.VariableName;
+                vertex.Class = this;
+            }
+
             Color = name == "External" ? ExternalColor
                 : rnd == null ? StaticColor
                 : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));

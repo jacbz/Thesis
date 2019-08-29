@@ -70,13 +70,6 @@ namespace Thesis.Views
             return (rowCount, columnCount);
         }
 
-        public IRange GetCellFromWorksheet(string sheetName, string address)
-        {
-            return spreadsheet.GridCollection.TryGetValue(sheetName, out var grid) 
-                ? grid.Worksheet.Range[address] 
-                : null;
-        }
-
         public IRange GetRangeFromCurrentWorksheet(string range)
         {
             try

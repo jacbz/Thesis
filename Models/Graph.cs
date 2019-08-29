@@ -13,6 +13,7 @@ namespace Thesis.Models
 {
     public class Graph
     {
+        public string WorksheetName { get; }
         public List<Vertex> Vertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; }
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
@@ -25,8 +26,9 @@ namespace Thesis.Models
         public List<int> PopulatedRows { get; set; }
         public List<int> PopulatedColumns { get; set; }
 
-        public Graph()
+        public Graph(string worksheetName)
         {
+            WorksheetName = worksheetName;
             Vertices = new List<Vertex>();
             ExternalVertices = new List<Vertex>();
             NameDictionary = new Dictionary<string, Vertex>();
@@ -34,12 +36,11 @@ namespace Thesis.Models
         }
 
         public static Graph FromSpreadsheet(string worksheetName, 
-            IRange cells, 
-            Func<string, string, IRange> getExternalCellFunc, 
+            IRange cells,  
             Func<string, IRange> getRangeFunc,
             INames names)
         {
-            Graph graph = new Graph();
+            Graph graph = new Graph(worksheetName);
             var verticesDict = new Dictionary<string, Vertex>();
             var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
 
@@ -403,13 +404,19 @@ namespace Thesis.Models
                 .ToList();
         }
 
-        public CellVertex GetVertexByAddress(int row, int col)
+        public Vertex GetVertexByAddress(string sheetName, int row, int col)
         {
-            return AllVertices
-                .OfType<CellVertex>()
-                .FirstOrDefault(v =>
-                    v.Address.row == row &&
-                    v.Address.col == col);
+            if (sheetName == WorksheetName)
+            {
+                return AllVertices
+                    .OfType<CellVertex>()
+                    .FirstOrDefault(v => v.Address.row == row && v.Address.col == col);
+            }
+
+            return ExternalVertices
+                .FirstOrDefault(v => v.ExternalWorksheetName == sheetName &&
+                                     v is CellVertex cellVertex && cellVertex.Address.row == row && cellVertex.Address.col == col
+                                     || v is RangeVertex rangeVertex && rangeVertex.GetAddressTuples().Contains((row, col)));
         }
     }
 }

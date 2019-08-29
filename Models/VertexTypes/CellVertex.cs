@@ -8,11 +8,15 @@ namespace Thesis.Models.VertexTypes
     /// </summary>
     public class CellVertex : Vertex
     {
+        public (int row, int col) Address { get; set; }
+        public string StringAddress { get; set; }
+        public (string worksheet, string address) GlobalAddress => IsExternal
+            ? (ExternalWorksheetName, StringAddress)
+            : (null, StringAddress);
         public dynamic Value { get; set; }
         public string DisplayValue { get; set; }
         public string Formula { get; set; }
         public Label Label { get; set; }
-        public (int row, int col) Address { get; set; }
         public ParseTreeNode ParseTree { get; set; }
 
         public CellType CellType { get; set; }

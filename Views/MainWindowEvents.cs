@@ -81,15 +81,16 @@ namespace Thesis.Views
         {
             spreadsheet.ActiveGrid.CellContextMenu.Items.Clear();
 
-            var vertex = _generator.Graph.GetVertexByAddress(e.Cell.RowIndex, e.Cell.ColumnIndex);
+            string sheetName = spreadsheet.ActiveSheet.Name;
+            var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.Cell.RowIndex, e.Cell.ColumnIndex);
 
-            if (vertex != null && vertex.NodeType == NodeType.OutputField)
+            if (vertex is CellVertex cellVertex && cellVertex.NodeType == NodeType.OutputField)
             {
                 var includeInGeneration = new MenuItem
                 {
                     Header = "Include in generation"
                 };
-                includeInGeneration.Click += (s, e1) => vertex.Include = true;
+                includeInGeneration.Click += (s, e1) => cellVertex.Include = true;
                 spreadsheet.ActiveGrid.CellContextMenu.Items.Add(includeInGeneration);
             }
         }
@@ -189,7 +190,9 @@ namespace Thesis.Views
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
             if (e.ActivationTrigger == ActivationTrigger.Program) return;
-            var vertex = _generator.Graph.GetVertexByAddress(e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
+
+            string sheetName = spreadsheet.ActiveSheet.Name;
+            var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
             if (vertex != null)
             {
                 SelectVertexInDiagrams(vertex);

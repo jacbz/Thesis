@@ -46,7 +46,6 @@ namespace Thesis.ViewModels
             Graph = Graph.FromSpreadsheet(
                 ActiveWorksheet, 
                 allCells, 
-                _window.GetCellFromWorksheet, 
                 _window.GetRangeFromCurrentWorksheet,
                 _window.spreadsheet.Workbook.Names);
             Logger.Log(LogItemType.Success, "Graph generation successful.");

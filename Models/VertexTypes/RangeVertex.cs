@@ -9,7 +9,7 @@ namespace Thesis.Models.VertexTypes
     {
         public RangeType Type { get; }
 
-        protected IRange[] CellsInRange;
+        public IRange[] CellsInRange { get; }
         protected Dictionary<(int Row, int Column), IRange> AddressToCellDictionary;
         protected (int row, int column) StartAddress;
         protected (int row, int column) EndAddress;
@@ -53,6 +53,11 @@ namespace Thesis.Models.VertexTypes
                 : minColumn == maxColumn
                     ? RangeType.Column
                     : RangeType.Matrix;
+        }
+
+        public (int row, int column)[] GetAddressTuples()
+        {
+            return CellsInRange.Select(c => (c.Row, c.Column)).ToArray();
         }
 
         public (string sheetName, string address)[] GetAddresses()

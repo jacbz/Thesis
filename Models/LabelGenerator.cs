@@ -46,7 +46,7 @@ namespace Thesis.Models
             // assign attributes and headers for each data type
             foreach (var cell in cellVertices)
             {
-                if (!cell.IsSpreadsheetCell || cell.Label.Type != LabelType.Data) continue;
+                if (cell.Label.Type != LabelType.Data) continue;
 
                 (int row, int col) currentPos = cell.Address;
 
