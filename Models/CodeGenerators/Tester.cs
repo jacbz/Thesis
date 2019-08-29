@@ -30,20 +30,20 @@ namespace Thesis.Models.CodeGenerators
         public int NullCount { get; }
         public int ValueMismatchCount { get; }
         public int TypeMismatchCount { get; }
-        public int SkippedCount { get; }
+        public int ErrorCount { get; }
 
-        public TestReport(int passCount, int nullCount, int valueMismatchCount, int typeMismatchCount, int skippedCount)
+        public TestReport(int passCount, int nullCount, int valueMismatchCount, int typeMismatchCount, int errorCount)
         {
             PassCount = passCount;
             NullCount = nullCount;
             ValueMismatchCount = valueMismatchCount;
             TypeMismatchCount = typeMismatchCount;
-            SkippedCount = skippedCount;
+            ErrorCount = errorCount;
         }
 
         public override string ToString()
         {
-            return $"Test results: {PassCount} Pass, {NullCount} were null, {ValueMismatchCount} Value Mismatch, {TypeMismatchCount} Type Mismatch, {SkippedCount} Skipped";
+            return $"Test results: {PassCount} Pass, {NullCount} were null, {ValueMismatchCount} Value Mismatch, {TypeMismatchCount} Type Mismatch, {ErrorCount} Error";
         }
     }
 
@@ -53,7 +53,7 @@ namespace Thesis.Models.CodeGenerators
         Null,
         TypeMismatch,
         ValueMismatch,
-        Skipped,
+        Error,
         Ignore
     }
     
@@ -92,8 +92,8 @@ namespace Thesis.Models.CodeGenerators
                            $"Actual: {ActualValue} ({ActualValue.GetType().Name})";
                 case TestResultType.ValueMismatch:
                     return $"//  FAIL  Expected: {ExpectedValue}, Actual: {ActualValue}";
-                case TestResultType.Skipped:
-                    return $"//  SKIPPED  Expected: {ExpectedValue}";
+                case TestResultType.Error:
+                    return $"//  COMPILE/RUNTIME ERROR  Expected: {ExpectedValue}";
                 case TestResultType.Ignore:
                     return "//  IGNORE  Can not check this type for correctness";
                 default:

@@ -259,7 +259,7 @@ namespace Thesis.ViewModels
                 Logger.Log(report.NullCount == 0
                            && report.TypeMismatchCount == 0
                            && report.ValueMismatchCount == 0 
-                           && report.SkippedCount == 0
+                           && report.ErrorCount == 0
                         ? LogItemType.Success
                         : report.PassCount == 0
                             ? LogItemType.Error

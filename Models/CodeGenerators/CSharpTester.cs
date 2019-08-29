@@ -109,7 +109,7 @@ namespace Thesis.Models.CodeGenerators
         {
             Logger.Log(LogItemType.Info, "Generating test report...");
 
-            int passCount = 0, nullCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, skippedCount = 0;
+            int passCount = 0, nullCount = 0, valueMismatchCount = 0, typeMismatchCount = 0, errorCount = 0;
 
             foreach (var keyValuePair in variableNameToVertexDictionary)
             {
@@ -210,18 +210,19 @@ namespace Thesis.Models.CodeGenerators
                 }
                 else
                 {
+                    // run time or compile error
                     VariableToTestResultDictionary.Add(variableName,
                         new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
                         {
                             ExpectedValue = vertex is CellVertex cellVertex ? cellVertex.Value : null,
-                            TestResultType = TestResultType.Skipped
+                            TestResultType = TestResultType.Error
                         });
-                    skippedCount++;
+                    errorCount++;
 
                 }
             }
 
-            return new TestReport(passCount, nullCount, valueMismatchCount, typeMismatchCount, skippedCount);
+            return new TestReport(passCount, nullCount, valueMismatchCount, typeMismatchCount, errorCount);
         }
 
     }

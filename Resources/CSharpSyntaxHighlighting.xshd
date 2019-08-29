@@ -44,19 +44,20 @@
 		<Keywords fontWeight="bold" background="#27ae60" foreground="#FFFFFF">
 			<Word> PASS </Word>
 		</Keywords>
-		<Keywords fontStyle="italic" foreground="#27ae60">
-			<Word>Expected</Word>
+		<Keywords foreground="#34495e">
+      <Word>Value:</Word>
+			<Word>Expected:</Word>
+      <Word>Actual:</Word>
 		</Keywords>
-		<Keywords fontWeight="bold" background="#c0392b" foreground="#FFFFFF">
+		<Keywords fontWeight="bold" background="#e74c3c" foreground="#FFFFFF">
 			<Word> FAIL </Word>
-			<Word> SKIPPED </Word>
 		</Keywords>
+    <Keywords fontWeight="bold" background="#e67e22" foreground="#FFFFFF">
+      <Word> COMPILE/RUNTIME ERROR </Word>
+    </Keywords>
     <Keywords fontWeight="bold" background="#34495e" foreground="#FFFFFF">
       <Word> IGNORE </Word>
     </Keywords>
-		<Keywords fontStyle="italic" foreground="#c0392b">
-			<Word>Actual</Word>
-		</Keywords>
 	</RuleSet>
 	
 	<!-- This is the main ruleset. -->
