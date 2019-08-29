@@ -176,19 +176,25 @@ namespace Thesis.Views
         }
 
         /// <summary>
-        /// Color spreadsheet cells by given vertices and styling functions.
+        /// Color cells by given vertices and styling functions.
         /// </summary>
         /// <param name="vertices">Cells to style</param>
         /// <param name="styleCell">Cell styling function</param>
         /// <param name="styleBorder">Border styling function</param>
-        public void ColorSpreadsheetCells(IEnumerable<CellVertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
+        public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
         {
             foreach (var vertex in vertices)
             {
-                var range = spreadsheet.ActiveSheet.Range[vertex.StringAddress];
-
-                styleCell(vertex, range.CellStyle);
-                styleBorder(vertex, range.Borders);
+                if (vertex is CellVertex cellVertex)
+                {
+                    var range = spreadsheet.ActiveSheet.Range[cellVertex.StringAddress];
+                    styleCell(cellVertex, range.CellStyle);
+                    styleBorder(cellVertex, range.Borders);
+                }
+                else if (vertex is RangeVertex rangeVertex)
+                {
+                    ColorSpreadsheetCells(rangeVertex.CellsInRange.Select(c => new CellVertex(c)), styleCell, styleBorder);
+                }
             }
         }
 

@@ -415,8 +415,8 @@ namespace Thesis.Models
 
             return ExternalVertices
                 .FirstOrDefault(v => v.ExternalWorksheetName == sheetName &&
-                                     v is CellVertex cellVertex && cellVertex.Address.row == row && cellVertex.Address.col == col
-                                     || v is RangeVertex rangeVertex && rangeVertex.GetAddressTuples().Contains((row, col)));
+                                     (v is CellVertex cellVertex && cellVertex.Address.row == row && cellVertex.Address.col == col
+                                     || v is RangeVertex rangeVertex && rangeVertex.GetAddressTuples().Contains((row, col))));
         }
     }
 }

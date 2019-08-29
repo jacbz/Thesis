@@ -195,7 +195,7 @@ namespace Thesis.ViewModels
                 _window.ResetSpreadsheetColors();
                 foreach (var generatedClass in ClassCollection.Classes)
                 {
-                    _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal).GetCellVertices(),
+                    _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal),
                         (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); },
                         _window.StyleBorderByNodeType);
                 }

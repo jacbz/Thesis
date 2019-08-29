@@ -227,7 +227,7 @@
     <Compile Include="Views\TestWindow.xaml.cs">
       <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Views\XamlBindings.cs" />
+    <Compile Include="ViewModels\VertexTypesXamlBindings.cs" />
     <Page Include="Views\LogControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
