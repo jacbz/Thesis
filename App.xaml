@@ -54,6 +54,12 @@
                 <Setter Property="Opacity" Value="0.3" />
             </Style>
 
+            <Style TargetType="Path" x:Key="ExternalConnectorGeometryStyle">
+                <Setter Property="Stroke" Value="{StaticResource ExternalColorBrush}" />
+                <Setter Property="StrokeThickness" Value="2"/>
+                <Setter Property="StrokeDashArray" Value="1.2"/>
+            </Style>
+
             <Style TargetType="Path" x:Key="TargetDecoratorStyle">
                 <Setter Property="Stroke" Value="Black" />
                 <Setter Property="Stretch" Value="Fill" />
@@ -61,6 +67,14 @@
                 <Setter Property="Height" Value="5" />
                 <Setter Property="Width" Value="5" />
                 <Setter Property="Opacity" Value="0.3" />
+            </Style>
+
+            <Style TargetType="Path" x:Key="ExternalTargetDecoratorStyle">
+                <Setter Property="Stroke" Value="{StaticResource ExternalColorBrush}" />
+                <Setter Property="Stretch" Value="Fill" />
+                <Setter Property="Fill" Value="{StaticResource ExternalColorBrush}" />
+                <Setter Property="Height" Value="7.5" />
+                <Setter Property="Width" Value="7.5" />
             </Style>
 
             <DataTemplate x:Key="normalLabel">

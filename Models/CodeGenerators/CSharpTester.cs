@@ -31,7 +31,7 @@ namespace Thesis.Models.CodeGenerators
             var staticClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            Logger.Log(LogItemType.Info, "Initializing Roslyn CSharp scripting engine...", true);
+            Logger.Log(LogItemType.Info, "Initializing the Roslyn C# scripting engine...", true);
 
             // base code required for testing, such as the EmptyCell class
             var baseCode = Properties.Resources.CSharpTestingBase;

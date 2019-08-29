@@ -143,7 +143,7 @@ namespace Thesis.ViewModels
 
             foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
-                ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
+                ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child, false));
 
             logItem.AppendElapsedTime();
         }

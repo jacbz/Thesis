@@ -10,7 +10,7 @@ namespace Thesis.Models
     public class Class
     {
         public static readonly Color StaticColor = ColorTranslator.FromHtml("#CFD8DC");
-        public static readonly Color ExternalColor = ColorTranslator.FromHtml("#AFEEEE");
+        public static readonly Color ExternalColor = ColorTranslator.FromHtml("#c4f7ed");
 
         public string Name { get; set; }
         public bool IsStaticClass => OutputVertex == null;

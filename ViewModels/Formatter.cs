@@ -32,7 +32,9 @@ namespace Thesis.ViewModels
         private static DataTemplate _classLabelTemplate;
 
         private static Style _connectorGeometryStyle;
+        private static Style _externalConnectorGeometryStyle;
         private static Style _targetDecoratorStyle;
+        private static Style _externalTargetDecoratorStyle;
 
         private static DColor _externalNodeColor;
         private static DColor _outputNodeColor;
@@ -57,7 +59,9 @@ namespace Thesis.ViewModels
             _classLabelTemplate = Application.Current.Resources["classLabel"] as DataTemplate;
 
             _connectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style;
+            _externalConnectorGeometryStyle = Application.Current.Resources["ExternalConnectorGeometryStyle"] as Style;
             _targetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style;
+            _externalTargetDecoratorStyle = Application.Current.Resources["ExternalTargetDecoratorStyle"] as Style;
 
             _externalNodeColor = ((MColor) Application.Current.Resources["ExternalColor"]).ToDColor();
             _outputNodeColor = ((MColor)Application.Current.Resources["OutputColor"]).ToDColor();
@@ -347,13 +351,11 @@ namespace Thesis.ViewModels
                 NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
-        public static ConnectorViewModel FormatEdge(this CellVertex from, Vertex to)
+        public static ConnectorViewModel FormatEdge(this CellVertex from, Vertex to, bool connectToExternal = true)
         {
             var connector = new ConnectorViewModel
             {
                 SourceNode = from.Node,
-                ConnectorGeometryStyle = _connectorGeometryStyle,
-                TargetDecoratorStyle = _targetDecoratorStyle,
                 Segments = new ObservableCollection<IConnectorSegment>
                 {
                     new StraightSegment()
@@ -361,10 +363,21 @@ namespace Thesis.ViewModels
                 Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable,
                 ZIndex = -1
             };
-            if (to.IsExternal)
-                connector.TargetPoint = new Point(0, 0);
+
+            if (to.IsExternal && !connectToExternal)
+            {
+                var length = Math.Min(VERTEX_BOX, from.Node.UnitWidth - 5);
+                connector.TargetPoint = new Point(from.Node.OffsetX + length, from.Node.OffsetY - length);
+                connector.ConnectorGeometryStyle = _externalConnectorGeometryStyle;
+                connector.TargetDecoratorStyle = _externalTargetDecoratorStyle;
+            }
             else
+            {
                 connector.TargetNode = to.Node;
+                connector.ConnectorGeometryStyle = _connectorGeometryStyle;
+                connector.TargetDecoratorStyle = _targetDecoratorStyle;
+            }
+
             return connector;
         }
 
