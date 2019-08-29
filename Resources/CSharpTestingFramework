@@ -104,20 +104,11 @@ public class Matrix
 		return Items.Cast<dynamic>().ToArray();
 	}
 
-	public double Sum()
-	{
-		return Flatten().Sum();
-	}
-
-	public double Min()
-	{
-		return Flatten().Min();
-	}
-
-	public double Max()
-	{
-		return Flatten().Max();
-	}
+	public double Sum() { return Flatten().Sum(); }
+	public double Min() { return Flatten().Min(); }
+	public double Max() { return Flatten().Max(); }
+	public int Count() { return Flatten().Count(); }
+	public double Average() { return Flatten().Average(); }
 	
 	public dynamic VLookUp(dynamic lookupValue, int column, dynamic matchMode = null)
 	{
@@ -356,20 +347,11 @@ public class Collection
 		return collection;
 	}
 
-	public double Sum()
-	{
-		return Items.Sum();
-	}
-
-	public double Min()
-	{
-		return Items.Min();
-	}
-
-	public double Max()
-	{
-		return Items.Max();
-	}	
+	public double Sum() { return Items.Sum(); }
+	public double Min() { return Items.Min(); }
+	public double Max() { return Items.Max(); }	
+	public int Count() { return Items.Count(); }
+	public double Average() { return Items.Average(); }	
 
 	public dynamic Match(dynamic lookupValue, int matchType = 1)
 	{
@@ -409,6 +391,7 @@ public class Collection
 	}
 }
 
+// sum all number of values, ignore logical values
 public static double Sum(this dynamic[] items)
 {
 	double result = 0;
@@ -418,8 +401,13 @@ public static double Sum(this dynamic[] items)
 			result += m.Sum();
 		else if(IsNumeric(obj))
 			result += Convert.ToDouble(obj);
-		else if (obj is string s && double.TryParse(s, out double d))
-			result += d;
+		else if (obj is string s)
+		{
+			if(s.Contains("%") && !s.Any(char.IsLetter))
+				s = s.Replace("%","");
+			if(double.TryParse(s, out var parsedNumber))
+				result += parsedNumber;
+		}
 	}
 	return result;
 }
@@ -434,8 +422,13 @@ public static double Min(this dynamic[] items)
 			min = Math.Min(min, m.Min());
 		else if(IsNumeric(obj))
 			min = Math.Min(min, Convert.ToDouble(obj));
-		else if (obj is string s && double.TryParse(s, out double d))
-			min = Math.Min(min, d);
+		else if (obj is string s)
+		{
+			if(s.Contains("%") && !s.Any(char.IsLetter))
+				s = s.Replace("%","");
+			if(double.TryParse(s, out var parsedNumber))
+				min = Math.Min(min, parsedNumber);
+		}
 	}
 	// if no valid arguments were provided, return 0
 	return min == Double.MaxValue ? 0 : min;
@@ -451,11 +444,55 @@ public static double Max(this dynamic[] items)
 			max = Math.Max(max, m.Max());
 		else if(IsNumeric(obj))
 			max = Math.Max(max, Convert.ToDouble(obj));
-		else if (obj is string s && double.TryParse(s, out double d))
-			max = Math.Max(max, d);
+		else if (obj is string s)
+		{
+			if(s.Contains("%") && !s.Any(char.IsLetter))
+				s = s.Replace("%","");
+			if(double.TryParse(s, out var parsedNumber))
+				max = Math.Max(max, parsedNumber);
+		}
 	}
 	// if no valid arguments were provided, return 0
 	return max == Double.MinValue ? 0 : max;
+}
+
+// count the number of items that contain numbers or text representation of numbers (e.g. "5", "20%")
+// https://support.office.com/en-us/article/count-function-a59cd7fc-b623-4d93-87a4-d23bf411294c
+public static int Count(this dynamic[] items)
+{
+	int count = 0;
+	foreach(var item in items)
+	{
+		if(item is Collection c)
+		{
+			count += c.Count();
+		}
+		else if(item is Matrix m)
+		{
+			count += m.Count();
+		}
+		else if(IsNumeric(item))
+		{
+			count++;
+		}
+		else if(item is string s)
+		{
+			if(s.Contains("%") && !s.Any(char.IsLetter))
+				s = s.Replace("%","");
+			if(double.TryParse(s, out var parsedNumber))
+			{
+				count++;
+				continue;
+			}
+		}
+	}
+	return count;
+}
+
+// https://support.office.com/en-us/article/average-function-047bac88-d466-426c-a32b-8f33eb960cf6
+public static double Average(this dynamic[] items)
+{
+	return items.Sum() / items.Count();
 }
 
 // mimics the behavior of an empty cell in Excel

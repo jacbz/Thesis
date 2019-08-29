@@ -509,8 +509,10 @@ namespace Thesis.Models.CodeGenerators
                 case "SUM":
                 case "MIN":
                 case "MAX":
+                case "COUNT":
+                case "AVERAGE":
                 {
-                    // Collection(...).Sum/Min/Max()
+                    // Collection(...).Sum/Min/Max/Count/Average()
                     return InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                         CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
                         IdentifierName(functionName.ToTitleCase())));
@@ -832,6 +834,8 @@ namespace Thesis.Models.CodeGenerators
             { "SUM", CellType.Number },
             { "MIN", CellType.Number },
             { "MAX", CellType.Number },
+            { "COUNT", CellType.Number },
+            { "AVERAGE", CellType.Number },
 
             { "HLOOKUP", CellType.Unknown },
             { "VLOOKUP", CellType.Unknown },
