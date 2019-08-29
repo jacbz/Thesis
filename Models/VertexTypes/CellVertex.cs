@@ -26,7 +26,7 @@ namespace Thesis.Models.VertexTypes
                 ? Children.Count == 0
                     ? NodeType.Constant
                     : NodeType.Formula
-                : Children.Count > 0
+                : Children.Count > 0 || ParseTree != null
                     ? NodeType.OutputField
                     : NodeType.None;
 

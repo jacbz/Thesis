@@ -21,8 +21,11 @@ namespace Thesis.Models
 
             var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<CellVertex>());
             var rnd = new Random();
+            
+            // output fields without children: formulas such as =TODAY()
+            var outputFieldsWithoutChildren = graph.GetOutputFields().Where(v => v.Children.Count == 0).ToList();
 
-            foreach (var vertex in graph.GetOutputFields())
+            foreach (var vertex in graph.GetOutputFields().Except(outputFieldsWithoutChildren))
             {
                 var reachableVertices = vertex.GetReachableVertices();
                 foreach (var v in reachableVertices)
@@ -44,6 +47,11 @@ namespace Thesis.Models
                 .Where(kvp => kvp.Value.Count > 1)
                 .Select(kvp => kvp.Key)
                 .ToList();
+
+            if (outputFieldsWithoutChildren.Count > 0)
+            {
+                classCollection.Classes.Add(new Class("OutputFieldsWithoutChildren", null, new List<Vertex>(outputFieldsWithoutChildren)));
+            }
 
             if (graph.ExternalVertices.Count > 0)
             {

@@ -146,7 +146,7 @@ namespace Thesis.Models
                         }
                         else
                         {
-                            Logger.Log(LogItemType.Warning, "Could not find vertex for named range " + nameTitle);
+                            // this name is not used anywhere
                             continue;
                         }
                     }

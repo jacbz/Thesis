@@ -70,7 +70,7 @@ namespace Thesis.Models.CodeGenerators
                     testState = await testState.ContinueWithAsync(staticClass.Code);
                     if (!string.IsNullOrEmpty(staticClass.MethodBodyCode))
                     {
-                        testState = await testState.ContinueWithAsync(staticClass.ClassName + ".InitXamlStyles();");
+                        testState = await testState.ContinueWithAsync(staticClass.ClassName + ".Init();");
                     }
 
                 }

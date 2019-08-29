@@ -53,7 +53,7 @@ namespace Thesis.ViewModels
             _outputShape = Application.Current.Resources["Trapezoid"];
             _constantShape = Application.Current.Resources["Ellipse"];
             _classShape = Application.Current.Resources["Rectangle"];
-            _rangeShape = Application.Current.Resources["PredefinedProcess"];
+            _rangeShape = Application.Current.Resources["Rectangle"];
 
             _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
             _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
