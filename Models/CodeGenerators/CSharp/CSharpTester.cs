@@ -9,7 +9,7 @@ using Microsoft.CSharp.RuntimeBinder;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
-namespace Thesis.Models.CodeGenerators
+namespace Thesis.Models.CodeGenerators.CSharp
 {
     public class CSharpTester : Tester
     {

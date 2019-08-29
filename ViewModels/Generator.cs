@@ -7,6 +7,7 @@ using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
 using Thesis.Models.CodeGenerators;
+using Thesis.Models.CodeGenerators.CSharp;
 using Thesis.Models.VertexTypes;
 using Thesis.Views;
 
@@ -231,14 +232,14 @@ namespace Thesis.ViewModels
                 .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
 
             // implement different languages here
-            CodeGenerator codeGenerator;
+            Models.CodeGenerators.CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    codeGenerator = new CSharpGenerator(
+                    codeGenerator = new Models.CodeGenerators.CSharp.CSharpGenerator(
                         ClassCollection,
-                        addressToVertexDictionary, 
-                        Graph.RangeDictionary, 
+                        addressToVertexDictionary,
+                        Graph.RangeDictionary,
                         Graph.NameDictionary);
                     break;
             }
