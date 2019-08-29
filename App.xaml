@@ -20,7 +20,7 @@
             <Color x:Key="OutputColor">#e74c3c</Color>
             <Color x:Key="ConstantColor">#2980b9</Color>
             <Color x:Key="ExternalColor">#1abc9c</Color>
-            <Color x:Key="RangeColor">#34495e</Color>
+            <Color x:Key="RangeColor">#95a5a6</Color>
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
             <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />

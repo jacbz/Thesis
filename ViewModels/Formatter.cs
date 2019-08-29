@@ -19,11 +19,13 @@ namespace Thesis.ViewModels
         private static Style _formulaShapeStyle;
         private static Style _outputShapeStyle;
         private static Style _constantShapeStyle;
+        private static Style _rangeShapeStyle;
 
         private static object _formulaShape;
         private static object _outputShape;
         private static object _constantShape;
         private static object _classShape;
+        private static object _rangeShape;
 
         private static DataTemplate _normalLabelTemplate;
         private static DataTemplate _redLabelTemplate;
@@ -42,11 +44,13 @@ namespace Thesis.ViewModels
             _formulaShapeStyle = GetNodeShapeStyle(Application.Current.Resources["FormulaColorBrush"] as SolidColorBrush);
             _outputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["OutputColorBrush"] as SolidColorBrush);
             _constantShapeStyle = GetNodeShapeStyle(Application.Current.Resources["ConstantColorBrush"] as SolidColorBrush);
+            _rangeShapeStyle = GetNodeShapeStyle(Application.Current.Resources["RangeColorBrush"] as SolidColorBrush);
 
             _formulaShape = Application.Current.Resources["Heptagon"];
             _outputShape = Application.Current.Resources["Trapezoid"];
             _constantShape = Application.Current.Resources["Ellipse"];
             _classShape = Application.Current.Resources["Rectangle"];
+            _rangeShape = Application.Current.Resources["PredefinedProcess"];
 
             _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
             _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
@@ -61,10 +65,11 @@ namespace Thesis.ViewModels
             _constantNodeColor = ((MColor)Application.Current.Resources["ConstantColor"]).ToDColor();
         }
 
-        private static readonly int DIAGRAM_PADDING = 40;
-        private static readonly int VERTEX_BOX = 60; // width and height of a vertex including spacing
-        private static readonly int CLASS_PADDING = 20; // padding inside classes
-        private static readonly int CLASS_SPACING = 40; // spacing between classes
+        private const int DIAGRAM_PADDING = 40;
+        private const int VERTEX_BOX = 60; // width and height of a vertex including spacing
+        private const int CLASS_PADDING = 20; // padding inside classes
+        private const int CLASS_SPACING = 40; // spacing between classes
+        private const double VERTEX_BOX_CENTER = VERTEX_BOX / 2.0;
 
         public static DColor GetNodeTypeColor(this CellVertex cellVertex)
         {
@@ -89,8 +94,8 @@ namespace Thesis.ViewModels
         public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, Graph graph)
         {
             return FormatCellVertex(cellVertex,
-                graph.PopulatedColumns.IndexOf(cellVertex.Address.col) * VERTEX_BOX + DIAGRAM_PADDING,
-                graph.PopulatedRows.IndexOf(cellVertex.Address.row) * VERTEX_BOX + DIAGRAM_PADDING);
+                Array.IndexOf(graph.PopulatedColumns, cellVertex.Address.col) * VERTEX_BOX + DIAGRAM_PADDING,
+                Array.IndexOf(graph.PopulatedRows, cellVertex.Address.row) * VERTEX_BOX + DIAGRAM_PADDING);
         }
 
         public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, double posX, double posY)
@@ -135,6 +140,57 @@ namespace Thesis.ViewModels
             return node;
         }
 
+        // formats a range vertex (large)
+        public static NodeViewModel FormatRangeVertexLarge(this RangeVertex rangeVertex, Graph graph)
+        {
+            double width = rangeVertex.ColumnCount * VERTEX_BOX - VERTEX_BOX / 3.0;
+            double height = rangeVertex.RowCount * VERTEX_BOX - VERTEX_BOX / 3.0;
+            var posX = Array.IndexOf(graph.PopulatedColumns, rangeVertex.StartAddress.column) * VERTEX_BOX + DIAGRAM_PADDING 
+                                                                                                           + width / 2.0 - VERTEX_BOX / 3.0;
+            var posY = Array.IndexOf(graph.PopulatedRows, rangeVertex.StartAddress.row) * VERTEX_BOX + DIAGRAM_PADDING 
+                                                                                                     + height / 2.0 - VERTEX_BOX / 3.0;
+
+            return FormatRangeVertex(rangeVertex, posX, posY, width, height);
+        }
+
+        public static NodeViewModel FormatRangeVertexSmall(this RangeVertex rangeVertex, double posX, double posY)
+        {
+            return FormatRangeVertex(rangeVertex, posX, posY);
+        }
+
+        public static NodeViewModel FormatRangeVertex(this RangeVertex rangeVertex, 
+            double posX, double posY, double width = 40, double height = 40)
+        {
+            var node = new NodeViewModel
+            {
+                ID = rangeVertex.VariableName,
+                Content = rangeVertex,
+                ContentTemplate = new DataTemplate(),
+                UnitWidth = width,
+                UnitHeight = height,
+                OffsetX = posX,
+                OffsetY = posY,
+                ShapeStyle = _rangeShapeStyle,
+                Shape = _rangeShape,
+
+                Annotations = new AnnotationCollection
+                {
+                    new AnnotationEditorViewModel
+                    {
+                        Offset = new Point(0, 0),
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        Content = rangeVertex.VariableName,
+                        ViewTemplate = _normalLabelTemplate,
+                        UnitWidth = 200
+                    }
+                }
+            };
+            SetNodeConstraints(node);
+            rangeVertex.Node = node;
+            return node;
+        }
+
         private static Style GetNodeShapeStyle(SolidColorBrush solidColorBrush)
         {
             var shapeStyle = new Style
@@ -152,7 +208,8 @@ namespace Thesis.ViewModels
             var graphLayout = LayoutGraph(@class).ToList();
             var numOfFormulaColumns = graphLayout.Count == 0 
                 ? 0 
-                : graphLayout.Max(l => l.Count(v => v.NodeType != NodeType.Constant));
+                : graphLayout.Max(l => l.Count(vertex => vertex is RangeVertex ||
+                                                    vertex is CellVertex cellVertex && cellVertex.NodeType != NodeType.Constant));
 
             var nodes = new NodeCollection();
             var group = new GroupViewModel
@@ -164,23 +221,25 @@ namespace Thesis.ViewModels
             posX = posX == 0 ? DIAGRAM_PADDING : posX;
             var nextPosX = posX + width + CLASS_SPACING;
             double posY = DIAGRAM_PADDING;
-            double vertexBoxCenter = VERTEX_BOX / 2.0;
 
-            var lastColumnX = posX + CLASS_PADDING + numOfFormulaColumns * VERTEX_BOX + vertexBoxCenter;
-            var currentRowY = posY + CLASS_PADDING + vertexBoxCenter;
+            var lastColumnX = posX + CLASS_PADDING + numOfFormulaColumns * VERTEX_BOX + VERTEX_BOX_CENTER;
+            var currentRowY = posY + CLASS_PADDING + VERTEX_BOX_CENTER;
 
             double smallVertexHeight = 40;
 
             foreach (var row in graphLayout)
             {
-                var formulas = row.Where(v => v.NodeType != NodeType.Constant).ToList();
-                var constants = row.Where(v => v.NodeType == NodeType.Constant).ToList();
+                var rightColumn = row
+                    .Where(vertex =>  vertex is CellVertex cellVertex && cellVertex.NodeType == NodeType.Constant)
+                    .Cast<CellVertex>()
+                    .ToList();
+                var leftColumns = row.Except(rightColumn).ToList();
 
-                if (constants.Count > 0)
+                if (rightColumn.Count > 0)
                 {
                     var startRowY = currentRowY;
                     // layout to the right, top-to-bottom, center the rest
-                    foreach (var vertex in constants)
+                    foreach (var vertex in rightColumn)
                     {
                         var node = vertex.FormatCellVertex(lastColumnX, currentRowY);
                         currentRowY += smallVertexHeight;
@@ -189,21 +248,27 @@ namespace Thesis.ViewModels
 
                     currentRowY += VERTEX_BOX - smallVertexHeight;
 
-                    var middle = startRowY + (constants.Count - 1) / 2.0 * smallVertexHeight;
-                    for (var i = 0; i < formulas.Count; i++)
+                    var middle = startRowY + (rightColumn.Count - 1) / 2.0 * smallVertexHeight;
+                    for (var i = 0; i < leftColumns.Count; i++)
                     {
-                        var node = formulas[i].FormatCellVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
-                            middle);
-                        nodes.Add(node);
+                        var nodePosX = posX + CLASS_PADDING + VERTEX_BOX_CENTER + i * VERTEX_BOX;
+                        var nodePosY = middle;
+                        if (leftColumns[i] is CellVertex cellVertex)
+                            nodes.Add(cellVertex.FormatCellVertex(nodePosX, nodePosY));
+                        else if (leftColumns[i] is RangeVertex rangeVertex)
+                            nodes.Add(rangeVertex.FormatRangeVertexSmall(nodePosX, nodePosY));
                     }
                 }
                 else
                 {
-                    for (var i = 0; i < formulas.Count; i++)
+                    for (var i = 0; i < leftColumns.Count; i++)
                     {
-                        var node = formulas[i].FormatCellVertex(posX + CLASS_PADDING + vertexBoxCenter + i * VERTEX_BOX,
-                            currentRowY);
-                        nodes.Add(node);
+                        var nodePosX = posX + CLASS_PADDING + VERTEX_BOX_CENTER + i * VERTEX_BOX;
+                        var nodePosY = currentRowY;
+                        if (leftColumns[i] is CellVertex cellVertex)
+                            nodes.Add(cellVertex.FormatCellVertex(nodePosX, nodePosY));
+                        else if (leftColumns[i] is RangeVertex rangeVertex)
+                            nodes.Add(rangeVertex.FormatRangeVertexSmall(nodePosX, nodePosY));
                     }
 
                     currentRowY += VERTEX_BOX;
@@ -242,29 +307,29 @@ namespace Thesis.ViewModels
         }
 
         // returns as list of vertex lists, each list is a row
-        private static IEnumerable<List<CellVertex>> LayoutGraph(Class @class)
+        private static IEnumerable<List<Vertex>> LayoutGraph(Class @class)
         {
-            var classCellVertices = @class.Vertices.GetCellVertices();
+            var classVertices = @class.Vertices;
             if (@class.OutputVertex == null)
             {
-                foreach (var cellVertex in classCellVertices)
-                    yield return new List<CellVertex> {cellVertex};
+                foreach (var vertex in classVertices)
+                    yield return new List<Vertex> {vertex};
             }
             else
             {
-                var vertexQueue = new Queue<CellVertex>(classCellVertices);
-                yield return new List<CellVertex> {vertexQueue.Dequeue()};
+                var vertexQueue = new Queue<Vertex>(classVertices);
+                yield return new List<Vertex> {vertexQueue.Dequeue()};
                 while (vertexQueue.Count > 0)
                 {
                     var vertex = vertexQueue.Dequeue();
-                    var entry = new List<CellVertex> {vertex};
+                    var entry = new List<Vertex> {vertex};
                     while (vertexQueue.Count > 0 && vertex.Children.Contains(vertexQueue.Peek()))
                     {
                         var child = vertexQueue.Dequeue();
                         entry.Add(child);
                         // TODO cleanup
                         while (vertexQueue.Count > 0 && child.Children.Contains(vertexQueue.Peek()) &&
-                               vertexQueue.Peek().NodeType == NodeType.Constant)
+                               vertexQueue.Peek() is CellVertex cellVertex && cellVertex.NodeType == NodeType.Constant)
                         {
                             var child1 = vertexQueue.Dequeue();
                             entry.Add(child1);
@@ -296,7 +361,7 @@ namespace Thesis.ViewModels
                 Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable,
                 ZIndex = -1
             };
-            if (to.IsExternal || !(to is CellVertex))
+            if (to.IsExternal)
                 connector.TargetPoint = new Point(0, 0);
             else
                 connector.TargetNode = to.Node;

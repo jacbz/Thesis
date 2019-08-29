@@ -55,9 +55,7 @@ namespace Thesis.Views
             }
             else if (vertex is RangeVertex rangeVertex)
             {
-                var topLeft = rangeVertex.GetTopLeft();
-                row = topLeft.Row;
-                col = topLeft.Column;
+                (row, col) = rangeVertex.StartAddress;
             }
             else return;
 

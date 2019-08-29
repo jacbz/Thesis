@@ -23,8 +23,8 @@ namespace Thesis.Models
         public List<Vertex> AllVertices { get; set; }
 
         // For layouting purposes
-        public List<int> PopulatedRows { get; set; }
-        public List<int> PopulatedColumns { get; set; }
+        public int[] PopulatedRows { get; set; }
+        public int[] PopulatedColumns { get; set; }
 
         public Graph(string worksheetName)
         {
@@ -390,11 +390,17 @@ namespace Thesis.Models
             Vertices = cellVertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
             logItem.AppendElapsedTime();
 
+            // create PopulatedRows, PopulatedColumns array
             var cells = Vertices.OfType<CellVertex>().ToList();
-            PopulatedRows = cells.Select(v => v.Address.row).Distinct().ToList();
-            PopulatedRows.Sort();
-            PopulatedColumns = cells.Select(v => v.Address.col).Distinct().ToList();
-            PopulatedColumns.Sort();
+            var populatedRows = cells.Select(v => v.Address.row).Distinct().ToList();
+            foreach (var rangeVertex in RangeDictionary.Values)
+                populatedRows.AddRange(rangeVertex.GetPopulatedRows());
+            PopulatedRows = populatedRows.Distinct().OrderBy(x => x).ToArray();
+
+            var populatedColumns = cells.Select(v => v.Address.col).Distinct().ToList();
+            foreach (var rangeVertex in RangeDictionary.Values)
+                populatedColumns.AddRange(rangeVertex.GetPopulatedColumns());
+            PopulatedColumns = populatedColumns.Distinct().OrderBy(x => x).ToArray();
 
             // filter external vertices for those which have at least one parent still in the vertices list
             Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...");

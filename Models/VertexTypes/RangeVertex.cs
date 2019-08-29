@@ -10,11 +10,11 @@ namespace Thesis.Models.VertexTypes
         public RangeType Type { get; }
 
         public IRange[] CellsInRange { get; }
+        public (int row, int column) StartAddress { get; }
+        public (int row, int column) EndAddress { get; }
+        public int RowCount { get; }
+        public int ColumnCount { get; }
         protected Dictionary<(int Row, int Column), IRange> AddressToCellDictionary;
-        protected (int row, int column) StartAddress;
-        protected (int row, int column) EndAddress;
-        protected int RowCount;
-        protected int ColumnCount;
 
         public RangeVertex(IRange[] cellsInRange, string addressOrName)
         {
@@ -65,9 +65,14 @@ namespace Thesis.Models.VertexTypes
             return CellsInRange.Select(c => (IsExternal ? ExternalWorksheetName : null, c.AddressLocal)).ToArray();
         }
 
-        public IRange GetTopLeft()
+        public IEnumerable<int> GetPopulatedRows()
         {
-            return AddressToCellDictionary[(StartAddress.row, StartAddress.column)];
+            return Enumerable.Range(StartAddress.row, StartAddress.row + RowCount - 1);
+        }
+
+        public IEnumerable<int> GetPopulatedColumns()
+        {
+            return Enumerable.Range(StartAddress.column, StartAddress.column + RowCount - 1);
         }
 
         public CellVertex GetSingleElement()

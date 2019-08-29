@@ -132,10 +132,16 @@ namespace Thesis.ViewModels
             _window.diagram.Nodes = new NodeCollection();
             _window.diagram.Connectors = new ConnectorCollection();
 
-            var graphCellVertices = Graph.Vertices.GetCellVertices();
-            foreach (var vertex in graphCellVertices)
-                ((NodeCollection)_window.diagram.Nodes).Add(vertex.FormatCellVertex(Graph));
-            foreach (var vertex in graphCellVertices)
+            // only display non-external vertices
+            foreach (var vertex in Graph.Vertices.Where(v => !v.IsExternal))
+            {
+                ((NodeCollection)_window.diagram.Nodes).Add(
+                    vertex is CellVertex cellVertex 
+                        ? cellVertex.FormatCellVertex(Graph) 
+                        : ((RangeVertex)vertex).FormatRangeVertexLarge(Graph));
+            }
+
+            foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
                 ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
 

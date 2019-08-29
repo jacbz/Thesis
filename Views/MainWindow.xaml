@@ -135,7 +135,7 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="32"/>
+                            <RowDefinition Height="28"/>
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
@@ -148,17 +148,17 @@
 
                         <Label Grid.Column="2" FontWeight="Bold">Node types:</Label>
                         <StackPanel Grid.Column="2" Grid.Row="1" Orientation="Vertical">
-                            <Border BorderBrush="{DynamicResource ConstantColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                            <Border BorderBrush="{StaticResource ConstantColorBrush}" Margin="0,0,0,6" BorderThickness="3">
                                 <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Constant</TextBlock>
                             </Border>
-                            <Border BorderBrush="{DynamicResource FormulaColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                            <Border BorderBrush="{StaticResource FormulaColorBrush}" Margin="0,0,0,6" BorderThickness="3">
                                 <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Formula</TextBlock>
                             </Border>
-                            <Border BorderBrush="{DynamicResource OutputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                            <Border BorderBrush="{StaticResource OutputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
                                 <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Output fields</TextBlock>
                             </Border>
-                            <Border BorderBrush="{DynamicResource ExternalColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">External</TextBlock>
+                            <Border BorderBrush="{StaticResource RangeColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Range</TextBlock>
                             </Border>
                         </StackPanel>
 
