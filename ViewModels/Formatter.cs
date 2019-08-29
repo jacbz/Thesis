@@ -127,7 +127,7 @@ namespace Thesis.ViewModels
                         : cellVertex.NodeType == NodeType.OutputField
                             ? _outputShape
                             : _constantShape,
-
+                ZIndex = 10000,
                 Annotations = new AnnotationCollection
                 {
                     new AnnotationEditorViewModel
@@ -178,7 +178,6 @@ namespace Thesis.ViewModels
                 OffsetY = posY,
                 ShapeStyle = _rangeShapeStyle,
                 Shape = _rangeShape,
-
                 Annotations = new AnnotationCollection
                 {
                     new AnnotationEditorViewModel

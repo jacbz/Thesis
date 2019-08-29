@@ -181,6 +181,11 @@ namespace Thesis.Views
             testCodeButton.IsEnabled = true;
         }
 
+        private void ShowTestFrameworkButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            codeTextBox.Text = Properties.Resources.CSharpTestingFramework;
+        }
+
         public void DiagramAnnotationChanged(object sender, ChangeEventArgs<object, AnnotationChangedEventArgs> args)
         {
             // disable annotation editing
