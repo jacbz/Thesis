@@ -86,7 +86,11 @@
             </DataTemplate>
 
             <DataTemplate x:Key="classLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontWeight="Bold" FontSize="14" />
+                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontWeight="Bold" FontSize="14" FontFamily="Consolas" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="staticLabel">
+                <TextBlock Text="{Binding Path=Content}" FontSize="12" FontFamily="Consolas" />
             </DataTemplate>
 
             <ResourceDictionary.MergedDictionaries>

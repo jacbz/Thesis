@@ -30,6 +30,7 @@ namespace Thesis.ViewModels
         private static DataTemplate _normalLabelTemplate;
         private static DataTemplate _redLabelTemplate;
         private static DataTemplate _classLabelTemplate;
+        private static DataTemplate _staticLabelTemplate;
 
         private static Style _connectorGeometryStyle;
         private static Style _externalConnectorGeometryStyle;
@@ -57,6 +58,7 @@ namespace Thesis.ViewModels
             _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
             _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
             _classLabelTemplate = Application.Current.Resources["classLabel"] as DataTemplate;
+            _staticLabelTemplate = Application.Current.Resources["staticLabel"] as DataTemplate;
 
             _connectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style;
             _externalConnectorGeometryStyle = Application.Current.Resources["ExternalConnectorGeometryStyle"] as Style;
@@ -304,6 +306,18 @@ namespace Thesis.ViewModels
                 ZIndex = int.MinValue,
                 ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(@class.Color.ToMColor()))
             };
+            if (@class.IsStaticClass)
+            {
+                ((AnnotationCollection)classNode.Annotations).Add(new AnnotationEditorViewModel
+                {
+                    Offset = new Point(1, 0),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Content = "<<static>>",
+                    ViewTemplate = _staticLabelTemplate
+                });
+            }
+
             SetNodeConstraints(classNode);
 
             nodes.Add(classNode);
