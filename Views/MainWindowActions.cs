@@ -43,25 +43,38 @@ namespace Thesis.Views
 
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
-            if (!(vertex is CellVertex cell)) return;
-
-            spreadsheet.SetActiveSheet(string.IsNullOrEmpty(cell.ExternalWorksheetName) 
+            spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
                 ? _generator.ActiveWorksheet
-                : cell.ExternalWorksheetName);
-            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(cell.Address.row, cell.Address.col);
+                : vertex.ExternalWorksheetName);
+
+            int row, col;
+            if (vertex is CellVertex cell)
+            {
+                row = cell.Address.row;
+                col = cell.Address.col;
+            }
+            else if (vertex is RangeVertex rangeVertex)
+            {
+                var topLeft = rangeVertex.GetTopLeft();
+                row = topLeft.Row;
+                col = topLeft.Column;
+            }
+            else return;
+
+            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(row, col);
 
             // highlight selected vertex yellow for one second
-            var spreadsheetCell = spreadsheet.ActiveSheet.Range[cell.StringAddress];
+            var spreadsheetCell = spreadsheet.ActiveSheet.Range[row, col];
             var originalBgColor = spreadsheetCell.CellStyle.Color;
             if (spreadsheet.Tag != null) return;
             spreadsheet.Tag = true;
             spreadsheetCell.CellStyle.Color = Color.Yellow;
-            spreadsheet.ActiveGrid.InvalidateCell(cell.Address.row, cell.Address.col);
+            spreadsheet.ActiveGrid.InvalidateCell(row, col);
             Task.Factory.StartNew(() => Thread.Sleep(1000))
                 .ContinueWith((t) =>
                 {
                     spreadsheetCell.CellStyle.Color = originalBgColor;
-                    spreadsheet.ActiveGrid.InvalidateCell(cell.Address.row, cell.Address.col);
+                    spreadsheet.ActiveGrid.InvalidateCell(row, col);
                     spreadsheet.Tag = null;
                 }, TaskScheduler.FromCurrentSynchronizationContext());
         }

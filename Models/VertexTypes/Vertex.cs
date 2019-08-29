@@ -5,7 +5,7 @@ using Syncfusion.UI.Xaml.Diagram;
 
 namespace Thesis.Models.VertexTypes
 {
-    public abstract class Vertex : INotifyPropertyChanged
+    public abstract partial class Vertex
     {
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
@@ -28,9 +28,6 @@ namespace Thesis.Models.VertexTypes
 
         public NodeViewModel Node { get; set; }
         public Class Class { get; set; }
-
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public Vertex()
         {
@@ -66,11 +63,6 @@ namespace Thesis.Models.VertexTypes
             }
 
             return vertices;
-        }
-
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

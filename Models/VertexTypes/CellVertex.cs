@@ -6,7 +6,7 @@ namespace Thesis.Models.VertexTypes
     /// <summary>
     /// A vertex which represents a spreadsheet cell.
     /// </summary>
-    public class CellVertex : Vertex
+    public partial class CellVertex : Vertex
     {
         public (int row, int col) Address { get; set; }
         public string StringAddress { get; set; }
@@ -29,8 +29,6 @@ namespace Thesis.Models.VertexTypes
                 : Children.Count > 0
                     ? NodeType.OutputField
                     : NodeType.None;
-        // used in XAML binding
-        public string CellTypeString => CellType.ToString();
 
         public CellVertex(IRange cell)
         {

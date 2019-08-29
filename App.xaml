@@ -7,6 +7,8 @@
     <Application.Resources>
 
         <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
             <Style TargetType="fa5:SvgAwesome">
                 <Setter Property="Margin" Value="0,0,6,0" />
                 <Setter Property="VerticalAlignment" Value="Center" />
@@ -18,10 +20,12 @@
             <Color x:Key="OutputColor">#e74c3c</Color>
             <Color x:Key="ConstantColor">#2980b9</Color>
             <Color x:Key="ExternalColor">#1abc9c</Color>
+            <Color x:Key="RangeColor">#34495e</Color>
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
             <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
             <SolidColorBrush x:Key="ExternalColorBrush" Color="{DynamicResource ExternalColor}" />
+            <SolidColorBrush x:Key="RangeColorBrush" Color="{DynamicResource RangeColor}" />
 
             <Color x:Key="HeaderColor">#aaaaaa</Color>
             <Color x:Key="AttributeColor">#83d0c9</Color>

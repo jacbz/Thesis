@@ -65,6 +65,11 @@ namespace Thesis.Models.VertexTypes
             return CellsInRange.Select(c => (IsExternal ? ExternalWorksheetName : null, c.AddressLocal)).ToArray();
         }
 
+        public IRange GetTopLeft()
+        {
+            return AddressToCellDictionary[(StartAddress.row, StartAddress.column)];
+        }
+
         public CellVertex GetSingleElement()
         {
             return new CellVertex(AddressToCellDictionary[(StartAddress.row, StartAddress.column)]);
