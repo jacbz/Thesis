@@ -380,8 +380,7 @@ namespace Thesis.Models.CodeGenerators
                             currentVertex.CellType = CellType.Number;
                             constant = constant.Replace("%", "*0.01").Replace("\"", "");
                         }
-                        if (constant == "TRUE") return LiteralExpression(SyntaxKind.TrueLiteralExpression);
-                        if (constant == "FALSE") return LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                        if (node.ChildNodes[0].Term.Name == "Bool") return ParseExpression(constant.ToLower());
                         return ParseExpression(constant);
                     case "FormulaWithEq":
                         return TreeNodeToExpression(node.ChildNodes[1], currentVertex);
@@ -417,6 +416,9 @@ namespace Thesis.Models.CodeGenerators
 
                         // node is a range
                         return RangeToExpression(node, currentVertex);
+                    case "HRange":
+                    case "VRange":
+                        return RangeToExpression(node.Parent(currentVertex.ParseTree), currentVertex);
                     case "UDFunctionCall":
                         // Not implemented
                         return CommentExpression($"User-defined function {node.GetFunction()} call here");
@@ -1068,7 +1070,8 @@ namespace Thesis.Models.CodeGenerators
         {
             if (node.Term.Name == "NamedRange")
                 return NamedRangeToExpression(node, currentVertex);
-            if (node.Term.Name == "ReferenceFunctionCall" && node.GetFunction() == ":")
+            if (node.Term.Name == "ReferenceFunctionCall" && node.GetFunction() == ":" ||
+                node.ChildNodes.Count == 2 && (node.ChildNodes[1].Term.Name == "VRange" || node.ChildNodes[1].Term.Name == "HRange"))
                 return RangeToExpression(node, currentVertex);
             if (node.ChildNodes.Count == 1)
                 return RangeOrNamedRangeToExpression(node.ChildNodes[0], currentVertex);

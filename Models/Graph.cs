@@ -133,6 +133,7 @@ namespace Thesis.Models
                         }
                         else
                         {
+                            // getExternalCellFunc is not really necessary? getRangeFunc can also get external cells 
                             var externalCellIRange = getExternalCellFunc(sheetName, address);
                             if (externalCellIRange == null)
                             {
@@ -383,14 +384,24 @@ namespace Thesis.Models
                 switch (node.Term.Name)
                 {
                     case "ReferenceFunctionCall":
+                    case "VRange":
+                    case "HRange":
                     {
-                        if (node.GetFunction() != ":")
-                            break;
+                        if (node.Term.Name == "ReferenceFunctionCall")
+                        {
+                            if (node.GetFunction() != ":")
+                                break;
+                        }
+                        else
+                        {
+                            node = node.Parent(cellVertex.ParseTree);
+                        }
 
                         string range = node.NodeToString(cellVertex.Formula);
 
                         if (!RangeDictionary.TryGetValue(range, out var rangeVertex))
                         {
+                            // getRangeFunc can also get cells from other spreadsheets
                             rangeVertex = new RangeVertex(getRangeFunc(range).Cells, range);
                             RangeDictionary.Add(range, rangeVertex);
                         }
