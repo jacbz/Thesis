@@ -418,8 +418,8 @@ namespace Thesis.Models.CodeGenerators
                         // node is a range
                         return RangeToExpression(node, currentVertex);
                     case "UDFunctionCall":
-                        return ParseExpression($"{node.GetFunction()}({string.Join(", ", node.GetFunctionArguments().Select(a => TreeNodeToExpression(a, currentVertex)))})");
-                    // Not implemented
+                        // Not implemented
+                        return CommentExpression($"User-defined function {node.GetFunction()} call here");
                     default:
                         return CommentExpression($"Parse token {node.Term.Name} is not implemented yet! {node}", true);
                 }
@@ -600,12 +600,12 @@ namespace Thesis.Models.CodeGenerators
                     ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], currentVertex);
                     ExpressionSyntax whenFalse;
 
-                    // if the condition is not always a bool (e.g. dynamic), use Equals(cond, true)
+                    // if the condition is not always a bool (e.g. dynamic), use Compare(cond, true)
                     // otherwise we might have a number as cond, and number can not be evaluated as bool
                     var conditionType = GetType(arguments[0], currentVertex);
                     if (!conditionType.HasValue || conditionType.Value != CellType.Bool)
                     {
-                        condition = InvocationExpression(IdentifierName("Equals"))
+                        condition = InvocationExpression(IdentifierName("Compare"))
                             .AddArgumentListArguments(
                                 Argument(condition),
                                 Argument(LiteralExpression(SyntaxKind.TrueLiteralExpression)));
@@ -735,14 +735,29 @@ namespace Thesis.Models.CodeGenerators
                     }
                     else
                     {
-                        // if types different, use our custom Equals method (== would throw exception if types are different)
-                        equalsExpression = InvocationExpression(IdentifierName("Equals"))
+                        // if types different, use our custom Compare method (== would throw exception if types are different)
+                        equalsExpression = InvocationExpression(IdentifierName("Compare"))
                             .AddArgumentListArguments(Argument(leftExpression), Argument(rightExpression));
                     }
 
                     return equalsExpression;
                 }
                 case "<>":
+                {
+                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
+
+                    // see above code for "=", only if types match and are not strings, use ==
+                    var leftType = GetType(arguments[0], currentVertex);
+                    var rightType = GetType(arguments[1], currentVertex);
+                    if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value &&
+                        (leftType.Value != CellType.Text || rightType.Value != CellType.Text))
+                    {
+                        return GenerateBinaryExpression(functionName, arguments, currentVertex);
+                    }
+
+                    return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
+                        FunctionToExpression("=", arguments, currentVertex));
+                }
                 case "<":
                 case "<=":
                 case ">=":
@@ -840,7 +855,7 @@ namespace Thesis.Models.CodeGenerators
             { "ISNA", CellType.Unknown },
 
             { "=", CellType.Bool },
-            { "<>", CellType.Number },
+            { "<>", CellType.Bool },
             { "<", CellType.Number },
             { "<=", CellType.Number },
             { ">=", CellType.Number },
@@ -871,10 +886,12 @@ namespace Thesis.Models.CodeGenerators
         // if multiple types are found, or type is unknown or dynamic, return null
         private CellType? GetType(ParseTreeNode node, Vertex currentVertex)
         {
+            ParseTreeNode[] childNodesToContinueWith = node.ChildNodes.ToArray();
+
             if (node.Term.Name == "ReferenceFunctionCall")
             {
                 var arguments = node.ChildNodes[1];
-                if (arguments.ChildNodes.Count == 3)
+                if (arguments.ChildNodes.Count == 3) // IF
                     return IsSameType(arguments.ChildNodes[1], arguments.ChildNodes[2], currentVertex);
                 if (arguments.ChildNodes.Count == 2)
                     return IsTypeBoolean(arguments.ChildNodes[1], currentVertex) ? CellType.Bool : (CellType?)null;
@@ -887,14 +904,9 @@ namespace Thesis.Models.CodeGenerators
                 if (_functionToCellTypeDictionary.TryGetValue(function, out var functionType)
                     && functionType != CellType.Unknown)
                     return functionType;
+                childNodesToContinueWith = node.GetFunctionArguments().ToArray();
             }
 
-            // TODO Implement
-            if (node.Term.Name == "Prefix")
-            {
-                return null;
-            }
-            // TODO Implement
             if (node.Term.Name == "UDFunctionCall")
             {
                 return null;
@@ -916,7 +928,7 @@ namespace Thesis.Models.CodeGenerators
                 return CellType.Text;
             }
 
-            var childTypes = node.ChildNodes.Select(node1 => GetType(node1, currentVertex)).Distinct().ToList();
+            var childTypes = childNodesToContinueWith.Select(node1 => GetType(node1, currentVertex)).Distinct().ToList();
             if (childTypes.All(c => c.HasValue) && childTypes.Count == 1 && childTypes[0].Value != CellType.Unknown)
                 return childTypes[0].Value;
             return null;
