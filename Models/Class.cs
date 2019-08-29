@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using Thesis.Models.CodeGenerators;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 

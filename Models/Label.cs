@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Thesis.Models.VertexTypes;
-using Thesis.ViewModels;
 
 namespace Thesis.Models
 {

@@ -1,21 +1,12 @@
 ﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Windows;
-using System.Windows.Controls;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
-using Syncfusion.XlsIO.Implementation;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 

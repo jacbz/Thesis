@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Irony.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Thesis.Models.VertexTypes;
-using Thesis.ViewModels;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using XLParser;
 using Formatter = Microsoft.CodeAnalysis.Formatting.Formatter;
