@@ -18,7 +18,7 @@ namespace Thesis.Models
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
         public Dictionary<string, RangeVertex> RangeDictionary { get; set; }
 
-        // toolbox
+        // for the toolbox
         public List<Vertex> AllVertices { get; set; }
 
         // For layouting purposes
@@ -43,15 +43,70 @@ namespace Thesis.Models
             var verticesDict = new Dictionary<string, Vertex>();
             var externalVerticesDict = new Dictionary<(string sheetName, string address), Vertex>();
 
+            // create a cell vertex for all cells in the spreadsheet
             foreach (var cell in cells.Cells)
             {
                 var cellVertex = new CellVertex(cell);
-
                 verticesDict.Add(cellVertex.StringAddress, cellVertex);
                 graph.Vertices.Add(cellVertex);
             }
 
-            // assigns a name name to a Vertex
+            Logger.Log(LogItemType.Info, $"Processing {names.Count} names in file...");
+
+            graph.NameDictionary = GenerateNameDictionary(names, verticesDict, worksheetName);
+
+            Logger.Log(LogItemType.Info, $"Considering {graph.Vertices.Count} vertices...");
+
+            ProcessVertices(graph, getRangeFunc, verticesDict, externalVerticesDict, graph.NameDictionary);
+            graph.ExternalVertices = externalVerticesDict.Values.ToList();
+
+            if (graph.ExternalVertices.Count > 0)
+                Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
+
+            var rangeVertices = graph.RangeDictionary.Values.ToList();
+            // add all range vertices
+            graph.Vertices.AddRange(rangeVertices);
+
+            // generate labels
+            LabelGenerator.GenerateLabels(graph.Vertices.GetCellVertices());
+
+            graph.AllVertices = graph.Vertices.ToList();
+
+            graph.PerformTransitiveFilter(graph.GetOutputFields());
+
+            // add parent/child for cells in ranges
+            var vertexDict = graph.Vertices.OfType<CellVertex>().ToDictionary(v => v.GlobalAddress);
+            foreach (var rangeVertex in rangeVertices)
+            {
+                foreach (var address in rangeVertex.GetAddresses())
+                {
+                    if (vertexDict.TryGetValue(address, out var vertex))
+                    {
+                        rangeVertex.Children.Add(vertex);
+                        vertex.Parents.Add(rangeVertex);
+                    }
+                }
+            }
+
+            Logger.Log(LogItemType.Info,
+                $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
+
+            return graph;
+        }
+
+        /// <summary>
+        /// Creates a dictionary which maps a name to the name's vertex.
+        /// If the name is external, create a new external RangeVertex.
+        /// If the name is internal, and
+        /// - consists of a single cell: simply rename the existing vertex with the name's name
+        /// - consists of multiple cells: create a new RangeVertex
+        /// 
+        /// Parent/child relationships are not established here, but after transitive filtering has been performed, to avoid
+        /// adding relationships to vertices which are not referenced by output fields.
+        /// </summary>
+        private static Dictionary<string, Vertex> GenerateNameDictionary(INames names, Dictionary<string, Vertex> verticesDict, string worksheetName)
+        {
+            var nameDictionary = new Dictionary<string, Vertex>();
             foreach (NameImpl name in names)
             {
                 var nameTitle = name.Name;
@@ -101,274 +156,59 @@ namespace Thesis.Models
                     }
                 }
 
-                if (graph.NameDictionary.ContainsKey(nameTitle))
+                if (nameDictionary.ContainsKey(nameTitle))
                     Logger.Log(LogItemType.Warning, $"Name {nameTitle} already exists!");
                 else
-                    graph.NameDictionary.Add(nameTitle, nameVertex);
+                    nameDictionary.Add(nameTitle, nameVertex);
             }
 
-            Logger.Log(LogItemType.Info, $"Considering {graph.Vertices.Count} vertices...");
-
-            foreach (var cellVertex in graph.Vertices.OfType<CellVertex>())
+            return nameDictionary;
+        }
+        
+        /// <summary>
+        /// Runs <see cref="ProcessVertex"/> on a graph's cell vertices
+        /// </summary>
+        private static void ProcessVertices(Graph graph,
+            Func<string, IRange> getRangeFunc,
+            Dictionary<string, Vertex> verticesDict,
+            Dictionary<(string sheetName, string address), Vertex> externalVerticesDict,
+            Dictionary<string, Vertex> nameDictionary)
+        {
+            foreach (var cellVertex in graph.Vertices.GetCellVertices())
             {
                 if (cellVertex.ParseTree == null) continue;
-//                try
-//                {
-                    var (referencedCells, externalReferencedCells, referencedNames) =
-                        graph.GetListOfReferencedCells(
-                            cellVertex,
-                            getRangeFunc);
-                    foreach (var cellAddress in referencedCells)
-                    {
-                        cellVertex.Children.Add(verticesDict[cellAddress]);
-                        verticesDict[cellAddress].Parents.Add(cellVertex);
-                    }
-                    // process external cells
-                    foreach(var (sheetName, address) in externalReferencedCells)
-                    {
-                        if (externalVerticesDict.TryGetValue((sheetName, address), out var externalCellVertex))
-                        {
-                            cellVertex.Children.Add(externalCellVertex);
-                            externalCellVertex.Parents.Add(cellVertex);
-                        }
-                        else
-                        {
-                            // getExternalCellFunc is not really necessary? getRangeFunc can also get external cells 
-                            var externalCellIRange = getExternalCellFunc(sheetName, address);
-                            if (externalCellIRange == null)
-                            {
-                                Logger.Log(LogItemType.Warning, $"Could not get cell {sheetName}.{address}");
-                            }
-                            else
-                            {
-                                externalCellVertex = new CellVertex(externalCellIRange);
-                                externalCellVertex.MarkAsExternal(sheetName, address);
-
-                                cellVertex.Children.Add(externalCellVertex);
-                                externalCellVertex.Parents.Add(cellVertex);
-                                graph.ExternalVertices.Add(externalCellVertex);
-                                externalVerticesDict.Add((sheetName, address), externalCellVertex);
-                            }
-                        }
-                    }
-
-                    // process named ranges
-                    foreach (var nameName in referencedNames)
-                    {
-                        if (graph.NameDictionary.TryGetValue(nameName, out var nameVertex))
-                        {
-                            cellVertex.Children.Add(nameVertex);
-                            nameVertex.Parents.Add(cellVertex);
-                        }
-                        else
-                        {
-                            Logger.Log(LogItemType.Warning, "Could not find named range " + nameName);
-                        }
-                    }
-//                }
-//                catch (Exception ex)
-//                {
-//                    Logger.Log(LogItemType.Error,
-//                        $"Error processing formula in {cellVertex.StringAddress} ({cellVertex.Formula}): {ex.GetType().Name} ({ex.Message})");
-//                }
-            }
-
-            if (graph.ExternalVertices.Count > 0)
-                Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
-
-            var rangeVertices = graph.RangeDictionary.Values.ToList();
-            // add all range vertices
-            graph.Vertices.AddRange(rangeVertices);
-            graph.GenerateLabels();
-
-            graph.AllVertices = graph.Vertices.ToList();
-
-            graph.PerformTransitiveFilter(graph.GetOutputFields());
-
-            // add parent/child for cells in ranges
-            var vertexDict = graph.Vertices.OfType<CellVertex>().ToDictionary(v => v.GlobalAddress);
-            foreach (var rangeVertex in rangeVertices)
-            {
-                foreach (var address in rangeVertex.GetAddresses())
+                try
                 {
-                    if (vertexDict.TryGetValue(address, out var vertex))
-                    {
-                        rangeVertex.Children.Add(vertex);
-                        vertex.Parents.Add(rangeVertex);
-                    }
+                    graph.ProcessVertex(cellVertex, getRangeFunc, verticesDict, externalVerticesDict, nameDictionary);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log(LogItemType.Error,
+                        $"Error processing formula in {cellVertex.StringAddress} ({cellVertex.Formula}): {ex.GetType().Name} ({ex.Message})");
                 }
             }
-
-            Logger.Log(LogItemType.Info,
-                $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
-
-            return graph;
         }
 
-        private void GenerateLabels()
+        /// <summary>
+        /// Recursively traverses the parse tree of each vertex and does the following, when it encounters a
+        /// - cell in the current worksheet: establishes a parent/child relationship
+        /// - cell in another worksheet: creates a new cell for the external cell, adds it to externalVerticesDict, and establishes a parent/child relationship
+        /// - range: creates a new RangeVertex for the range, adds it to RangeDictionary, and establishes a parent/child relationship.
+        /// - name: uses nameDictionary to find the named range, and establishes a parent/child relationship
+        /// </summary>
+        private void ProcessVertex(CellVertex cellVertex, 
+                Func<string, IRange> getRangeFunc,
+                Dictionary<string, Vertex> verticesDict,
+                Dictionary<(string sheetName, string address), Vertex> externalVerticesDict,
+                Dictionary<string, Vertex> nameDictionary)
         {
-            var logItem = Logger.Log(LogItemType.Info, "Generating labels...", true);
-            // Create labels
-            Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
-
-            var cells = Vertices.GetCellVertices();
-            foreach (var cell in cells)
-            {
-                Label label = new Label(cell);
-                if (cell.CellType == CellType.Unknown && cell.NodeType == NodeType.None)
-                {
-                    label.Type = LabelType.None;
-                }
-                else if (cell.Children.Count == 0 && cell.Parents.Count == 0 && cell.CellType == CellType.Text)
-                {
-                    if (labelDictionary.TryGetValue((cell.Address.row - 1, cell.Address.col), out Label labelAbove)
-                        && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
-                    {
-                        label.Type = LabelType.Attribute;
-                        label.Text = cell.DisplayValue;
-                        labelAbove.Type = LabelType.Attribute;
-                    }
-                    else
-                    {
-                        label.Type = LabelType.Header;
-                        label.Text = cell.DisplayValue;
-                    }
-                }
-                else
-                {
-                    label.Type = LabelType.Data;
-                }
-
-                cell.Label = label;
-                labelDictionary.Add((cell.Address.row, cell.Address.col), label);
-            }
-
-            // assign attributes and headers for each data type
-            foreach (var cell in cells)
-            {
-                if (!cell.IsSpreadsheetCell || cell.Label.Type != LabelType.Data) continue;
-
-                (int row, int col) currentPos = cell.Address;
-
-                // add attributes
-                bool foundAttribute = false;
-                int distanceToAttribute = 0;
-                // a list that stores how far all attributes are to the vertex. e.g. attribute in 2,3, vertex in 8: [5,6]
-                List<int> distancesToAttribute = new List<int>();
-                while (currentPos.col-- > 1)
-                {
-                    var currentLabel = labelDictionary[currentPos];
-                    if (foundAttribute && currentLabel.Type != LabelType.Attribute) break;
-
-                    distanceToAttribute++;
-                    if (currentLabel.Type == LabelType.Attribute)
-                    {
-                        foundAttribute = true;
-                        cell.Label.Attributes.Add(currentLabel);
-                        distancesToAttribute.Add(distanceToAttribute);
-                    }
-                }
-
-                // add headers
-                currentPos = cell.Address;
-                if (!foundAttribute)
-                {
-                    // no attributes, use first header on the top
-                    while (currentPos.row-- > 1)
-                    {
-                        var currentLabel = labelDictionary[currentPos];
-                        if (currentLabel.Type == LabelType.Header)
-                        {
-                            cell.Label.Headers.Add(currentLabel);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    // keep adding headers, until there is no attribute to the left or left bottom with the exact distance
-                    bool foundHeader = false;
-                    while (currentPos.row-- > 1)
-                    {
-                        var currentLabel = labelDictionary[currentPos];
-
-                        bool anyAttributeDistanceMatch = false;
-                        foreach (int dist in distancesToAttribute)
-                        {
-                            if (labelDictionary[(currentPos.row, currentPos.col - dist)].Type == LabelType.Attribute ||
-                                labelDictionary[(currentPos.row + 1, currentPos.col - dist)].Type == LabelType.Attribute)
-                                anyAttributeDistanceMatch = true;
-                        }
-
-                        if (!anyAttributeDistanceMatch)
-                            break;
-                        if (foundHeader && currentLabel.Type != LabelType.Header)
-                            break;
-
-                        if (currentLabel.Type == LabelType.Header)
-                        {
-                            foundHeader = true;
-                            cell.Label.Headers.Add(currentLabel);
-                        }
-                    }
-                }
-
-                // do not override name if name was already assigned, e.g. per named range
-                if (string.IsNullOrEmpty(cell.VariableName))
-                    cell.Label.GenerateVariableName();
-            }
-            logItem.AppendElapsedTime();
-        }
-
-        // recursively gets list of referenced cells from parse tree using DFS
-        private (List<string> referencedCells, List<(string, string)> externalReferencedCells, List<string> referencednames)
-            GetListOfReferencedCells(CellVertex cellVertex, Func<string, IRange> getRangeFunc)
-        {
-            var referencedCells = new List<string>();
-            var externalReferencedCells = new List<(string sheetName, string address)>();
-            var referencedNames = new List<string>();
-
             var stack = new Stack<ParseTreeNode>();
             var visited = new HashSet<ParseTreeNode>();
             stack.Push(cellVertex.ParseTree);
 
-            // maps a Reference node to an external sheet
-            var referenceNodeToExternalSheet = new HashSet<(ParseTreeNode node, string sheetName)>();
-
-            // first 
-
-            while (stack.Count > 0)
-            {
-                var node = stack.Pop();
-                if (visited.Contains(node)) continue;
-
-                visited.Add(node);
-                if (node.Term.Name == "Prefix")
-                {
-                    // SheetNameToken vs ParsedSheetNameToken
-                    string sheetName = node.ChildNodes.Count == 2
-                        ? node.ChildNodes[1].FindTokenAndGetText()
-                        : node.FindTokenAndGetText();
-                    // remove ! at end of sheet name
-                    sheetName = sheetName.FormatSheetName();
-
-                    // reference must be as far above as possible, to parse e.g. 'Sheet'!A1:A8
-                    ParseTreeNode reference = node.Parent(cellVertex.ParseTree);
-                    var traverse = node;
-                    while (traverse != cellVertex.ParseTree)
-                    {
-                        traverse = traverse.Parent(cellVertex.ParseTree);
-                        if (traverse.Term.Name == "Reference")
-                            reference = traverse;
-                    }
-                    MarkChildNodesAsExternal(referenceNodeToExternalSheet, reference, sheetName);
-                }
-
-                for (var i = node.ChildNodes.Count - 1; i >= 0; i--)
-                {
-                    stack.Push(node.ChildNodes[i]);
-                }
-            }
+            // maps a node to an external sheet
+            var nodeToExternalSheetDictionary = new Dictionary<ParseTreeNode, string>();
+            GenerateNodeToExternalSheetDictionary(cellVertex.ParseTree, cellVertex.ParseTree, nodeToExternalSheetDictionary);
 
             visited.Clear();
             stack.Push(cellVertex.ParseTree);
@@ -405,9 +245,8 @@ namespace Thesis.Models
                             rangeVertex = new RangeVertex(getRangeFunc(range).Cells, range);
                             RangeDictionary.Add(range, rangeVertex);
                         }
-                        var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
-                        if (!externalMatch.Equals(default))
-                            rangeVertex.MarkAsExternal(externalMatch.sheetName);
+                        if (nodeToExternalSheetDictionary.TryGetValue(node, out var sheetName))
+                            rangeVertex.MarkAsExternal(sheetName);
 
                         rangeVertex.Parents.Add(cellVertex);
                         cellVertex.Children.Add(rangeVertex);
@@ -418,17 +257,53 @@ namespace Thesis.Models
                     }
                     case "Cell":
                     {
-                        var externalMatch = referenceNodeToExternalSheet.FirstOrDefault(e => e.node == node);
-                        if (!externalMatch.Equals(default))
-                            externalReferencedCells.Add((externalMatch.sheetName, node.FindTokenAndGetText()));
+                        string referencedCellAddress = node.FindTokenAndGetText();
+                        if (nodeToExternalSheetDictionary.TryGetValue(node, out var externalSheetName))
+                        {
+                            if (externalVerticesDict.TryGetValue((externalSheetName, referencedCellAddress), out var externalCellVertex))
+                            {
+                                cellVertex.Children.Add(externalCellVertex);
+                                externalCellVertex.Parents.Add(cellVertex);
+                            }
+                            else
+                            {
+                                var wholeAddress = node.Parent(cellVertex.ParseTree).NodeToString(cellVertex.Formula);
+                                var externalCellIRange = getRangeFunc(wholeAddress);
+                                if (externalCellIRange == null)
+                                {
+                                    Logger.Log(LogItemType.Warning, $"Could not get cell {externalSheetName}.{referencedCellAddress}");
+                                }
+                                else
+                                {
+                                    externalCellVertex = new CellVertex(externalCellIRange);
+                                    externalCellVertex.MarkAsExternal(externalSheetName, referencedCellAddress);
+
+                                    cellVertex.Children.Add(externalCellVertex);
+                                    externalCellVertex.Parents.Add(cellVertex);
+                                    externalVerticesDict.Add((externalSheetName, referencedCellAddress), externalCellVertex);
+                                }
+                            }
+                        }
                         else
-                            referencedCells.Add(node.FindTokenAndGetText());
+                        {
+                            cellVertex.Children.Add(verticesDict[referencedCellAddress]);
+                            verticesDict[referencedCellAddress].Parents.Add(cellVertex);
+                        }
+
                         break;
                     }
                     case "NamedRange":
                     {
                         var name = node.FindTokenAndGetText();
-                        referencedNames.Add(name);
+                        if (nameDictionary.TryGetValue(name, out var nameVertex))
+                        {
+                            cellVertex.Children.Add(nameVertex);
+                            nameVertex.Parents.Add(cellVertex);
+                        }
+                        else
+                        {
+                            Logger.Log(LogItemType.Warning, "Could not find named range " + name);
+                        }
                         break;
                     }
                 }
@@ -447,15 +322,54 @@ namespace Thesis.Models
                 }
             }
 
-            return (referencedCells, externalReferencedCells, referencedNames);
         }
 
-        private void MarkChildNodesAsExternal(HashSet<(ParseTreeNode, string)> externalList, ParseTreeNode node, string refName)
+        /// <summary>
+        /// Recursively traverses down a ParseTreeNode, and populates the dictionary with entries of nodes which are part of an
+        /// external sheet reference
+        /// </summary>
+        private void GenerateNodeToExternalSheetDictionary(ParseTreeNode node, ParseTreeNode rootNode,
+            Dictionary<ParseTreeNode, string> nodeToExternalSheetDictionary)
+        {
+            if (node.Term.Name == "Prefix")
+            {
+                // SheetNameToken vs ParsedSheetNameToken
+                string sheetName = node.ChildNodes.Count == 2
+                    ? node.ChildNodes[1].FindTokenAndGetText()
+                    : node.FindTokenAndGetText();
+                // remove ! at end of sheet name
+                sheetName = sheetName.FormatSheetName();
+
+                // traverse up the parse tree until a Reference node is find
+                ParseTreeNode referenceNode = node.Parent(rootNode);
+                var traverse = node;
+                while (traverse != rootNode)
+                {
+                    traverse = traverse.Parent(rootNode);
+                    if (traverse.Term.Name == "Reference")
+                        referenceNode = traverse;
+                }
+
+                // make all children of the reference node as external
+                MarkChildNodesAsExternal(nodeToExternalSheetDictionary, referenceNode, sheetName);
+            }
+            else
+            {
+                foreach (var child in node.ChildNodes)
+                    GenerateNodeToExternalSheetDictionary(child, rootNode, nodeToExternalSheetDictionary);
+            }
+
+        }
+
+        /// <summary>
+        /// Recursively traverses down a ParseTreeNode, and adds all child nodes to the dictionary
+        /// </summary>
+        private void MarkChildNodesAsExternal(Dictionary<ParseTreeNode, string> nodeToExternalSheetDictionary, ParseTreeNode node, string sheetName)
         {
             foreach (var child in node.ChildNodes)
             {
-                externalList.Add((child, refName));
-                MarkChildNodesAsExternal(externalList, child, refName);
+                nodeToExternalSheetDictionary.Add(child, sheetName);
+                MarkChildNodesAsExternal(nodeToExternalSheetDictionary, child, sheetName);
             }
         }
 

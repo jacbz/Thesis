@@ -92,8 +92,8 @@ namespace Thesis.Models
         {
             if (sheetName.Substring(sheetName.Length - 1, 1) == "!")
                 sheetName = sheetName.Substring(0, sheetName.Length - 1);
-            if (sheetName.Substring(sheetName.Length - 1, 1) == "'")
-                sheetName = sheetName.Substring(0, sheetName.Length - 1);
+//            if (sheetName.Substring(sheetName.Length - 1, 1) == "'")
+//                sheetName = sheetName.Substring(0, sheetName.Length - 1);
             return sheetName;
         }
 
