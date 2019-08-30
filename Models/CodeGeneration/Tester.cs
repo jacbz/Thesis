@@ -8,16 +8,15 @@ namespace Thesis.Models.CodeGeneration
     public abstract class Tester
     {
         public List<ClassCode> ClassesCode { get; }
-        public Dictionary<string, TestResult> VariableToTestResultDictionary { get; set; }
+        public TestResults TestResults { get; set; }
 
         protected Tester(List<ClassCode> classesCode)
         {
             ClassesCode = classesCode;
-            VariableToTestResultDictionary = new Dictionary<string, TestResult>();
         }
 
         public abstract Task PerformTestAsync();
-        public abstract TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary);
+        public abstract TestReport GenerateTestReport(Dictionary<(string className, string variableName), Vertex> variableNameToVertexDictionary);
 
         public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int || o is long || o is float || o is double || o is decimal;
     }
@@ -54,6 +53,37 @@ namespace Thesis.Models.CodeGeneration
         ValueMismatch,
         Error,
         Ignore
+    }
+
+    public class TestResults
+    {
+        private readonly Dictionary<(string className, string variableName), TestResult> _testResults;
+
+        public TestResults()
+        {
+            _testResults = new Dictionary<(string className, string variableName), TestResult>();
+        }
+
+        public void Add((string className, string variableName) tuple, TestResult testResult)
+        {
+            _testResults.Add(tuple, testResult);
+        }
+
+        public TestResult this[(string className, string variableName) tuple] =>
+            _testResults.TryGetValue(tuple, out var testResult)
+                ? testResult
+                : null;
+
+        public TestResult this[Vertex vertex]
+        {
+            get
+            {
+                var tuple = (vertex.Class.Name, vertex.VariableName);
+                return _testResults.TryGetValue(tuple, out var testResult) 
+                    ? testResult 
+                    : null;
+            }
+        }
     }
     
 

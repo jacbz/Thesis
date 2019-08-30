@@ -34,7 +34,7 @@ namespace Thesis.Views
 
         private void SetUpUi()
         {
-            Formatter.InitXamlStyles();
+            Formatter.InitFormatter();
 
             // enable folding in code text box
             _foldingManager = FoldingManager.Install(codeTextBox.TextArea);

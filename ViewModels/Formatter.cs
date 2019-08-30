@@ -18,6 +18,7 @@ namespace Thesis.ViewModels
     public static class Formatter
     {
         public static CultureInfo CurrentCultureInfo;
+        private static int _nodeCounter;
 
         private static Style _formulaShapeStyle;
         private static Style _outputShapeStyle;
@@ -45,9 +46,10 @@ namespace Thesis.ViewModels
         private static DColor _formulaNodeColor;
         private static DColor _constantNodeColor;
 
-        public static void InitXamlStyles()
+        public static void InitFormatter()
         {
             CurrentCultureInfo = CultureInfo.CurrentCulture;
+            _nodeCounter = 0;
 
             _formulaShapeStyle = GetNodeShapeStyle(Application.Current.Resources["FormulaColorBrush"] as SolidColorBrush);
             _outputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["OutputColorBrush"] as SolidColorBrush);
@@ -114,7 +116,7 @@ namespace Thesis.ViewModels
             var size = cellVertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, cellVertex.Parents.Count * 4 + 25);
             var node = new NodeViewModel
             {
-                ID = cellVertex.StringAddress,
+                ID = _nodeCounter++,
                 Content = cellVertex,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = size,
@@ -174,7 +176,7 @@ namespace Thesis.ViewModels
         {
             var node = new NodeViewModel
             {
-                ID = rangeVertex.VariableName,
+                ID = _nodeCounter++,
                 Content = rangeVertex,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = width,
@@ -212,8 +214,7 @@ namespace Thesis.ViewModels
             return shapeStyle;
         }
 
-        public static (GroupViewModel group, double nextPosX) FormatClass(this Class @class,
-            double posX)
+        public static (GroupViewModel group, double nextPosX) FormatClass(this Class @class, double posX)
         {
             var graphLayout = LayoutGraph(@class).ToList();
             var numOfFormulaColumns = graphLayout.Count == 0 
@@ -287,7 +288,7 @@ namespace Thesis.ViewModels
 
             var classNode = new NodeViewModel
             {
-                ID = @class.Name,
+                ID = _nodeCounter++,
                 Content = @class,
                 ContentTemplate = new DataTemplate(),
                 UnitWidth = width,

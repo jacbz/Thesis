@@ -207,7 +207,7 @@ namespace Thesis.Views
             }
         }
 
-        private void CodeTextBox_TextChanged(object sender, System.EventArgs e)
+        private void CodeTextBox_TextChanged(object sender, EventArgs e)
         {
             _foldingStrategy.UpdateFoldings(_foldingManager, codeTextBox.Document);
         }
@@ -217,8 +217,18 @@ namespace Thesis.Views
             if (_generator.Code?.VariableNameToVertexDictionary == null) return;
 
             var selection = codeTextBox.SelectedText;
-            if (_generator.Code.VariableNameToVertexDictionary.TryGetValue(selection, out var vertex))
+
+            // check if user selected both class and variable name (e.g. Global.A1)
+            var match = _generator.Code.VariableNameToVertexDictionary
+                .FirstOrDefault(kvp => selection == kvp.Key.className + "." + kvp.Key.variableName);
+            // check if user selected only variable name (e.g. A1)
+            if (match.Equals(default))
+                match = _generator.Code.VariableNameToVertexDictionary
+                    .FirstOrDefault(kvp => selection == kvp.Key.variableName);
+
+            if (!match.Equals(default))
             {
+                var vertex = match.Value;
                 SelectVertexInSpreadsheet(vertex);
                 InitiateToolbox(vertex);
                 // restore focus to textbox so user can copy selected text

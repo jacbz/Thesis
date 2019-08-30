@@ -14,8 +14,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator : CodeGenerator
     {
-        private HashSet<string> _usedVariableNames;
-
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
@@ -27,14 +25,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
         {
         }
 
-        public override async Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null)
+        public override async Task<Code> GenerateCodeAsync(TestResults testResults = null)
         {
             return await Task.Run(() => GenerateCode(testResults));
         }
 
-        public Code GenerateCode(Dictionary<string, TestResult> testResults = null)
+        public Code GenerateCode(TestResults testResults = null)
         {
-            _usedVariableNames = new HashSet<string>();
             _useDynamic = new HashSet<Vertex>();
 
             // generate variable names for all
@@ -78,12 +75,14 @@ namespace Thesis.Models.CodeGeneration.CSharp
             var node = Formatter.Format(@namespace, workspace, options);
             var sourceCode = node.ToFullString();
 
-            var variableNameToVertexDictionary = ClassCollection.Classes.SelectMany(c => c.Vertices).ToDictionary(v => v.VariableName);
+            var variableNameToVertexDictionary = ClassCollection.Classes
+                .SelectMany(c => c.Vertices)
+                .ToDictionary(v => (v.Class.Name, v.VariableName));
             return new Code(sourceCode, variableNameToVertexDictionary, new CSharpTester(classesCode));
         }
 
         private (ClassDeclarationSyntax classDeclarationSyntax, ClassCode classCode)
-            GenerateClass(Class @class, Dictionary<string, TestResult> testResults = null)
+            GenerateClass(Class @class, TestResults testResults = null)
         {
             // public class {generatedClass.Name}
             var newClass = ClassDeclaration(@class.Name)
@@ -114,7 +113,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     var identifier = testResults == null
                         ? IdentifierName(formula.VariableName)
                         : GenerateIdentifierWithComment(formula.VariableName,
-                            testResults[formula.VariableName].ToString());
+                            testResults[formula].ToString());
 
                     var assignmentExpression = AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -128,7 +127,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     var type = testResults == null
                         ? ParseTypeName(GetTypeString(formula))
                         : GenerateTypeWithComment(GetTypeString(formula),
-                            testResults[formula.VariableName].ToString());
+                            testResults[formula].ToString());
                     var variableDeclaration = VariableDeclaration(type)
                         .AddVariables(VariableDeclarator(formula.VariableName)
                             .WithInitializer(
@@ -243,7 +242,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
             }
         }
 
-        private ClassDeclarationSyntax GenerateResultClass(Dictionary<string, TestResult> testResults = null)
+        private ClassDeclarationSyntax GenerateResultClass(TestResults testResults = null)
         {
             var resultClass = ClassDeclaration("Result")
                 .AddModifiers(Token(SyntaxKind.PublicKeyword));
@@ -279,7 +278,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     var type = testResults == null
                         ? ParseTypeName(GetTypeString(generatedClass.OutputVertex))
                         : GenerateTypeWithComment(GetTypeString(generatedClass.OutputVertex),
-                            testResults[generatedClass.OutputVertex.VariableName].ToString());
+                            testResults[generatedClass.OutputVertex].ToString());
 
                     // {type} {outputvertexname} = new {classname}().Calculate()
                     methodBody.Add(LocalDeclarationStatement(
@@ -305,13 +304,21 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
         private void GenerateVariableNamesForAll()
         {
-            _usedVariableNames = CreateUsedVariableHashSet();
+            var usedClassNames = CreateUsedVariableHashSet();
+
+            // output vertex variable must be unique as they are in the Main class
+            var usedOutputVertexNames = new HashSet<string>();
             foreach (var generatedClass in ClassCollection.Classes)
             {
-                generatedClass.Name = GenerateUniqueName(generatedClass.Name, _usedVariableNames);
+                generatedClass.Name = GenerateUniqueName(generatedClass.Name, usedClassNames);
+
+                var usedVariableNames = CreateUsedVariableHashSet();
+                usedVariableNames.UnionWith(usedOutputVertexNames);
                 foreach (var vertex in generatedClass.Vertices)
                 {
-                    vertex.VariableName = GenerateUniqueName(vertex.VariableName.MakeNameVariableConform(), _usedVariableNames);
+                    vertex.VariableName = GenerateUniqueName(vertex.VariableName.MakeNameVariableConform(), usedVariableNames);
+                    if (vertex == generatedClass.OutputVertex)
+                        usedOutputVertexNames.Add(vertex.VariableName);
                 }
             }
         }

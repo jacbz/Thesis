@@ -25,13 +25,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
         public override async Task PerformTestAsync()
         {
-            VariableToTestResultDictionary.Clear();
+            TestResults = new TestResults();
 
             var lookup = ClassesCode.ToLookup(c => c.IsStaticClass);
             var staticClasses = lookup[true];
             var normalClasses = lookup[false];
 
-            Logger.Log(LogItemType.Info, "Initializing the Roslyn C# scripting engine...", true);
+            var logItem = Logger.Log(LogItemType.Info, "Initializing the Roslyn C# scripting engine with testing framework...", true);
 
             // framework required for testing, such as the EmptyCell class
             var framework = Properties.Resources.CSharpTestingFramework;
@@ -47,6 +47,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 Logger.Log(LogItemType.Error, "Error loading testing framework: " + ex.Message);
                 return;
             }
+            logItem.AppendElapsedTime();
 
             // test each static class separately
             foreach (var staticClass in staticClasses)
@@ -62,7 +63,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
                     foreach (var testResult in VariablesToTestResults(staticClass.ClassName, testStaticClassState))
                     {
-                        VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
+                        TestResults.Add((staticClass.ClassName, testResult.VariableName), testResult);
                     }
                     logItem2.AppendElapsedTime();
 
@@ -90,7 +91,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     testNormalClassState = await testNormalClassState.ContinueWithAsync(normalClass.MethodBodyCode);
                     foreach (var testResult in VariablesToTestResults(normalClass.ClassName, testNormalClassState))
                     {
-                        VariableToTestResultDictionary.Add(testResult.VariableName, testResult);
+                        TestResults.Add((normalClass.ClassName, testResult.VariableName), testResult);
                     }
                     logItem2.AppendElapsedTime();
                 }
@@ -112,7 +113,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 new TestResult(className, variable.Name, variable.Value, variable.Type));
         }
 
-        public override TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary)
+        public override TestReport GenerateTestReport(Dictionary<(string className, string variableName), Vertex> variableNameToVertexDictionary)
         {
             Logger.Log(LogItemType.Info, "Generating test report...");
 
@@ -120,10 +121,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
             foreach (var keyValuePair in variableNameToVertexDictionary)
             {
-                var variableName = keyValuePair.Key;
+                var classAndVariableName = keyValuePair.Key;
                 var vertex = keyValuePair.Value;
 
-                if (VariableToTestResultDictionary.TryGetValue(variableName, out var testResult))
+                var testResult = TestResults[classAndVariableName];
+                if (testResult != null)
                 {
                     if (vertex is RangeVertex)
                     {
@@ -218,14 +220,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 else
                 {
                     // run time or compile error
-                    VariableToTestResultDictionary.Add(variableName,
+                    TestResults.Add(classAndVariableName,
                         new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
                         {
                             ExpectedValue = vertex is CellVertex cellVertex ? cellVertex.Value : null,
                             TestResultType = TestResultType.Error
                         });
                     errorCount++;
-
                 }
             }
 

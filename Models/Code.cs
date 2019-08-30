@@ -9,14 +9,14 @@ namespace Thesis.Models
     public class Code
     {
         public string SourceCode { get; }
-        public Dictionary<string, Vertex> VariableNameToVertexDictionary { get; }
+        public Dictionary<(string className, string variableName), Vertex> VariableNameToVertexDictionary { get; }
 
         protected CodeGenerator CodeGenerator;
         protected Tester Tester;
 
         public Code(
             string sourceCode,
-            Dictionary<string, Vertex> variableNameToVertexDictionary,
+            Dictionary<(string className, string variableName), Vertex> variableNameToVertexDictionary,
             Tester tester)
         {
             SourceCode = sourceCode;
@@ -37,7 +37,7 @@ namespace Thesis.Models
             await Tester.PerformTestAsync();
             var testReport = Tester.GenerateTestReport(VariableNameToVertexDictionary);
             Logger.Log(LogItemType.Info, "Generating code with test results as comments...");
-            testReport.Code = (await CodeGenerator.GenerateCodeAsync(Tester.VariableToTestResultDictionary)).SourceCode;
+            testReport.Code = (await CodeGenerator.GenerateCodeAsync(Tester.TestResults)).SourceCode;
             return testReport;
         }
     }

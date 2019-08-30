@@ -332,7 +332,7 @@
             <Button x:Name="magicButton" Padding="10,0" ToolTip="Generate graph, generate classes, generate code, test code – in one click." Click="MagicButton_Click">
                 <StackPanel Orientation="Horizontal">
                     <fa5:SvgAwesome Icon="Solid_Magic" Width="12" Height="12"/>
-                    <TextBlock FontSize="10">Do <Bold><Underline>everything</Underline></Bold>!</TextBlock>
+                    <TextBlock FontSize="10">Do <Bold><Underline>everything</Underline></Bold></TextBlock>
                 </StackPanel>
             </Button>
         </StackPanel>

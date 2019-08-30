@@ -13,7 +13,7 @@ namespace Thesis.Models.CodeGeneration
         protected Dictionary<string, RangeVertex> RangeDictionary;
         protected Dictionary<string, Vertex> NameDictionary;
 
-        public abstract Task<Code> GenerateCodeAsync(Dictionary<string, TestResult> testResults = null);
+        public abstract Task<Code> GenerateCodeAsync(TestResults testResults = null);
 
         protected CodeGenerator(ClassCollection classCollection,
             Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
@@ -42,10 +42,5 @@ namespace Thesis.Models.CodeGeneration
             }
             return variableName;
         }
-    }
-
-    public enum Language
-    {
-        CSharp
     }
 }
