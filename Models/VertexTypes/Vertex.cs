@@ -9,7 +9,7 @@ namespace Thesis.Models.VertexTypes
     {
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
-        public string VariableName { get; set; } // for ranges, this will be either a name (named range), or address (e.g. A1:C3)
+        public string Name { get; set; } // for ranges, this will be either a name (named range), or address (e.g. A1:C3)
         public bool IsExternal => !string.IsNullOrEmpty(ExternalWorksheetName);
         public string ExternalWorksheetName { get; set; }
         public string WorksheetName => IsExternal ? ExternalWorksheetName : null;
@@ -43,7 +43,7 @@ namespace Thesis.Models.VertexTypes
         public void MarkAsExternal(string worksheetName, string variableName)
         {
             ExternalWorksheetName = worksheetName;
-            VariableName = GenerateExternalVariableName(worksheetName, variableName);
+            Name = GenerateExternalVariableName(worksheetName, variableName);
         }
 
         public static string GenerateExternalVariableName(string worksheetName, string variableName)

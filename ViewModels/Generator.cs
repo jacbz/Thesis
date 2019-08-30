@@ -36,6 +36,9 @@ namespace Thesis.ViewModels
             _window.generateGraphButton.IsEnabled = false;
 
             ActiveWorksheet = _window.spreadsheet.ActiveSheet.Name;
+            if (App.Settings.SelectedWorksheet != ActiveWorksheet)
+                App.Settings.ResetWorkbookSpecificSettings();
+            
             App.Settings.SelectedWorksheet = ActiveWorksheet;
             App.Settings.Persist();
 
@@ -49,7 +52,10 @@ namespace Thesis.ViewModels
                 allCells, 
                 _window.GetRangeFromCurrentWorksheet,
                 _window.spreadsheet.Workbook.Names);
+
             Logger.Log(LogItemType.Success, "Graph generation successful.");
+            ClassCollection = null;
+            Code = null;
 
             _window.generateGraphButton.IsEnabled = true;
             logItem.AppendElapsedTime();
@@ -59,11 +65,13 @@ namespace Thesis.ViewModels
 
             LoadPersistedOutputFields();
 
+            LayoutGraph();
+
             return true;
         }
 
         // return value: success
-        private bool LoadPersistedOutputFields()
+        private void LoadPersistedOutputFields()
         {
             // load selected output fields from settings
             if (App.Settings.SelectedOutputFields != null &&
@@ -85,28 +93,14 @@ namespace Thesis.ViewModels
                 var firstIncludedOutputVertex = OutputVertices.FirstOrDefault(v => v.Include);
                 if (firstIncludedOutputVertex != null)
                     _window.outputFieldsListView.ScrollIntoView(firstIncludedOutputVertex);
-                return true;
             }
-
-            return false;
         }
 
         /// <summary>
         /// Filters by selected output vertices, displays graph, and colors spreadsheet cells
         /// </summary>
-        public void FilterAndLayoutGraph()
+        public void FilterGraph()
         {
-            Application.Current.Dispatcher.Invoke(() => {
-
-                if (_window.spreadsheet.ActiveSheet.Name != ActiveWorksheet)
-                {
-                    App.Settings.ResetWorkbookSpecificSettings();
-                    GenerateGraph();
-                }
-                _window.EnableClassGenerationOptions();
-
-            }, DispatcherPriority.Background);
-
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
             var includedVertexStrings = includedVertices.Select(v => v.StringAddress).ToList();
             App.Settings.SelectedOutputFields = includedVertexStrings;
@@ -117,11 +111,7 @@ namespace Thesis.ViewModels
 
             Graph.PerformTransitiveFilter(includedVertices);
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                LayoutGraph();
-                _window.ResetAndColorAllCells(Graph.AllVertices);
-            }, DispatcherPriority.Background);
+            Application.Current.Dispatcher.Invoke(LayoutGraph, DispatcherPriority.Background);
 
             Logger.Log(LogItemType.Success, "Graph generation complete.");
         }
@@ -147,6 +137,8 @@ namespace Thesis.ViewModels
                 ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child, false));
 
             logItem.AppendElapsedTime();
+
+            _window.ResetAndColorAllCells(Graph.AllVertices);
         }
 
         public void LayoutClasses()
@@ -197,7 +189,9 @@ namespace Thesis.ViewModels
         public void GenerateClasses()
         {
             var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
-
+            
+//            if(ClassCollection != null)
+//                // retain old variable names!
             ClassCollection = ClassCollection.FromGraph(Graph);
 
             logItem.AppendElapsedTime();

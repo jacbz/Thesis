@@ -35,7 +35,7 @@ namespace Thesis.Models
                 variableName += string.Join("_", attributeStrings);
             }
 
-            Vertex.VariableName = variableName.LowerFirstCharacter();
+            Vertex.Name = variableName.LowerFirstCharacter();
         }
     }
 

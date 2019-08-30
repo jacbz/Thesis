@@ -13,6 +13,7 @@ namespace Thesis.Models
         public static readonly Color ExternalColor = ColorTranslator.FromHtml("#c4f7ed");
 
         public string Name { get; set; }
+        public string DefaultName { get; }
         public bool IsStaticClass => OutputVertex == null;
         public Vertex OutputVertex { get; set; }
         public List<Vertex> Vertices { get; set; }
@@ -21,15 +22,16 @@ namespace Thesis.Models
         public Class(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
         {
             Name = name;
+            DefaultName = name;
             OutputVertex = outputVertex;
             Vertices = vertices;
             foreach (var vertex in Vertices)
             {
-                vertex.VariableName = vertex is CellVertex cellVertex 
-                    ? string.IsNullOrWhiteSpace(vertex.VariableName)
+                vertex.Name = vertex is CellVertex cellVertex 
+                    ? string.IsNullOrWhiteSpace(vertex.Name)
                         ? "_" + cellVertex.StringAddress
-                        : vertex.VariableName.MakeNameVariableConform()
-                    : vertex.VariableName;
+                        : vertex.Name.MakeNameVariableConform()
+                    : vertex.Name;
                 vertex.Class = this;
             }
 

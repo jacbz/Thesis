@@ -102,8 +102,8 @@
                         <TextBlock Text="{Binding CellTypeString}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold"/>
                         <TextBlock Text="Range" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold" Visibility="{Binding Path=IsRangeVertex, Converter={StaticResource BoolToVis}}"/>
 
-                        <TextBlock Text="Label:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding VariableName, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
+                        <TextBlock Text="Name:" Grid.Row="2" VerticalAlignment="Center"/>
+                        <TextBox Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
                         
                         <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>
                         <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>    
@@ -191,7 +191,7 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Orientation="Horizontal" IsEnabled="False">
                             <Label Content="Output fields (red):" Margin="0,0,6,0"/>
                             <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click" IsEnabled="False">
                                 <StackPanel Orientation="Horizontal">
@@ -206,7 +206,7 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-                        <ListView x:Name="outputFieldsListView" Grid.Row="1" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
+                        <ListView x:Name="outputFieldsListView" IsEnabled="False" Grid.Row="1" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Setter Property="Height" Value="20" />
@@ -228,10 +228,16 @@
                         </ListView>
                         <Border Grid.Row="2" Padding="6,6,6,0" >
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" ToolTip="If output fields are changed, labels will be newly generated." Margin="0,0,8,0">
+                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                                        <TextBlock><Run Text="Generate graph from selected worksheet and output fields"/></TextBlock>
+                                        <TextBlock><Run Text="Generate graph for selected worksheet"/></TextBlock>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="filterGraphButton" IsEnabled="False" Margin="0,0,8,0" Click="FilterGraphButton_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <fa5:SvgAwesome Icon="Solid_Filter"/>
+                                        <TextBlock><Run Text="Filter graph for selected output fields"/></TextBlock>
                                     </StackPanel>
                                 </Button>
                                 <controls:ProgressRing x:Name="generateGraphProgressRing" IsActive="False" Height="16" Width="16" />

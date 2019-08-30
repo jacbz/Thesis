@@ -73,5 +73,13 @@ namespace Thesis.Models
 
             return classCollection;
         }
+
+//        public Dictionary<string, string> GetCustomClassNames()
+//        {
+//            return Classes
+//                .Where(c => c.DefaultName != c.Name)
+//                .Select(c => (c.DefaultName, c.Name))
+//                .ToHashSet();
+//        }
     }
 }

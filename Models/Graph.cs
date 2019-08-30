@@ -142,7 +142,7 @@ namespace Thesis.Models
                         // simply assign the named range to the cell vertex
                         if (verticesDict.TryGetValue(nameAddress, out nameVertex))
                         {
-                            nameVertex.VariableName = nameTitle;
+                            nameVertex.Name = nameTitle;
                         }
                         else
                         {
@@ -386,8 +386,14 @@ namespace Thesis.Models
         // Remove all vertices that are not transitively reachable from any vertex in the given list
         public void PerformTransitiveFilter(List<CellVertex> cellVertices)
         {
-            var logItem = Logger.Log(LogItemType.Info, "Perform transitive filter...", true);
+            var logItem = Logger.Log(LogItemType.Info, "Perform transitive filtering...", true);
             Vertices = cellVertices.SelectMany(v => v.GetReachableVertices()).Distinct().ToList();
+
+            // filter external vertices for those which have at least one parent still in the vertices list
+            ExternalVertices = cellVertices
+                .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.IsExternal)
+                .Distinct()
+                .ToList();
             logItem.AppendElapsedTime();
 
             // create PopulatedRows, PopulatedColumns array
@@ -401,13 +407,6 @@ namespace Thesis.Models
             foreach (var rangeVertex in RangeDictionary.Values)
                 populatedColumns.AddRange(rangeVertex.GetPopulatedColumns());
             PopulatedColumns = populatedColumns.Distinct().OrderBy(x => x).ToArray();
-
-            // filter external vertices for those which have at least one parent still in the vertices list
-            Logger.Log(LogItemType.Info, "Perform transitive filter for external cells...");
-            ExternalVertices = cellVertices
-                .SelectMany(v => v.GetReachableVertices(false)).Where(v => v.IsExternal)
-                .Distinct()
-                .ToList();
         }
 
         public Vertex GetVertexByAddress(string sheetName, int row, int col)

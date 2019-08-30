@@ -77,7 +77,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
             var variableNameToVertexDictionary = ClassCollection.Classes
                 .SelectMany(c => c.Vertices)
-                .ToDictionary(v => (v.Class.Name, v.VariableName));
+                .ToDictionary(v => (v.Class.Name, v.Name));
             return new Code(sourceCode, variableNameToVertexDictionary, new CSharpTester(classesCode));
         }
 
@@ -111,8 +111,8 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
                     // test result comment
                     var identifier = testResults == null
-                        ? IdentifierName(formula.VariableName)
-                        : GenerateIdentifierWithComment(formula.VariableName,
+                        ? IdentifierName(formula.Name)
+                        : GenerateIdentifierWithComment(formula.Name,
                             testResults[formula].ToString());
 
                     var assignmentExpression = AssignmentExpression(
@@ -129,7 +129,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         : GenerateTypeWithComment(GetTypeString(formula),
                             testResults[formula].ToString());
                     var variableDeclaration = VariableDeclaration(type)
-                        .AddVariables(VariableDeclarator(formula.VariableName)
+                        .AddVariables(VariableDeclarator(formula.Name)
                             .WithInitializer(
                                 EqualsValueClause(expression)));
                     statements.Add(LocalDeclarationStatement(variableDeclaration));
@@ -148,7 +148,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     FieldDeclaration(
                         VariableDeclaration(
                                 ParseTypeName(GetTypeString(constant)))
-                            .AddVariables(VariableDeclarator(constant.VariableName)
+                            .AddVariables(VariableDeclarator(constant.Name)
                                 .WithInitializer(
                                     EqualsValueClause(expression))));
                 if (@class.IsStaticClass)
@@ -169,7 +169,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 {
                     var formulaField = FieldDeclaration(
                             VariableDeclaration(ParseTypeName(GetTypeString(formula)))
-                                .AddVariables(VariableDeclarator(formula.VariableName)))
+                                .AddVariables(VariableDeclarator(formula.Name)))
                         .AddModifiers(
                             Token(SyntaxKind.PublicKeyword),
                             Token(SyntaxKind.StaticKeyword));
@@ -230,7 +230,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
             else
             {
                 // return output vertex
-                statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.VariableName)));
+                statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.Name)));
 
                 // public {type} Calculate()
                 var outputField = @class.OutputVertex;
@@ -283,7 +283,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     // {type} {outputvertexname} = new {classname}().Calculate()
                     methodBody.Add(LocalDeclarationStatement(
                         VariableDeclaration(type)
-                            .AddVariables(VariableDeclarator(generatedClass.OutputVertex.VariableName)
+                            .AddVariables(VariableDeclarator(generatedClass.OutputVertex.Name)
                                 .WithInitializer(
                                     EqualsValueClause(
                                         InvocationExpression(
@@ -316,9 +316,9 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 usedVariableNames.UnionWith(usedOutputVertexNames);
                 foreach (var vertex in generatedClass.Vertices)
                 {
-                    vertex.VariableName = GenerateUniqueName(vertex.VariableName.MakeNameVariableConform(), usedVariableNames);
+                    vertex.Name = GenerateUniqueName(vertex.Name.MakeNameVariableConform(), usedVariableNames);
                     if (vertex == generatedClass.OutputVertex)
-                        usedOutputVertexNames.Add(vertex.VariableName);
+                        usedOutputVertexNames.Add(vertex.Name);
                 }
             }
         }
@@ -438,9 +438,9 @@ namespace Thesis.Models.CodeGeneration.CSharp
         private static ExpressionSyntax VariableReferenceToExpression(Vertex variableVertex, Vertex currentVertex)
         {
             return currentVertex.Class == variableVertex.Class
-                ? (ExpressionSyntax) IdentifierName(variableVertex.VariableName)
+                ? (ExpressionSyntax) IdentifierName(variableVertex.Name)
                 : MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(variableVertex.Class.Name), IdentifierName(variableVertex.VariableName));
+                    IdentifierName(variableVertex.Class.Name), IdentifierName(variableVertex.Name));
         }
 
         private ExpressionSyntax CellVertexToConstantOrVariable(CellVertex cellVertex, Vertex currentVertex)

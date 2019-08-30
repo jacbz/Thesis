@@ -117,6 +117,7 @@ namespace Thesis.Models
             inputString = ProcessDiacritics(inputString);
             inputString = inputString.Replace("%", "Percent");
             inputString = Regex.Replace(inputString, "[^0-9a-zA-Z_]+", "");
+            if (inputString == "") return "_";
             if (inputString.Length > 0 && char.IsDigit(inputString.ToCharArray()[0]))
             {
                 if (char.IsDigit(inputString.ToCharArray()[0]))

@@ -4,11 +4,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO.Implementation;
+using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
@@ -42,9 +44,13 @@ namespace Thesis.Views
             magicButton.IsEnabled = false;
             magicButtonProgressRing.IsActive = true;
 
-            await GenerateGraph();
+            generateGraphTab.IsSelected = true;
+            GenerateGraph();
+            await FilterGraph();
+
             generateClassesTab.IsSelected = true;
             await GenerateClasses();
+
             generateCodeTab.IsSelected = true;
             await GenerateCode();
             await TestCode();
@@ -53,21 +59,41 @@ namespace Thesis.Views
             magicButtonProgressRing.IsActive = false;
         }
 
-        private async void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
+        private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
-            await GenerateGraph();
+            GenerateGraph();
         }
 
-        private async Task GenerateGraph()
+        private void GenerateGraph()
         {
-            generateGraphButton.IsEnabled = false;
+            _generator = new Generator(this);
+
+            if (_generator.GenerateGraph())
+            {
+                ProvideGraphFilteringOptions();
+                EnableClassGenerationOptions();
+            }
+            else
+            {
+                DisableGraphOptions();
+            }
+        }
+
+        private async void FilterGraphButton_Click(object sender, System.Windows.RoutedEventArgs e)
+        {
+            await FilterGraph();
+        }
+
+        private async Task FilterGraph()
+        {
+            filterGraphButton.IsEnabled = false;
             generateGraphProgressRing.IsActive = true;
             diagram.Opacity = 0.3f;
 
-            await Task.Run(() => _generator.FilterAndLayoutGraph());
+            await Task.Run(() => _generator.FilterGraph());
 
             generateGraphProgressRing.IsActive = false;
-            generateGraphButton.IsEnabled = true;
+            filterGraphButton.IsEnabled = true;
             diagram.Opacity = 1;
 
             // scroll to top left
@@ -85,10 +111,10 @@ namespace Thesis.Views
             if (diagram2.Groups != null)
                 foreach (var group in (GroupCollection)diagram2.Groups)
                 {
-                    foreach (var node in (NodeCollection)@group.Nodes)
+                    foreach (var node in (NodeCollection)group.Nodes)
                         if (node.Content is Vertex)
                             node.IsSelected = false;
-                    @group.IsSelected = false;
+                    group.IsSelected = false;
                 }
 
             _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
@@ -185,11 +211,20 @@ namespace Thesis.Views
         public void DiagramItemClicked(object sender, DiagramEventArgs e)
         {
             DisableDiagramNodeTools();
-            if (e.Item is NodeViewModel item && item.Content is Vertex vertex)
+            if (e.Item is NodeViewModel item)
             {
-                SelectVertexInSpreadsheet(vertex);
-                SelectVertexInOutputListView(vertex);
-                InitiateToolbox(vertex);
+                if (item.Content is Vertex vertex)
+                {
+                    SelectVertexInSpreadsheet(vertex);
+                    SelectVertexInOutputListView(vertex);
+                    InitiateToolbox(vertex);
+                }
+                else if (item.Content is Class @class)
+                {
+                    // TODO select class vertices
+
+                    InitiateToolbox(@class);
+                }
             }
             else
             {
@@ -245,6 +280,13 @@ namespace Thesis.Views
                 spreadsheet.ActiveGrid.CellContextMenuOpening += ActiveGrid_CellContextMenuOpening;
                 spreadsheet.ActiveGrid.CurrentCellActivated += SpreadsheetCellSelected;
             }
+            else if (e.PropertyName == "ActiveSheet" && spreadsheet.ActiveSheet != null)
+            {
+                if (_generator != null && _generator.ActiveWorksheet == spreadsheet.ActiveSheet.Name)
+                    ProvideGraphFilteringOptions();
+                else
+                    ProvideGraphGenerationOptions();
+            }
         }
 
         private void Spreadsheet_WorkbookLoaded(object sender, WorkbookLoadedEventArgs args)
@@ -258,12 +300,6 @@ namespace Thesis.Views
                 {
                     Logger.Log(LogItemType.Info, $"Loading last selected worksheet {App.Settings.SelectedWorksheet}");
                     spreadsheet.SetActiveSheet(App.Settings.SelectedWorksheet);
-                }
-
-                _generator = new Generator(this);
-                if (_generator.GenerateGraph())
-                {
-                    EnableGraphGenerationOptions();
                 }
             }
         }

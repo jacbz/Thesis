@@ -78,7 +78,7 @@ namespace Thesis.Models.CodeGeneration
         {
             get
             {
-                var tuple = (vertex.Class.Name, vertex.VariableName);
+                var tuple = (vertex.Class.Name, vertex.Name);
                 return _testResults.TryGetValue(tuple, out var testResult) 
                     ? testResult 
                     : null;

@@ -85,15 +85,24 @@ namespace Thesis.Views
             }
         }
 
-        public void EnableGraphGenerationOptions()
+        public void ProvideGraphGenerationOptions()
         {
-            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = true;
+            generateGraphButton.IsEnabled = true;
+            filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = false;
         }
         
-        public void DisableGraphGenerationOptions()
+        public void ProvideGraphFilteringOptions()
         {
-            generateGraphButton.IsEnabled = selectAllButton.IsEnabled = unselectAllButton.IsEnabled = false;
+            generateGraphButton.IsEnabled = false;
+            filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = true;
         }
+
+        public void DisableGraphOptions()
+        {
+            generateGraphButton.IsEnabled = filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = false;
+            DisableClassGenerationOptions();
+        }
+
 
         public void EnableClassGenerationOptions()
         {
@@ -140,7 +149,7 @@ namespace Thesis.Views
                 .Remove(SelectorConstraints.Resizer);
         }
 
-        private void InitiateToolbox(Vertex vertex)
+        private void InitiateToolbox(dynamic vertex)
         {
             if (vertex == null)
             {

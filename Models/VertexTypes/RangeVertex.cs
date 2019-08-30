@@ -19,7 +19,7 @@ namespace Thesis.Models.VertexTypes
         public RangeVertex(IRange[] cellsInRange, string addressOrName)
         {
             CellsInRange = cellsInRange;
-            VariableName = addressOrName.MakeNameVariableConform();
+            Name = addressOrName.MakeNameVariableConform();
             AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
 
             if (cellsInRange.Length == 0)
@@ -125,7 +125,7 @@ namespace Thesis.Models.VertexTypes
 
         public override string ToString()
         {
-            return VariableName;
+            return Name;
         }
     }
 }

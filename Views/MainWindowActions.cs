@@ -22,7 +22,7 @@ namespace Thesis.Views
     {
         private void LoadSpreadsheet()
         {
-            DisableGraphGenerationOptions();
+            DisableGraphOptions();
             
             pathLabel.Content = pathLabel.ToolTip = App.Settings.FilePath;
             pathLabel.FontStyle = FontStyles.Normal;

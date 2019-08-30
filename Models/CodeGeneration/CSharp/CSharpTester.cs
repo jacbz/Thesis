@@ -221,7 +221,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 {
                     // run time or compile error
                     TestResults.Add(classAndVariableName,
-                        new TestResult(vertex.Class.Name, vertex.VariableName, null, null)
+                        new TestResult(vertex.Class.Name, vertex.Name, null, null)
                         {
                             ExpectedValue = vertex is CellVertex cellVertex ? cellVertex.Value : null,
                             TestResultType = TestResultType.Error

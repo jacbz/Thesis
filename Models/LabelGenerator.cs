@@ -114,7 +114,7 @@ namespace Thesis.Models
                 }
 
                 // do not override name if name was already assigned, e.g. per named range
-                if (string.IsNullOrEmpty(cell.VariableName))
+                if (string.IsNullOrEmpty(cell.Name))
                     cell.Label.GenerateVariableName();
             }
             logItem.AppendElapsedTime();
