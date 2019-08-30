@@ -6,8 +6,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Syncfusion.UI.Xaml.CellGrid.Helpers;
+using Syncfusion.UI.Xaml.CellGrid;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.Models.VertexTypes;
@@ -47,32 +48,40 @@ namespace Thesis.Views
                 ? _generator.ActiveWorksheet
                 : vertex.ExternalWorksheetName);
 
-            int row, col;
             if (vertex is CellVertex cell)
             {
-                row = cell.Address.row;
-                col = cell.Address.col;
+                var row = cell.Address.row;
+                var col = cell.Address.col;
+                spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(row, col);
+                FlashSpreadsheetCells(spreadsheet.ActiveSheet.Range[row, col]);
             }
             else if (vertex is RangeVertex rangeVertex)
             {
-                (row, col) = rangeVertex.StartAddress;
+                spreadsheet.ActiveGrid.SelectionController.ClearSelection();
+                var range = spreadsheet.ActiveSheet.Range[rangeVertex.StringAddress];
+                spreadsheet.ActiveGrid.SelectionController.AddSelection(range.ConvertExcelRangeToGridRange());
+                FlashSpreadsheetCells(range);
             }
-            else return;
+        }
 
-            spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(row, col);
+        private void FlashSpreadsheetCells(IRange spreadsheetCells)
+        {
+            // highlight selected cell(s) yellow for one second
+            var originalBgColors = spreadsheetCells.Cells.ToDictionary(c => c, c => c.CellStyle.Color);
 
-            // highlight selected vertex yellow for one second
-            var spreadsheetCell = spreadsheet.ActiveSheet.Range[row, col];
-            var originalBgColor = spreadsheetCell.CellStyle.Color;
             if (spreadsheet.Tag != null) return;
             spreadsheet.Tag = true;
-            spreadsheetCell.CellStyle.Color = Color.Yellow;
-            spreadsheet.ActiveGrid.InvalidateCell(row, col);
+            spreadsheetCells.CellStyle.Color = Color.Yellow;
+
+            var gridRange = spreadsheetCells.ConvertExcelRangeToGridRange();
+            spreadsheet.ActiveGrid.InvalidateCell(gridRange);
             Task.Factory.StartNew(() => Thread.Sleep(1000))
-                .ContinueWith((t) =>
+                .ContinueWith(t =>
                 {
-                    spreadsheetCell.CellStyle.Color = originalBgColor;
-                    spreadsheet.ActiveGrid.InvalidateCell(row, col);
+                    foreach (var cell in originalBgColors)
+                        cell.Key.CellStyle.Color = cell.Value;
+
+                    spreadsheet.ActiveGrid.InvalidateCell(gridRange);
                     spreadsheet.Tag = null;
                 }, TaskScheduler.FromCurrentSynchronizationContext());
         }

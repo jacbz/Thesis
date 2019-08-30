@@ -12,7 +12,6 @@ namespace Thesis.Models.VertexTypes
     public class CellVertex : Vertex
     {
         public (int row, int col) Address { get; set; }
-        public string StringAddress { get; set; }
         public (string worksheet, string address) GlobalAddress => IsExternal
             ? (ExternalWorksheetName, StringAddress)
             : (null, StringAddress);

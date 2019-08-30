@@ -16,10 +16,11 @@ namespace Thesis.Models.VertexTypes
         public int ColumnCount { get; }
         protected Dictionary<(int Row, int Column), IRange> AddressToCellDictionary;
 
-        public RangeVertex(IRange[] cellsInRange, string addressOrName)
+        public RangeVertex(IRange[] cellsInRange, string name, string address)
         {
             CellsInRange = cellsInRange;
-            Name = addressOrName.MakeNameVariableConform();
+            Name = name.MakeNameVariableConform();
+            StringAddress = address;
             AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
 
             if (cellsInRange.Length == 0)

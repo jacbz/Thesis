@@ -132,7 +132,7 @@ namespace Thesis.Models
                 var nameWorksheetName = nameWorksheetMatch.Groups[1].Value;
                 if (nameWorksheetName != worksheetName)
                 {
-                    nameVertex = new RangeVertex(name.Cells, nameTitle);
+                    nameVertex = new RangeVertex(name.Cells, nameTitle, nameAddress);
                     nameVertex.MarkAsExternal(nameWorksheetName, nameTitle);
                 }
                 else
@@ -153,7 +153,7 @@ namespace Thesis.Models
                     else
                     {
                         // contains more than one cell
-                        nameVertex = new RangeVertex(name.Cells, nameTitle);
+                        nameVertex = new RangeVertex(name.Cells, nameTitle, nameAddress);
                     }
                 }
 
@@ -244,7 +244,7 @@ namespace Thesis.Models
                         {
                             var iRange = getRangeFunc(range);
                             var cells = iRange != null ? iRange.Cells : new IRange[0];
-                            rangeVertex = new RangeVertex(cells, range);
+                            rangeVertex = new RangeVertex(cells, range, range);
                             RangeDictionary.Add(range, rangeVertex);
                         }
                         if (nodeToExternalSheetDictionary.TryGetValue(node, out var sheetName))
