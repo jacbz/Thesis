@@ -28,9 +28,23 @@ namespace Thesis.Models.CodeGeneration.CSharp
                             constant = constant.Replace("%", "*0.01").Replace("\"", "");
                         }
 
-                        if (node.ChildNodes[0].Term.Name == "Bool")
-                            return ParseExpression(constant.ToLower());
-                        return ParseExpression(constant);
+                        switch (node.ChildNodes[0].Term.Name)
+                        {
+                            case "Bool":
+                                return ParseExpression(constant.ToLower());
+                            case "Number":
+                                return ParseExpression(constant.Contains(".") ? constant : constant + ".0");
+                            case "String":
+                                return ParseExpression(constant);
+                            case "Error":
+                                return ObjectCreationExpression( IdentifierName("FormulaError"))
+                                    .AddArgumentListArguments(Argument(LiteralExpression(
+                                            SyntaxKind.StringLiteralExpression,
+                                            Literal(constant))));
+                            default:
+                                return CommentExpression("Invalid constant term name", true);
+                        }
+
                     case "FormulaWithEq":
                         return TreeNodeToExpression(node.ChildNodes[1], currentVertex);
                     case "Formula":
