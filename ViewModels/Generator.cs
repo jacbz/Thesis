@@ -190,9 +190,9 @@ namespace Thesis.ViewModels
         {
             var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
             
-//            if(ClassCollection != null)
-//                // retain old variable names!
-            ClassCollection = ClassCollection.FromGraph(Graph);
+            ClassCollection = ClassCollection != null 
+                ? ClassCollection.FromGraph(Graph, ClassCollection.GetCustomClassNames()) // keep user class names
+                : ClassCollection.FromGraph(Graph);
 
             logItem.AppendElapsedTime();
 

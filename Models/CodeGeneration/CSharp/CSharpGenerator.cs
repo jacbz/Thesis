@@ -17,6 +17,19 @@ namespace Thesis.Models.CodeGeneration.CSharp
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
+        protected override string[] LanguageKeywords =>
+            new[]
+            {
+                "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float",
+                "decimal", "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if",
+                "else", "while", "for", "foreach", "do", "switch", "case", "default", "lock", "try", "throw",
+                "catch", "finally", "goto", "break", "continue", "return", "public", "private", "internal", "protected",
+                "static", "readonly", "sealed", "const", "fixed", "stackalloc", "volatile", "new", "override", "abstract",
+                "virtual", "event", "extern", "ref", "out", "in", "is", "as", "params", "__arglist", "__makeref",
+                "__reftype", "__refvalue", "this", "base", "namespace", "using", "class", "struct", "interface",
+                "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit"
+            };
+
         public CSharpGenerator(ClassCollection classCollection, 
             Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
             Dictionary<string, RangeVertex> rangeDictionary, 
@@ -300,49 +313,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
             resultClass = resultClass.AddMembers(mainMethod);
 
             return resultClass;
-        }
-
-        private void GenerateVariableNamesForAll()
-        {
-            var usedClassNames = CreateUsedVariableHashSet();
-
-            // output vertex variable must be unique as they are in the Main class
-            var usedOutputVertexNames = new HashSet<string>();
-            foreach (var generatedClass in ClassCollection.Classes)
-            {
-                generatedClass.Name = GenerateUniqueName(generatedClass.Name, usedClassNames);
-
-                var usedVariableNames = CreateUsedVariableHashSet();
-                usedVariableNames.UnionWith(usedOutputVertexNames);
-                foreach (var vertex in generatedClass.Vertices)
-                {
-                    vertex.Name = GenerateUniqueName(vertex.Name.MakeNameVariableConform(), usedVariableNames);
-                    if (vertex == generatedClass.OutputVertex)
-                        usedOutputVertexNames.Add(vertex.Name);
-                }
-            }
-        }
-
-        private string GenerateUniqueName(string variableName, HashSet<string> usedVariableNames)
-        {
-            variableName = GenerateNonDuplicateName(usedVariableNames, variableName);
-            usedVariableNames.Add(variableName);
-            return variableName;
-        }
-
-        private HashSet<string> CreateUsedVariableHashSet()
-        {
-            return new[]
-            {
-                "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float",
-                "decimal", "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if",
-                "else", "while", "for", "foreach", "do", "switch", "case", "default", "lock", "try", "throw", "catch",
-                "finally", "goto", "break", "continue", "return", "public", "private", "internal", "protected", "static",
-                "readonly", "sealed", "const", "fixed", "stackalloc", "volatile", "new", "override", "abstract",
-                "virtual", "event", "extern", "ref", "out", "in", "is", "as", "params", "__arglist", "__makeref",
-                "__reftype", "__refvalue", "this", "base", "namespace", "using", "class", "struct", "interface",
-                "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit"
-            }.ToHashSet();
         }
 
         private ExpressionSyntax RangeToExpression(ParseTreeNode node, CellVertex currentVertex)

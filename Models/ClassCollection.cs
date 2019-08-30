@@ -15,7 +15,7 @@ namespace Thesis.Models
             Classes = new List<Class>();
         }
 
-        public static ClassCollection FromGraph(Graph graph)
+        public static ClassCollection FromGraph(Graph graph, Dictionary<string, string> customClassNames = null)
         {
             ClassCollection classCollection = new ClassCollection();
 
@@ -30,7 +30,11 @@ namespace Thesis.Models
                 var reachableVertices = vertex.GetReachableVertices();
                 foreach (var v in reachableVertices)
                     vertexToOutputFieldVertices[v].Add(vertex);
-                var newClass = new Class($"Class{vertex.StringAddress}", vertex, reachableVertices.ToList(), rnd);
+
+                var className = $"Class{vertex.StringAddress}";
+                if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
+                    className = customName;
+                var newClass = new Class(className, vertex, reachableVertices.ToList(), rnd);
                 classCollection.Classes.Add(newClass);
             }
 
@@ -50,19 +54,28 @@ namespace Thesis.Models
 
             if (outputFieldsWithoutChildren.Count > 0)
             {
-                classCollection.Classes.Add(new Class("OutputFieldsWithoutChildren", null, new List<Vertex>(outputFieldsWithoutChildren)));
+                var className = "OutputFieldsWithoutChildren";
+                if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
+                    className = customName;
+                classCollection.Classes.Add(new Class(className, null, new List<Vertex>(outputFieldsWithoutChildren)));
             }
 
             if (graph.ExternalVertices.Count > 0)
             {
-                var externalClass = new Class("External", null, graph.ExternalVertices);
+                var className = "External";
+                if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
+                    className = customName;
+                var externalClass = new Class(className, null, graph.ExternalVertices);
                 externalClass.TopologicalSort();
                 classCollection.Classes.Add(externalClass);
             }
 
             if (sharedVertices.Count > 0)
             {
-                var globalClass = new Class("Global", null, sharedVertices);
+                var className = "Global";
+                if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
+                    className = customName;
+                var globalClass = new Class(className, null, sharedVertices);
                 globalClass.TopologicalSort();
                 classCollection.Classes.Add(globalClass);
             }
@@ -74,12 +87,11 @@ namespace Thesis.Models
             return classCollection;
         }
 
-//        public Dictionary<string, string> GetCustomClassNames()
-//        {
-//            return Classes
-//                .Where(c => c.DefaultName != c.Name)
-//                .Select(c => (c.DefaultName, c.Name))
-//                .ToHashSet();
-//        }
+        public Dictionary<string, string> GetCustomClassNames()
+        {
+            return Classes
+                .Where(c => c.DefaultName != c.Name)
+                .ToDictionary(c => c.DefaultName, c => c.Name);
+        }
     }
 }
