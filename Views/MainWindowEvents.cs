@@ -221,8 +221,7 @@ namespace Thesis.Views
                 }
                 else if (item.Content is Class @class)
                 {
-                    // TODO select class vertices
-
+                    SelectClassVerticesInSpreadsheet(@class);
                     InitiateToolbox(@class);
                 }
             }
@@ -257,11 +256,11 @@ namespace Thesis.Views
             var match = _generator.Code.VariableNameToVertexDictionary
                 .FirstOrDefault(kvp => selection == kvp.Key.className + "." + kvp.Key.variableName);
             // check if user selected only variable name (e.g. A1)
-            if (match.Equals(default))
+            if (match.Value == null)
                 match = _generator.Code.VariableNameToVertexDictionary
                     .FirstOrDefault(kvp => selection == kvp.Key.variableName);
 
-            if (!match.Equals(default))
+            if (match.Value != null)
             {
                 var vertex = match.Value;
                 SelectVertexInSpreadsheet(vertex);

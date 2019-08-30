@@ -50,39 +50,63 @@ namespace Thesis.Views
 
             if (vertex is CellVertex cell)
             {
-                var row = cell.Address.row;
-                var col = cell.Address.col;
-                spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(row, col);
-                FlashSpreadsheetCells(spreadsheet.ActiveSheet.Range[row, col]);
+                FlashAndSelectSpreadsheetCells(spreadsheet.ActiveSheet.Range[cell.StringAddress]);
             }
             else if (vertex is RangeVertex rangeVertex)
             {
-                spreadsheet.ActiveGrid.SelectionController.ClearSelection();
-                var range = spreadsheet.ActiveSheet.Range[rangeVertex.StringAddress];
-                spreadsheet.ActiveGrid.SelectionController.AddSelection(range.ConvertExcelRangeToGridRange());
-                FlashSpreadsheetCells(range);
+                FlashAndSelectSpreadsheetCells(rangeVertex.CellsInRange);
             }
         }
 
-        private void FlashSpreadsheetCells(IRange spreadsheetCells)
+        private void SelectClassVerticesInSpreadsheet(Class @class)
+        {
+            // get the most common worksheet (current worksheet is null)
+            var mostCommonWorksheetList = @class.Vertices
+                .GroupBy(v => v.ExternalWorksheetName)
+                .OrderByDescending(gp => gp.Count())
+                .Take(1)
+                .Select(gp => gp.Key)
+                .ToList();
+            if (mostCommonWorksheetList.Count == 0) return;
+            var mostCommonWorksheet = mostCommonWorksheetList[0];
+
+            // navigate to the most common worksheet
+            spreadsheet.SetActiveSheet(mostCommonWorksheet ?? _generator.ActiveWorksheet);
+
+            var ranges = @class.Vertices
+                .Where(v => v.WorksheetName == mostCommonWorksheet)
+                .Select(vertex => spreadsheet.ActiveSheet.Range[vertex.StringAddress])
+                .ToArray();
+
+            FlashAndSelectSpreadsheetCells(ranges);
+        }
+
+        private void FlashAndSelectSpreadsheetCells(params IRange[] ranges)
         {
             // highlight selected cell(s) yellow for one second
-            var originalBgColors = spreadsheetCells.Cells.ToDictionary(c => c, c => c.CellStyle.Color);
+            var originalBgColors = ranges
+                .SelectMany(c => c.Cells)
+                .ToDictionary(c => c, c => c.CellStyle.Color);
 
             if (spreadsheet.Tag != null) return;
             spreadsheet.Tag = true;
-            spreadsheetCells.CellStyle.Color = Color.Yellow;
+            foreach (var cell in originalBgColors)
+                cell.Key.CellStyle.Color = Color.Yellow;
 
-            var gridRange = spreadsheetCells.ConvertExcelRangeToGridRange();
-            spreadsheet.ActiveGrid.InvalidateCell(gridRange);
+            spreadsheet.ActiveGrid.InvalidateCells();
             Task.Factory.StartNew(() => Thread.Sleep(1000))
                 .ContinueWith(t =>
                 {
                     foreach (var cell in originalBgColors)
                         cell.Key.CellStyle.Color = cell.Value;
 
-                    spreadsheet.ActiveGrid.InvalidateCell(gridRange);
+                    spreadsheet.ActiveGrid.InvalidateCells();
                     spreadsheet.Tag = null;
+
+                    spreadsheet.ActiveGrid.SelectionController.ClearSelection();
+                    foreach (var range in ranges)
+                        spreadsheet.ActiveGrid.SelectionController.AddSelection(range.ConvertExcelRangeToGridRange());
+
                 }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 

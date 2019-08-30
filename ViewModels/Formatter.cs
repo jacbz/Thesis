@@ -225,6 +225,8 @@ namespace Thesis.ViewModels
             var nodes = new NodeCollection();
             var group = new GroupViewModel
             {
+                ID = _nodeCounter++,
+                Content = @class,
                 Nodes = nodes
             };
 

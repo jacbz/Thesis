@@ -1,15 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Text;
-using System.Windows.Media;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
-using Thesis.Models;
-using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
 namespace Thesis.Views
