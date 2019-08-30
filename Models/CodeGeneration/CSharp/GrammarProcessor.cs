@@ -6,7 +6,7 @@ using Thesis.Models.VertexTypes;
 using XLParser;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Thesis.Models.CodeGenerators.CSharp
+namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator
     {

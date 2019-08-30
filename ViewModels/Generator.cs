@@ -6,10 +6,10 @@ using System.Windows.Threading;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Syncfusion.UI.Xaml.Diagram;
 using Thesis.Models;
-using Thesis.Models.CodeGenerators;
-using Thesis.Models.CodeGenerators.CSharp;
+using Thesis.Models.CodeGeneration;
 using Thesis.Models.VertexTypes;
 using Thesis.Views;
+using CSharpGenerator = Thesis.Models.CodeGeneration.CSharp.CSharpGenerator;
 
 namespace Thesis.ViewModels
 {
@@ -232,11 +232,11 @@ namespace Thesis.ViewModels
                 .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
 
             // implement different languages here
-            Models.CodeGenerators.CodeGenerator codeGenerator;
+            CodeGenerator codeGenerator;
             switch (_window.languageComboBox.SelectedIndex)
             {
                 default:
-                    codeGenerator = new Models.CodeGenerators.CSharp.CSharpGenerator(
+                    codeGenerator = new CSharpGenerator(
                         ClassCollection,
                         addressToVertexDictionary,
                         Graph.RangeDictionary,

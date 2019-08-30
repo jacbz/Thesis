@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Thesis.Models.CodeGenerators;
+using Thesis.Models.CodeGeneration;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 

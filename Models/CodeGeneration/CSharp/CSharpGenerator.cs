@@ -10,7 +10,7 @@ using XLParser;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Formatter = Microsoft.CodeAnalysis.Formatting.Formatter;
 
-namespace Thesis.Models.CodeGenerators.CSharp
+namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator : CodeGenerator
     {
@@ -376,7 +376,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
                 {
                     var matrix = rangeVertex.GetMatrixArray();
                     return MatrixOf(matrix
-                        .Select(rowArray => RowOf(rowArray.Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
+                        .Select<CellVertex[], ExpressionSyntax>(rowArray => RowOf(rowArray.Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
                             .ToArray()))
                         .ToArray());
                 }

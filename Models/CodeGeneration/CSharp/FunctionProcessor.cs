@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Thesis.Models.VertexTypes;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Thesis.Models.CodeGenerators.CSharp
+namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator
     {
@@ -182,7 +182,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
                     // Collection(...).Sum/Min/Max/Count/Average()
                     return InvocationExpression(MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
+                        CollectionOf(arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
                         IdentifierName(functionName.ToTitleCase())));
                 }
 
@@ -218,7 +218,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
                         return FunctionError(functionName, arguments);
                     var collection = CollectionOf(arguments
                         .Skip(1)
-                        .Select(a => TreeNodeToExpression(a, currentVertex))
+                        .Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex))
                         .ToArray());
 
                     // collection[arguments[0]]
@@ -491,7 +491,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
                 default:
                 {
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
-                                             $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}",
+                                             $"{string.Join("\n", arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex)))}",
                         true);
                 }
             }
@@ -548,7 +548,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
         {
             if (arguments.Length != 2) return FunctionError(functionName, arguments);
             return GenerateBinaryExpression(functionName,
-                TreeNodeToExpression(arguments[0], vertex),
+                (ExpressionSyntax) TreeNodeToExpression(arguments[0], vertex),
                 TreeNodeToExpression(arguments[1], vertex));
         }
 
@@ -569,7 +569,7 @@ namespace Thesis.Models.CodeGenerators.CSharp
         {
             var syntaxKind = _binaryOperators[functionName].syntaxKind;
             // do not parenthesize
-            return arguments.Select(a => TreeNodeToExpression(a, vertex))
+            return arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, vertex))
                 .Aggregate((acc, right) => BinaryExpression(syntaxKind, acc, right));
         }
 

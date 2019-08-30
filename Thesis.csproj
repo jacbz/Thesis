@@ -202,12 +202,12 @@
     </ApplicationDefinition>
     <Compile Include="Models\ClassCollection.cs" />
     <Compile Include="Models\Code.cs" />
-    <Compile Include="Models\CodeGenerators\CodeGenerator.cs" />
-    <Compile Include="Models\CodeGenerators\CSharp\FunctionProcessor.cs" />
-    <Compile Include="Models\CodeGenerators\CSharp\CSharpGenerator.cs" />
-    <Compile Include="Models\CodeGenerators\CSharp\CSharpTester.cs" />
-    <Compile Include="Models\CodeGenerators\CSharp\GrammarProcessor.cs" />
-    <Compile Include="Models\CodeGenerators\Tester.cs" />
+    <Compile Include="Models\CodeGeneration\CodeGenerator.cs" />
+    <Compile Include="Models\CodeGeneration\CSharp\FunctionProcessor.cs" />
+    <Compile Include="Models\CodeGeneration\CSharp\CSharpGenerator.cs" />
+    <Compile Include="Models\CodeGeneration\CSharp\CSharpTester.cs" />
+    <Compile Include="Models\CodeGeneration\CSharp\GrammarProcessor.cs" />
+    <Compile Include="Models\CodeGeneration\Tester.cs" />
     <Compile Include="Models\Class.cs" />
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\Label.cs" />

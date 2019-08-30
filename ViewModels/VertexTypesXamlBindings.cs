@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using Syncfusion.UI.Xaml.Diagram.Serializer;
+using Thesis.Models.VertexTypes;
 
 namespace Thesis.Models.VertexTypes
 {

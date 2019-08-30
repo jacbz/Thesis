@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Thesis.Models.VertexTypes;
 
-namespace Thesis.Models.CodeGenerators
+namespace Thesis.Models.CodeGeneration
 {
     public abstract class CodeGenerator
     {
