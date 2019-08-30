@@ -223,13 +223,13 @@
     <Compile Include="ViewModels\LogItem.cs" />
     <Compile Include="Models\UserSettings.cs" />
     <Compile Include="Models\VertexTypes\Vertex.cs" />
+    <Compile Include="Views\XamlConverters.cs" />
     <Compile Include="Views\BraceFoldingStrategy.cs" />
     <Compile Include="Views\MainWindowEvents.cs" />
     <Compile Include="Views\MainWindowActions.cs" />
     <Compile Include="Views\TestWindow.xaml.cs">
       <DependentUpon>TestWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ViewModels\VertexTypesXamlBindings.cs" />
     <Page Include="Views\LogControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

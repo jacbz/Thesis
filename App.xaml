@@ -3,11 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Thesis"
              StartupUri="Views/MainWindow.xaml"
-             xmlns:fa5="http://schemas.fontawesome.com/icons/">
+             xmlns:fa5="http://schemas.fontawesome.com/icons/"
+             xmlns:viewModels="clr-namespace:Thesis.ViewModels"
+             xmlns:views="clr-namespace:Thesis.Views">
     <Application.Resources>
 
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <views:TypeOfConverter x:Key="TypeOfConverter"/>
+            <views:ColorToSolidBrushConverter x:Key="ColorToSolidBrushConverter"/>
+            <views:CellVertexVisibilityConverter x:Key="CellVertexVisibilityConverter"/>
 
             <Style TargetType="fa5:SvgAwesome">
                 <Setter Property="Margin" Value="0,0,6,0" />

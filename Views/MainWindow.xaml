@@ -47,38 +47,46 @@
                 <TabItem x:Name="toolboxTab" Header="Toolbox" >
                     <StackPanel x:Name="toolboxContent" Orientation="Vertical" Opacity="0.3" IsEnabled="False">
                         <TextBlock Margin="6">
-                            <InlineUIContainer>
-                                <TextBlock FontWeight="Bold" Visibility="{Binding Path=IsExternal, Converter={StaticResource BoolToVis}}" FontSize="16" Text="External" Padding="4,0" Foreground="White" Background="{StaticResource ExternalColorBrush}"/>
-                            </InlineUIContainer>
-                            <InlineUIContainer>
-                                <TextBlock FontWeight="Bold" FontSize="16"><InlineUIContainer>
-                                        <TextBlock Text="{Binding LayoutVertexType, FallbackValue='    '}" Padding="4,0" Foreground="White" Margin="0,0,2,0">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding LayoutVertexType}" Value="{x:Static vertexTypes:XamlVertexType.Formula}" >
-                                                            <Setter Property="Background" Value="{StaticResource FormulaColorBrush}"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding LayoutVertexType}" Value="{x:Static vertexTypes:XamlVertexType.OutputField}" >
-                                                            <Setter Property="Background" Value="{StaticResource OutputColorBrush}"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding LayoutVertexType}" Value="{x:Static vertexTypes:XamlVertexType.Constant}" >
-                                                            <Setter Property="Background" Value="{StaticResource ConstantColorBrush}"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding LayoutVertexType}" Value="{x:Static vertexTypes:XamlVertexType.Range}" >
-                                                            <Setter Property="Background" Value="{StaticResource RangeColorBrush}"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding LayoutVertexType}" Value="{x:Static vertexTypes:XamlVertexType.None}" >
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </InlineUIContainer><Run Text=" "/><InlineUIContainer>
-                                        <TextBlock Text="{Binding StringAddress}"/>
-                                    </InlineUIContainer></TextBlock>
-                            </InlineUIContainer>
+                            <TextBlock FontWeight="Bold" Visibility="{Binding Path=IsExternal, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}" FontSize="16" Text="External" Padding="4,0" Foreground="White" Background="{StaticResource ExternalColorBrush}"/>
+                            <TextBlock FontWeight="Bold" FontSize="16">
+                                <TextBlock x:Name="toolboxType" Padding="4,0" Margin="0,0,4,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Converter={StaticResource TypeOfConverter}}" Value="Class" >
+                                                    <Setter Property="Foreground" Value="Black"/>
+                                                    <Setter Property="Background" Value="{Binding Color, Converter={StaticResource ColorToSolidBrushConverter}}"/>
+                                                    <Setter Property="Text" Value="{Binding Name}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Converter={StaticResource TypeOfConverter}}" Value="RangeVertex" >
+                                                    <Setter Property="Background" Value="{StaticResource RangeColorBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="Range"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.Formula}" >
+                                                    <Setter Property="Background" Value="{StaticResource FormulaColorBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="Formula"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.OutputField}" >
+                                                    <Setter Property="Background" Value="{StaticResource OutputColorBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="Output field"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.Constant}" >
+                                                    <Setter Property="Background" Value="{StaticResource ConstantColorBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="Constant"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.None}" >
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding StringAddress}"/>
+                            </TextBlock>
                         </TextBlock>
                         
                     <Grid Margin="6">
@@ -99,17 +107,32 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock Text="Type:" Grid.Row="0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CellTypeString}" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold"/>
-                        <TextBlock Text="Range" VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold" Visibility="{Binding Path=IsRangeVertex, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Converter={StaticResource TypeOfConverter}}" Value="Class" >
+                                            <Setter Property="Text" Value="Class"/>
+                                            </DataTrigger>
+                                        <DataTrigger Binding="{Binding Converter={StaticResource TypeOfConverter}}" Value="RangeVertex" >
+                                            <Setter Property="Text" Value="Range"/>
+                                            </DataTrigger>
+                                        <DataTrigger Binding="{Binding Converter={StaticResource TypeOfConverter}}" Value="CellVertex" >
+                                            <Setter Property="Text" Value="{Binding CellType}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                         <TextBlock Text="Name:" Grid.Row="2" VerticalAlignment="Center"/>
                         <TextBox Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
+
+                        <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
+                        <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>   
                         
-                        <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>
-                        <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>    
-                        
-                        <TextBlock Text="Formula:" Grid.Row="6" VerticalAlignment="Center" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>
-                        <TextBox Text="{Binding Formula}" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Path=IsCellVertex, Converter={StaticResource BoolToVis}}"/>   
+                        <TextBlock Text="Formula:" Grid.Row="6" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
+                        <TextBox Text="{Binding Formula}" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>  
                     </Grid>
                         
                     </StackPanel>

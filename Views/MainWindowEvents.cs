@@ -192,7 +192,7 @@ namespace Thesis.Views
         
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
-            if (e.ActivationTrigger == ActivationTrigger.Program) return;
+            if (e.ActivationTrigger == ActivationTrigger.Program || _generator.Graph == null) return;
 
             string sheetName = spreadsheet.ActiveSheet.Name;
             var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);

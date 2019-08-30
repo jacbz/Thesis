@@ -1,12 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Windows.Media;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.XlsIO;
+using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
@@ -149,9 +151,9 @@ namespace Thesis.Views
                 .Remove(SelectorConstraints.Resizer);
         }
 
-        private void InitiateToolbox(dynamic vertex)
+        private void InitiateToolbox(dynamic obj)
         {
-            if (vertex == null)
+            if (obj == null)
             {
                 toolboxContent.Opacity = 0.3f;
                 toolboxContent.IsEnabled = false;
@@ -161,7 +163,7 @@ namespace Thesis.Views
                 toolboxContent.Opacity = 1f;
                 toolboxContent.IsEnabled = true;
                 toolboxTab.IsSelected = true;
-                DataContext = vertex;
+                DataContext = obj;
             }
         }
 

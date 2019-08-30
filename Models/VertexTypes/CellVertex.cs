@@ -9,7 +9,7 @@ namespace Thesis.Models.VertexTypes
     /// <summary>
     /// A vertex which represents a spreadsheet cell.
     /// </summary>
-    public partial class CellVertex : Vertex
+    public class CellVertex : Vertex
     {
         public (int row, int col) Address { get; set; }
         public string StringAddress { get; set; }
