@@ -134,7 +134,10 @@ namespace Thesis.Views
             // disable remove, rotate buttons etc. on click
             var selectedItem = diagram.SelectedItems as SelectorViewModel;
             (selectedItem.Commands as QuickCommandCollection).Clear();
-            selectedItem.SelectorConstraints = selectedItem.SelectorConstraints.Remove(SelectorConstraints.Rotator);
+            selectedItem.SelectorConstraints = selectedItem.SelectorConstraints
+                .Remove(SelectorConstraints.Pivot)
+                .Remove(SelectorConstraints.Rotator)
+                .Remove(SelectorConstraints.Resizer);
         }
 
         private void InitiateToolbox(Vertex vertex)
