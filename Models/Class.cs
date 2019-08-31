@@ -19,10 +19,10 @@ namespace Thesis.Models
         public List<Vertex> Vertices { get; set; }
         public Color Color { get; set; }
 
-        public Class(string name, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
+        public Class(string name, string defaultName, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
         {
             Name = name;
-            DefaultName = name;
+            DefaultName = defaultName;
             OutputVertex = outputVertex;
             Vertices = vertices;
             foreach (var vertex in Vertices)

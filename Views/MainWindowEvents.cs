@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using Syncfusion.XlsIO.Implementation;
 using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
+using GroupCollection = Syncfusion.UI.Xaml.Diagram.GroupCollection;
 
 namespace Thesis.Views
 {
@@ -31,10 +33,9 @@ namespace Thesis.Views
             {
                 var path = openFileDialog.FileName;
                 if (string.IsNullOrEmpty(path)) return;
-                App.Settings.FilePath = path;
-                App.Settings.ResetWorkbookSpecificSettings();
+                App.Settings.SelectedFile = path;
                 App.Settings.Persist();
-                Logger.Log(LogItemType.Info, "Selected file " + App.Settings.FilePath);
+                Logger.Log(LogItemType.Info, "Selected file " + App.Settings.SelectedFile);
                 LoadSpreadsheet();
             }
         }
@@ -133,6 +134,9 @@ namespace Thesis.Views
 
             // scroll to top left
             (diagram2.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
+
+            // save custom class names
+            SaveCustomClassNames();
         }
 
         private async void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
@@ -151,6 +155,19 @@ namespace Thesis.Views
             codeGeneratorProgressRing.IsActive = false;
             testCodeButton.IsEnabled = true;
             generateCodeButton.IsEnabled = true;
+
+            // save custom class names
+            SaveCustomClassNames();
+        }
+
+        private void SaveCustomClassNames()
+        {
+            var classNames = _generator?.ClassCollection?.GetCustomClassNames();
+            if (classNames != null)
+            {
+                App.Settings.CurrentWorksheetSettings.CustomClassNames = _generator.ClassCollection.GetCustomClassNames();
+                App.Settings.Persist();
+            }
         }
 
         private async void TestCodeButton_Click(object sender, RoutedEventArgs e)
@@ -252,20 +269,48 @@ namespace Thesis.Views
 
             var selection = codeTextBox.SelectedText;
 
-            // check if user selected both class and variable name (e.g. Global.A1)
-            var match = _generator.Code.VariableNameToVertexDictionary
-                .FirstOrDefault(kvp => selection == kvp.Key.className + "." + kvp.Key.variableName);
-            // check if user selected only variable name (e.g. A1)
-            if (match.Value == null)
-                match = _generator.Code.VariableNameToVertexDictionary
-                    .FirstOrDefault(kvp => selection == kvp.Key.variableName);
-
-            if (match.Value != null)
+            // check if user selected class name
+            var classMatch = _generator.ClassCollection.Classes.FirstOrDefault(c => c.Name == selection);
+            if (classMatch != null)
             {
-                var vertex = match.Value;
+                SelectClassVerticesInSpreadsheet(classMatch);
+                InitiateToolbox(classMatch);
+                codeTextBox.Focus();
+            }
+
+            // check if user selected both class and variable name (e.g. Global.A1)
+            var vertex = _generator.Code.VariableNameToVertexDictionary
+                .FirstOrDefault(kvp => selection == kvp.Key.className + "." + kvp.Key.variableName).Value;
+
+            // check if user selected only variable name (e.g. A1)
+            if (vertex == null)
+            {
+                var verticesWithSelectedVariableName = _generator.Code.VariableNameToVertexDictionary
+                    .Where(kvp => selection == kvp.Key.variableName).Select(kvp => kvp.Value).ToList();
+                if (verticesWithSelectedVariableName.Count > 0)
+                {
+                    if (verticesWithSelectedVariableName.Count == 1)
+                    {
+                        vertex = verticesWithSelectedVariableName[0];
+                    }
+                    else
+                    {
+                        // perform regex such for the correct class name
+                        var regexMatch = Regex.Match(codeTextBox.Text.Substring(0, codeTextBox.SelectionStart),
+                            "class ([A-Za-z0-9_]+)", RegexOptions.RightToLeft);
+                        if (regexMatch.Success)
+                        {
+                            var className = regexMatch.Groups[1].Value;
+                            vertex = verticesWithSelectedVariableName.FirstOrDefault(v => v.Class.Name == className);
+                        }
+                    }
+                }
+            }
+
+            if (vertex != null)
+            {
                 SelectVertexInSpreadsheet(vertex);
                 InitiateToolbox(vertex);
-                // restore focus to textbox so user can copy selected text
                 codeTextBox.Focus();
             }
         }

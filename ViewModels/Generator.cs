@@ -36,8 +36,6 @@ namespace Thesis.ViewModels
             _window.generateGraphButton.IsEnabled = false;
 
             ActiveWorksheet = _window.spreadsheet.ActiveSheet.Name;
-            if (App.Settings.SelectedWorksheet != ActiveWorksheet)
-                App.Settings.ResetWorkbookSpecificSettings();
             
             App.Settings.SelectedWorksheet = ActiveWorksheet;
             App.Settings.Persist();
@@ -79,17 +77,19 @@ namespace Thesis.ViewModels
         private void LoadPersistedOutputFields()
         {
             // load selected output fields from settings
-            if (App.Settings.SelectedOutputFields != null &&
-                App.Settings.SelectedOutputFields.Count > 0 &&
-                OutputVertices.Count > 0 && 
-                !OutputVertices.Where(v => v.Include).Select(v => v.StringAddress).ToList()
-                    .SequenceEqual(App.Settings.SelectedOutputFields))
+            var worksheetData = App.Settings.CurrentWorksheetSettings;
+
+            if (worksheetData?.SelectedOutputFields != null 
+                && worksheetData.SelectedOutputFields.Count > 0 
+                && OutputVertices.Count > 0 
+                && !OutputVertices.Where(v => v.Include).Select(v => v.StringAddress).ToList()
+                    .SequenceEqual(worksheetData.SelectedOutputFields))
             {
                 Logger.Log(LogItemType.Info, "Loading selected output fields from persisted user settings...");
                 UnselectAllOutputFields();
                 foreach (var v in OutputVertices)
                 {
-                    if (App.Settings.SelectedOutputFields.Contains(v.StringAddress))
+                    if (worksheetData.SelectedOutputFields.Contains(v.StringAddress))
                     {
                         v.Include = true;
                     }
@@ -108,7 +108,7 @@ namespace Thesis.ViewModels
         {
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
             var includedVertexStrings = includedVertices.Select(v => v.StringAddress).ToList();
-            App.Settings.SelectedOutputFields = includedVertexStrings;
+            App.Settings.CurrentWorksheetSettings.SelectedOutputFields = includedVertexStrings;
             App.Settings.Persist();
 
             Logger.Log(LogItemType.Info,
@@ -194,9 +194,13 @@ namespace Thesis.ViewModels
         public void GenerateClasses()
         {
             var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
-            
-            ClassCollection = ClassCollection != null 
-                ? ClassCollection.FromGraph(Graph, ClassCollection.GetCustomClassNames()) // keep user class names
+
+            var customClassNames = ClassCollection == null
+                ? App.Settings.CurrentWorksheetSettings.CustomClassNames
+                : ClassCollection.GetCustomClassNames();
+
+            ClassCollection = customClassNames != null 
+                ? ClassCollection.FromGraph(Graph, customClassNames)
                 : ClassCollection.FromGraph(Graph);
 
             logItem.AppendElapsedTime();

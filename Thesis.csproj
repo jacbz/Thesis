@@ -221,7 +221,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="ViewModels\LogItem.cs" />
-    <Compile Include="Models\UserSettings.cs" />
+    <Compile Include="ViewModels\UserSettings.cs" />
     <Compile Include="Models\VertexTypes\Vertex.cs" />
     <Compile Include="Views\XamlConverters.cs" />
     <Compile Include="Views\BraceFoldingStrategy.cs" />

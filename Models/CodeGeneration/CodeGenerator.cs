@@ -33,7 +33,7 @@ namespace Thesis.Models.CodeGeneration
             var blockedClassNames = LanguageKeywords.ToHashSet();
             foreach (var generatedClass in ClassCollection.Classes)
             {
-                generatedClass.Name = GenerateUniqueName(blockedClassNames, generatedClass.Name);
+                generatedClass.Name = GenerateUniqueName(blockedClassNames, generatedClass.Name.MakeNameVariableConform());
             }
 
             // output vertex variable must be unique as they are in the Main class

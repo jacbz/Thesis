@@ -6,9 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using Syncfusion.UI.Xaml.CellGrid;
 using Syncfusion.UI.Xaml.Diagram;
-using Syncfusion.UI.Xaml.Grid.ScrollAxis;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO;
 using Thesis.Models;
@@ -26,13 +24,13 @@ namespace Thesis.Views
         {
             DisableGraphOptions();
             
-            pathLabel.Content = pathLabel.ToolTip = App.Settings.FilePath;
+            pathLabel.Content = pathLabel.ToolTip = App.Settings.SelectedFile;
             pathLabel.FontStyle = FontStyles.Normal;
 
-            Logger.Log(LogItemType.Info, $"Loading {App.Settings.FilePath}");
+            Logger.Log(LogItemType.Info, $"Loading {App.Settings.SelectedFile}");
             try
             {
-                spreadsheet.Open(App.Settings.FilePath);
+                spreadsheet.Open(App.Settings.SelectedFile);
             }
             catch (IOException e)
             {
@@ -87,6 +85,11 @@ namespace Thesis.Views
                 .ToArray();
 
             FlashAndSelectSpreadsheetCells(ranges);
+
+            spreadsheet.ActiveGrid.CurrentCell
+                .MoveCurrentCell(ranges.Min(r => r.Row), ranges.Min(r => r.Column));
+            spreadsheet.ActiveGrid.CurrentCell
+                .MoveCurrentCell(ranges.Max(r => r.LastRow), ranges.Max(r => r.LastColumn));
         }
 
         private void FlashAndSelectSpreadsheetCells(params IRange[] ranges)

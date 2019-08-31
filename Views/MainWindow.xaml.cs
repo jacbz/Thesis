@@ -27,7 +27,9 @@ namespace Thesis.Views
         {
             InitializeComponent();
             Logger.Instantiate(logControl.logListView, SelectLogTab);
-            if (!string.IsNullOrEmpty(App.Settings.FilePath)) LoadSpreadsheet();
+
+            App.Settings = UserSettings.Read();
+            if (!string.IsNullOrEmpty(App.Settings.SelectedFile)) LoadSpreadsheet();
             SetUpUi();
         }
 
@@ -101,7 +103,6 @@ namespace Thesis.Views
             generateGraphButton.IsEnabled = filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = false;
             DisableClassGenerationOptions();
         }
-
 
         public void EnableClassGenerationOptions()
         {

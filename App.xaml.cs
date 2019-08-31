@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Thesis.Models;
+using Thesis.ViewModels;
 
 namespace Thesis
 {
@@ -15,7 +16,6 @@ namespace Thesis
         {
             // Register Syncfusion license
             Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("***REMOVED***");
-            Settings = UserSettings.Read();
         }
     }
 }

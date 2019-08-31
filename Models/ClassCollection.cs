@@ -31,10 +31,11 @@ namespace Thesis.Models
                 foreach (var v in reachableVertices)
                     vertexToOutputFieldVertices[v].Add(vertex);
 
-                var className = $"Class{vertex.StringAddress}";
+                var defaultName = $"Class{vertex.StringAddress}";
+                var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var newClass = new Class(className, vertex, reachableVertices.ToList(), rnd);
+                var newClass = new Class(className, defaultName, vertex, reachableVertices.ToList(), rnd);
                 classCollection.Classes.Add(newClass);
             }
 
@@ -54,28 +55,31 @@ namespace Thesis.Models
 
             if (outputFieldsWithoutChildren.Count > 0)
             {
-                var className = "OutputFieldsWithoutChildren";
+                var defaultName = "OutputFieldsWithoutChildren";
+                var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                classCollection.Classes.Add(new Class(className, null, new List<Vertex>(outputFieldsWithoutChildren)));
+                classCollection.Classes.Add(new Class(className, defaultName,null, new List<Vertex>(outputFieldsWithoutChildren)));
             }
 
             if (graph.ExternalVertices.Count > 0)
             {
-                var className = "External";
+                var defaultName = "External";
+                var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var externalClass = new Class(className, null, graph.ExternalVertices);
+                var externalClass = new Class(className, defaultName, null, graph.ExternalVertices);
                 externalClass.TopologicalSort();
                 classCollection.Classes.Add(externalClass);
             }
 
             if (sharedVertices.Count > 0)
             {
-                var className = "Global";
+                var defaultName = "Global";
+                var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var globalClass = new Class(className, null, sharedVertices);
+                var globalClass = new Class(className, defaultName, null, sharedVertices);
                 globalClass.TopologicalSort();
                 classCollection.Classes.Add(globalClass);
             }
