@@ -5,6 +5,11 @@ These classes and methods are loaded into the test engine before testing.
 They provide essential methods to mimic the behavior of Excel's formula engine.
 */
 
+using System;
+using System.Linq;
+using System.Collections.Generic;
+
+
 // case-insensitive string compare
 public static bool CIEquals(this String a, String b) {
     return a.Equals(b, StringComparison.CurrentCultureIgnoreCase);
