@@ -137,10 +137,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 else
                 {
                     // test result comment
-                    var type = testResults == null
-                        ? ParseTypeName(GetTypeString(formula))
-                        : GenerateTypeWithComment(GetTypeString(formula),
-                            testResults[formula].ToString());
+                    var type = GenerateTypeSyntax(formula, testResults);
                     var variableDeclaration = VariableDeclaration(type)
                         .AddVariables(VariableDeclarator(formula.Name)
                             .WithInitializer(
@@ -210,11 +207,18 @@ namespace Thesis.Models.CodeGeneration.CSharp
             return (newClass, classCode);
         }
 
-        private IdentifierNameSyntax GenerateTypeWithComment(string typeString, string comment)
+        private TypeSyntax GenerateTypeSyntax(Vertex vertex, TestResults testResults)
         {
+            var typeString = GetTypeString(vertex);
+            if (testResults == null)
+                return ParseTypeName(typeString);
+            var testResult = testResults[vertex];
+            if (testResult == null || testResult.TestResultType == TestResultType.Ignore)
+                return ParseTypeName(typeString);
+
             return IdentifierName(
                 Identifier(
-                    TriviaList(Comment(comment), LineFeed),
+                    TriviaList(Comment(testResult.ToString()), LineFeed),
                     typeString,
                     TriviaList()));
         }
@@ -288,18 +292,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 else
                 {
                     // test
-                    var type = testResults == null
-                        ? ParseTypeName(GetTypeString(generatedClass.OutputVertex))
-                        : GenerateTypeWithComment(GetTypeString(generatedClass.OutputVertex),
-                            testResults[generatedClass.OutputVertex].ToString());
+                    var type =  GenerateTypeSyntax(generatedClass.OutputVertex, testResults);
 
                     // {type} {outputvertexname} = new {classname}().Calculate()
                     methodBody.Add(LocalDeclarationStatement(
                         VariableDeclaration(type)
                             .AddVariables(VariableDeclarator(generatedClass.OutputVertex.Name)
-                                .WithInitializer(
-                                    EqualsValueClause(
-                                        InvocationExpression(
+                                .WithInitializer(EqualsValueClause(InvocationExpression(
                                             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                                                 ObjectCreationExpression(
                                                         IdentifierName(generatedClass.Name))
@@ -449,6 +448,8 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     return "double";
                 case CellType.Text:
                     return "string";
+                case CellType.Error:
+                    return "FormulaError";
                 case CellType.Unknown:
                     return "EmptyCell";
                 default:
@@ -482,7 +483,12 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 case CellType.Number:
                     return LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(vertexValue));
                 case CellType.Date:
-                    return ParseExpression($"DateTime.Parse(\"{vertexValue}\")");
+                    return InvocationExpression(MemberAccessExpression( SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName("DateTime"), IdentifierName("Parse")))
+                        .AddArgumentListArguments(Argument(ParseExpression(vertexValue)));
+                case CellType.Error:
+                    return ObjectCreationExpression(IdentifierName("FormulaError"))
+                        .AddArgumentListArguments(Argument(ParseExpression(vertexValue)));
                 case CellType.Unknown:
                     return ObjectCreationExpression(IdentifierName("EmptyCell")).WithArgumentList(ArgumentList());
                 default:

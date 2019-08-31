@@ -136,7 +136,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         var cellVertex = (CellVertex)keyValuePair.Value;
                         if (cellVertex.NodeType == NodeType.Constant || cellVertex.IsExternal) continue;
 
-                        testResult.ExpectedValue = cellVertex.Value;
+                        testResult.SetExpectedValue(cellVertex);
                         var actualValueIsNumeric = IsNumeric(testResult.ActualValue);
                         var expectedValueIsNumeric = IsNumeric(testResult.ExpectedValue);
 
@@ -144,6 +144,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         {
                             testResult.TestResultType = TestResultType.Null;
                             nullCount++;
+                        }
+                        else if (testResult.ExpectedValueType == CellType.Error &&
+                                 testResult.ActualValue.GetType().Name.Contains("FormulaError"))
+                        {
+                            testResult.Annotation = "expected " + testResult.ExpectedValue;
+                            testResult.TestResultType = TestResultType.Pass;
+                            passCount++;
                         }
                         else if (testResult.ExpectedValue.GetType() != testResult.ActualValue.GetType() &&
                             // two different numeric types are to be treated as equal types
@@ -219,13 +226,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 }
                 else
                 {
+                    var errorTestResult = new TestResult(vertex.Class.Name, vertex.Name, null, null)
+                    {
+                        TestResultType = TestResultType.Error
+                    };
+                    errorTestResult.SetExpectedValue(vertex is CellVertex cellVertex ? cellVertex.Value : null);
                     // run time or compile error
-                    TestResults.Add(classAndVariableName,
-                        new TestResult(vertex.Class.Name, vertex.Name, null, null)
-                        {
-                            ExpectedValue = vertex is CellVertex cellVertex ? cellVertex.Value : null,
-                            TestResultType = TestResultType.Error
-                        });
+                    TestResults.Add(classAndVariableName, errorTestResult);
                     errorCount++;
                 }
             }

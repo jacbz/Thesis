@@ -34,10 +34,6 @@ namespace Thesis.Models.VertexTypes
 
         public CellVertex(IRange cell)
         {
-            if (cell.AddressLocal == "D34")
-            {
-
-            }
             CellType = GetCellType(cell);
             Value = GetCellValue(cell);
             DisplayValue = cell.DisplayText;
@@ -53,6 +49,7 @@ namespace Thesis.Models.VertexTypes
             if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;
             if (cell.HasNumber || cell.HasFormulaNumberValue) return CellType.Number;
             if (cell.HasDateTime || cell.HasFormulaDateTime) return CellType.Date;
+            if (cell.HasFormulaErrorValue) return CellType.Error;
             if (cell.HasString || cell.HasFormulaStringValue ||
                 !string.IsNullOrEmpty(cell.DisplayText)) return CellType.Text;
             return CellType.Unknown;
@@ -72,6 +69,8 @@ namespace Thesis.Models.VertexTypes
                 return cell.DateTime;
             if (cell.HasFormulaDateTime)
                 return cell.FormulaDateTime;
+            if (cell.HasFormulaErrorValue)
+                return cell.FormulaErrorValue;
             return cell.DisplayText;
         }
 
@@ -94,6 +93,7 @@ namespace Thesis.Models.VertexTypes
         Number,
         Date,
         Text,
+        Error,
         Unknown
     }
 

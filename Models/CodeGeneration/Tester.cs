@@ -94,15 +94,30 @@ namespace Thesis.Models.CodeGeneration
         public dynamic ActualValue { get; }
         public dynamic ExpectedValue { get; set; }
         public TestResultType TestResultType { get; set; }
-        public Type ValueType { get; }
+        public CellType ExpectedValueType { get; set; }
+        public Type ActualValueType { get; }
         public string Annotation { get; set; }
 
-        public TestResult(string className, string variableName, dynamic actualValue, Type valueType)
+        public TestResult(string className, string variableName, dynamic actualValue, Type actualValueType)
         {
             ClassName = className;
             VariableName = variableName;
             ActualValue = actualValue;
-            ValueType = valueType;
+            ActualValueType = actualValueType;
+        }
+
+        public void SetExpectedValue(CellVertex vertex)
+        {
+            if (vertex == null)
+            {
+                ExpectedValue = null;
+                ExpectedValueType = CellType.Unknown;
+            }
+            else
+            {
+                ExpectedValue = vertex.Value;
+                ExpectedValueType = vertex.CellType;
+            }
         }
 
         public override string ToString()
