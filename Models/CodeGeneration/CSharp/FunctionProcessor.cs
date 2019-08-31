@@ -70,33 +70,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
             {"TODAY", CellType.Date},
         };
 
-        private readonly SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)> _binaryOperators
-            = new SortedList<string, (SyntaxKind syntaxKind, bool parenthesize)>
-            {
-                {"+", (SyntaxKind.AddExpression, false)},
-                {"-", (SyntaxKind.SubtractExpression, false)},
-                {"/", (SyntaxKind.DivideExpression, true)},
-                {"*", (SyntaxKind.MultiplyExpression, true)},
-
-                {"ISBLANK", (SyntaxKind.IsExpression, false)},
-                {"ISLOGICAL", (SyntaxKind.IsExpression, false)},
-                {"ISNOTEXT", (SyntaxKind.IsExpression, false)},
-                {"ISNUMBER", (SyntaxKind.IsExpression, false)},
-                {"ISTEXT", (SyntaxKind.IsExpression, false)},
-                {"ISERR", (SyntaxKind.IsExpression, false)},
-                {"ISERROR", (SyntaxKind.IsExpression, false)},
-                {"ISNA", (SyntaxKind.IsExpression, false)},
-
-                {"<>", (SyntaxKind.NotEqualsExpression, false)},
-                {"<", (SyntaxKind.LessThanExpression, false)},
-                {"<=", (SyntaxKind.LessThanOrEqualExpression, false)},
-                {">=", (SyntaxKind.GreaterThanOrEqualExpression, false)},
-                {">", (SyntaxKind.GreaterThanExpression, false)},
-                {"AND", (SyntaxKind.LogicalAndExpression, true)},
-                {"OR", (SyntaxKind.LogicalOrExpression, true)},
-                {"XOR", (SyntaxKind.ExclusiveOrExpression, true)},
-            };
-
         private ExpressionSyntax FunctionToExpression(string functionName, ParseTreeNode[] arguments,
             CellVertex currentVertex)
         {
@@ -142,7 +115,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 case "*":
                 case "/":
                 {
-                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
+                    return GenerateBinaryExpression(functionName, arguments, currentVertex, true);
                 }
                 case "%":
                 {
@@ -182,7 +155,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     // Collection(...).Sum/Min/Max/Count/Average()
                     return InvocationExpression(MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionOf(arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
+                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
                         IdentifierName(functionName.ToTitleCase())));
                 }
 
@@ -218,7 +191,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         return FunctionError(functionName, arguments);
                     var collection = CollectionOf(arguments
                         .Skip(1)
-                        .Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex))
+                        .Select(a => TreeNodeToExpression(a, currentVertex))
                         .ToArray());
 
                     // collection[arguments[0]]
@@ -491,7 +464,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 default:
                 {
                     return CommentExpression($"Function {functionName} not implemented yet! Args: " +
-                                             $"{string.Join("\n", arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, currentVertex)))}",
+                                             $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}",
                         true);
                 }
             }
@@ -544,32 +517,62 @@ namespace Thesis.Models.CodeGeneration.CSharp
         }
 
         private ExpressionSyntax GenerateBinaryExpression(string functionName, ParseTreeNode[] arguments,
-            CellVertex vertex)
+            CellVertex vertex, bool parenthesize = false)
         {
             if (arguments.Length != 2) return FunctionError(functionName, arguments);
+
+            var leftExpression = TreeNodeToExpression(arguments[0], vertex);
+            var rightExpression = TreeNodeToExpression(arguments[1], vertex);
+
+            if (parenthesize && arguments[0].ChildNodes[0].Term.Name != "Constant" && arguments[0].ChildNodes[0].Term.Name != "Reference")
+                leftExpression = ParenthesizedExpression(leftExpression);
+            if (parenthesize && arguments[1].ChildNodes[0].Term.Name != "Constant" && arguments[1].ChildNodes[0].Term.Name != "Reference")
+                rightExpression = ParenthesizedExpression(rightExpression);
+
             return GenerateBinaryExpression(functionName,
-                TreeNodeToExpression(arguments[0], vertex),
-                TreeNodeToExpression(arguments[1], vertex));
+                leftExpression,
+                rightExpression);
         }
+
+        private readonly SortedList<string, SyntaxKind> _binaryOperators
+            = new SortedList<string, SyntaxKind>
+            {
+                {"+", SyntaxKind.AddExpression},
+                {"-", SyntaxKind.SubtractExpression},
+                {"/", SyntaxKind.DivideExpression},
+                {"*", SyntaxKind.MultiplyExpression},
+
+                {"ISBLANK", SyntaxKind.IsExpression},
+                {"ISLOGICAL", SyntaxKind.IsExpression},
+                {"ISNOTEXT", SyntaxKind.IsExpression},
+                {"ISNUMBER", SyntaxKind.IsExpression},
+                {"ISTEXT", SyntaxKind.IsExpression},
+                {"ISERR", SyntaxKind.IsExpression},
+                {"ISERROR", SyntaxKind.IsExpression},
+                {"ISNA", SyntaxKind.IsExpression},
+
+                {"<>", SyntaxKind.NotEqualsExpression},
+                {"<", SyntaxKind.LessThanExpression},
+                {"<=", SyntaxKind.LessThanOrEqualExpression},
+                {">=", SyntaxKind.GreaterThanOrEqualExpression},
+                {">", SyntaxKind.GreaterThanExpression},
+                {"AND", SyntaxKind.LogicalAndExpression},
+                {"OR", SyntaxKind.LogicalOrExpression},
+                {"XOR", SyntaxKind.ExclusiveOrExpression},
+            };
 
         private ExpressionSyntax GenerateBinaryExpression(string functionName,
             ExpressionSyntax leftExpression, ExpressionSyntax rightExpression)
         {
-            SyntaxKind syntaxKind = _binaryOperators[functionName].syntaxKind;
-            if (_binaryOperators[functionName].parenthesize)
-            {
-                leftExpression = ParenthesizedExpression(leftExpression);
-                rightExpression = ParenthesizedExpression(rightExpression);
-            }
-
+            SyntaxKind syntaxKind = _binaryOperators[functionName];
             return BinaryExpression(syntaxKind, leftExpression, rightExpression);
         }
 
         private ExpressionSyntax FoldBinaryExpression(string functionName, ParseTreeNode[] arguments, CellVertex vertex)
         {
-            var syntaxKind = _binaryOperators[functionName].syntaxKind;
+            var syntaxKind = _binaryOperators[functionName];
             // do not parenthesize
-            return arguments.Select<ParseTreeNode, ExpressionSyntax>(a => TreeNodeToExpression(a, vertex))
+            return arguments.Select(a => TreeNodeToExpression(a, vertex))
                 .Aggregate((acc, right) => BinaryExpression(syntaxKind, acc, right));
         }
 

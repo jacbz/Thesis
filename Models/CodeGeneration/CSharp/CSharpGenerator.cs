@@ -362,7 +362,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 {
                     var matrix = rangeVertex.GetMatrixArray();
                     return MatrixOf(matrix
-                        .Select<CellVertex[], ExpressionSyntax>(rowArray => RowOf(rowArray.Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
+                        .Select(rowArray => RowOf(rowArray.Select(cellVertex => CellVertexToConstantOrVariable(cellVertex, rangeVertex))
                             .ToArray()))
                         .ToArray());
                 }
