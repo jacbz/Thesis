@@ -163,11 +163,16 @@ namespace Thesis.Views
         private void SaveCustomClassNames()
         {
             var classNames = _generator?.ClassCollection?.GetCustomClassNames();
-            if (classNames != null)
+            if (classNames == null) return;
+
+            foreach (var kvp in _generator.ClassCollection.GetCustomClassNames())
             {
-                App.Settings.CurrentWorksheetSettings.CustomClassNames = _generator.ClassCollection.GetCustomClassNames();
-                App.Settings.Persist();
+                if (App.Settings.CurrentWorksheetSettings.CustomClassNames.ContainsKey(kvp.Key))
+                    App.Settings.CurrentWorksheetSettings.CustomClassNames[kvp.Key] = kvp.Value;
+                else
+                    App.Settings.CurrentWorksheetSettings.CustomClassNames.Add(kvp.Key, kvp.Value);
             }
+            App.Settings.Persist();
         }
 
         private async void TestCodeButton_Click(object sender, RoutedEventArgs e)

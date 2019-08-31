@@ -1,10 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Irony.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Formatting;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Syncfusion.Windows.Shared;
 using Thesis.Models.VertexTypes;
 using XLParser;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -82,11 +86,14 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 .AddMembers(staticClasses.ToArray())
                 .AddMembers(normalClasses.ToArray());
 
-            // format code and return as string
+            // format with Roslyn formatter
             var workspace = new AdhocWorkspace();
             var options = workspace.Options;
             var node = Formatter.Format(@namespace, workspace, options);
             var sourceCode = node.ToFullString();
+
+            // format with our custom formatter
+            sourceCode = FormatCode(sourceCode);
 
             var variableNameToVertexDictionary = ClassCollection.Classes
                 .SelectMany(c => c.Vertices)

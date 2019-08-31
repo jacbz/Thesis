@@ -203,6 +203,7 @@
     <Compile Include="Models\ClassCollection.cs" />
     <Compile Include="Models\Code.cs" />
     <Compile Include="Models\CodeGeneration\CodeGenerator.cs" />
+    <Compile Include="Models\CodeGeneration\CSharp\Formatter.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\FunctionProcessor.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\CSharpGenerator.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\CSharpTester.cs" />
