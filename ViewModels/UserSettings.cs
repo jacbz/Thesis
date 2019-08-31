@@ -99,7 +99,7 @@ namespace Thesis.ViewModels
 
         public void Persist()
         {
-            File.WriteAllText(Path, JsonConvert.SerializeObject(this));
+            File.WriteAllText(Path, JsonConvert.SerializeObject(this, Formatting.Indented));
         }
     }
 }

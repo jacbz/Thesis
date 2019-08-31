@@ -107,12 +107,15 @@ namespace Thesis.ViewModels
         public void FilterGraph()
         {
             var includedVertices = OutputVertices.Where(v => v.Include).ToList();
-            var includedVertexStrings = includedVertices.Select(v => v.StringAddress).ToList();
-            App.Settings.CurrentWorksheetSettings.SelectedOutputFields = includedVertexStrings;
+            var includedVertexAddresses = includedVertices.Select(v => v.StringAddress).ToList();
+            App.Settings.CurrentWorksheetSettings.SelectedOutputFields =
+                includedVertexAddresses.Count != OutputVertices.Count 
+                    ? includedVertexAddresses 
+                    : null;
             App.Settings.Persist();
 
             Logger.Log(LogItemType.Info,
-                $"Selected output fields: {string.Join(", ", includedVertexStrings)}");
+                $"Selected output fields: {string.Join(", ", includedVertexAddresses)}");
 
             Graph.PerformTransitiveFilter(includedVertices);
 
