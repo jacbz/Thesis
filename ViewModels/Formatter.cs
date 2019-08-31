@@ -198,6 +198,8 @@ namespace Thesis.ViewModels
                     }
                 }
             };
+            if (width > VERTEX_BOX || height > VERTEX_BOX)
+                node.ZIndex = -1000;
             SetNodeConstraints(node);
             rangeVertex.Node = node;
             return node;
@@ -381,8 +383,7 @@ namespace Thesis.ViewModels
                 {
                     new StraightSegment()
                 },
-                Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable,
-                ZIndex = -1
+                Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable
             };
 
             if (to.IsExternal && !connectToExternal)
@@ -397,6 +398,7 @@ namespace Thesis.ViewModels
                 connector.TargetNode = to.Node;
                 connector.ConnectorGeometryStyle = _connectorGeometryStyle;
                 connector.TargetDecoratorStyle = _targetDecoratorStyle;
+                connector.ZIndex = -1;
             }
 
             return connector;

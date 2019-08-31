@@ -5,7 +5,7 @@ using Syncfusion.UI.Xaml.Diagram;
 
 namespace Thesis.Models.VertexTypes
 {
-    public abstract class Vertex
+    public abstract class Vertex : INotifyPropertyChanged
     {
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
@@ -29,7 +29,7 @@ namespace Thesis.Models.VertexTypes
         public NodeViewModel Node { get; set; }
         public Class Class { get; set; }
 
-        public Vertex()
+        protected Vertex()
         {
             Parents = new HashSet<Vertex>();
             Children = new HashSet<Vertex>();

@@ -123,10 +123,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     // for static classes: omit type name as already declared
 
                     // test result comment
-                    var identifier = testResults == null
-                        ? IdentifierName(formula.Name)
-                        : GenerateIdentifierWithComment(formula.Name,
-                            testResults[formula].ToString());
+                    var identifier =  GenerateIdentifierNameSyntaxWithTestResult(formula, testResults);
 
                     var assignmentExpression = AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -137,7 +134,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 else
                 {
                     // test result comment
-                    var type = GenerateTypeSyntax(formula, testResults);
+                    var type = GenerateTypeSyntaxWithTestResult(formula, testResults);
                     var variableDeclaration = VariableDeclaration(type)
                         .AddVariables(VariableDeclarator(formula.Name)
                             .WithInitializer(
@@ -207,7 +204,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
             return (newClass, classCode);
         }
 
-        private TypeSyntax GenerateTypeSyntax(Vertex vertex, TestResults testResults)
+        private TypeSyntax GenerateTypeSyntaxWithTestResult(Vertex vertex, TestResults testResults)
         {
             var typeString = GetTypeString(vertex);
             if (testResults == null)
@@ -223,12 +220,18 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     TriviaList()));
         }
 
-        private static IdentifierNameSyntax GenerateIdentifierWithComment(string variableName, string comment)
+        private static IdentifierNameSyntax GenerateIdentifierNameSyntaxWithTestResult(Vertex vertex, TestResults testResults)
         {
+            if (testResults == null)
+                return IdentifierName(vertex.Name);
+            var testResult = testResults[vertex];
+            if (testResult == null || testResult.TestResultType == TestResultType.Ignore)
+                return IdentifierName(vertex.Name);
+
             return IdentifierName(
                 Identifier(
-                    TriviaList(Comment(comment), LineFeed),
-                    variableName,
+                    TriviaList(Comment(testResult.ToString()), LineFeed),
+                    vertex.Name,
                     TriviaList()));
         }
 
@@ -292,7 +295,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 else
                 {
                     // test
-                    var type =  GenerateTypeSyntax(generatedClass.OutputVertex, testResults);
+                    var type =  GenerateTypeSyntaxWithTestResult(generatedClass.OutputVertex, testResults);
 
                     // {type} {outputvertexname} = new {classname}().Calculate()
                     methodBody.Add(LocalDeclarationStatement(
@@ -485,7 +488,8 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 case CellType.Date:
                     return InvocationExpression(MemberAccessExpression( SyntaxKind.SimpleMemberAccessExpression,
                             IdentifierName("DateTime"), IdentifierName("Parse")))
-                        .AddArgumentListArguments(Argument(ParseExpression(vertexValue)));
+                        .AddArgumentListArguments(Argument(LiteralExpression(SyntaxKind.StringLiteralExpression,
+                            Literal(vertexValue.ToString()))));
                 case CellType.Error:
                     return ObjectCreationExpression(IdentifierName("FormulaError"))
                         .AddArgumentListArguments(Argument(ParseExpression(vertexValue)));

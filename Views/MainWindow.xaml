@@ -216,13 +216,13 @@
 
                         <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Orientation="Horizontal" IsEnabled="False">
                             <Label Content="Output fields (red):" Margin="0,0,6,0"/>
-                            <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click" IsEnabled="False">
+                            <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
                                     <TextBlock FontSize="10"><Run Text="Select all"/></TextBlock>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click" IsEnabled="False">
+                            <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
                                     <TextBlock FontSize="10"><Run Text="Unselect all"/></TextBlock>

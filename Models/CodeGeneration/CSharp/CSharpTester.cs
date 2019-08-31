@@ -230,7 +230,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     {
                         TestResultType = TestResultType.Error
                     };
-                    errorTestResult.SetExpectedValue(vertex is CellVertex cellVertex ? cellVertex.Value : null);
+                    errorTestResult.SetExpectedValue(vertex is CellVertex cellVertex ? cellVertex : null);
                     // run time or compile error
                     TestResults.Add(classAndVariableName, errorTestResult);
                     errorCount++;

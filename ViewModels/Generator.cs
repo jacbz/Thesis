@@ -67,9 +67,8 @@ namespace Thesis.ViewModels
             logItem.AppendElapsedTime();
 
             OutputVertices = new ObservableCollection<CellVertex>(Graph.GetOutputFields());
-            _window.outputFieldsListView.ItemsSource = OutputVertices;
-
             LoadPersistedOutputFields();
+            _window.outputFieldsListView.ItemsSource = OutputVertices;
 
             LayoutGraph();
 
