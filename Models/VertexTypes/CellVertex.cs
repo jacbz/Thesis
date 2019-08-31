@@ -34,6 +34,10 @@ namespace Thesis.Models.VertexTypes
 
         public CellVertex(IRange cell)
         {
+            if (cell.AddressLocal == "D34")
+            {
+
+            }
             CellType = GetCellType(cell);
             Value = GetCellValue(cell);
             DisplayValue = cell.DisplayText;

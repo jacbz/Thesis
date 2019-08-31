@@ -45,6 +45,12 @@ namespace Thesis.ViewModels
             var logItem = Logger.Log(LogItemType.Info, "Generate graph from spreadsheet cells to determine output fields...", true);
 
             var (rowCount, columnCount) = _window.GetSheetDimensions();
+            if (rowCount == 0 || columnCount == 0)
+            {
+                Logger.Log(LogItemType.Error, "Selected worksheet is empty!");
+                return false;
+            }
+
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
             Graph = Graph.FromSpreadsheet(

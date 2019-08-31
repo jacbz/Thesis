@@ -49,10 +49,10 @@
 			<Word>Expected:</Word>
       <Word>Actual:</Word>
 		</Keywords>
-		<Keywords fontWeight="bold" background="#e74c3c" foreground="#FFFFFF">
+		<Keywords fontWeight="bold" background="#e67e22" foreground="#FFFFFF">
 			<Word> FAIL </Word>
 		</Keywords>
-    <Keywords fontWeight="bold" background="#e67e22" foreground="#FFFFFF">
+    <Keywords fontWeight="bold" background="#e74c3c" foreground="#FFFFFF">
       <Word> COMPILE/RUNTIME ERROR </Word>
     </Keywords>
     <Keywords fontWeight="bold" background="#34495e" foreground="#FFFFFF">

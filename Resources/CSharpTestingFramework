@@ -110,16 +110,17 @@ public class Matrix
 	public int Count() { return Flatten().Count(); }
 	public double Average() { return Flatten().Average(); }
 	
-	public dynamic VLookUp(dynamic lookupValue, int column, dynamic matchMode = null)
+	public dynamic VLookUp(dynamic lookupValue, dynamic columnParameter, dynamic matchMode = null)
 	{
+		int column = (int)columnParameter;
         try
         {
-            if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+            if(matchMode == null || Compare(matchMode, true) || Compare(matchMode, 1))
             {
                 // approximate match
                 return Items[ApproximateMatchRowIndex(lookupValue, 0), column - 1];
             }
-            if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+            if(Compare(matchMode, false) || Compare(matchMode, 0))
             {
                 // exact match
                 return Items[ExactMatchRowIndex(lookupValue, 0), column - 1];
@@ -132,16 +133,17 @@ public class Matrix
         }
     }
 	
-	public dynamic HLookUp(dynamic lookupValue, int row, dynamic matchMode = null)
+	public dynamic HLookUp(dynamic lookupValue, dynamic rowParameter, dynamic matchMode = null)
 	{
+		int row = (int)rowParameter;
         try
         {
-            if(matchMode == null || Object.Equals(matchMode, true) || Object.Equals(matchMode, 1))
+            if(matchMode == null || Compare(matchMode, true) || Compare(matchMode, 1))
             {
                 // approximate match
                 return Items[row - 1, ApproximateMatchColumnIndex(lookupValue, 0)];
             }
-            if(Object.Equals(matchMode, false) || Object.Equals(matchMode, 0))
+            if(Compare(matchMode, false) || Compare(matchMode, 0))
             {
                 // exact match
                 return Items[row - 1, ExactMatchColumnIndex(lookupValue, 0)];
@@ -154,8 +156,9 @@ public class Matrix
         }
 	}
 
-	public int ExactMatchRowIndex(dynamic value, int column)
+	public int ExactMatchRowIndex(dynamic value, dynamic columnParameter)
 	{
+		int column = (int)columnParameter;
 		if(IsNumeric(value))
 		{
 			decimal valueNum = Convert.ToDecimal(value);
@@ -178,8 +181,9 @@ public class Matrix
 		return -1;
 	}
 
-	public int ExactMatchColumnIndex(dynamic value, int row)
+	public int ExactMatchColumnIndex(dynamic value, dynamic rowParameter)
 	{
+		int row = (int)rowParameter;
 		if(IsNumeric(value))
 		{
 			decimal valueNum = Convert.ToDecimal(value);
@@ -202,8 +206,9 @@ public class Matrix
 		return -1;
 	}
 
-	public int ApproximateMatchRowIndex(dynamic value, int column)
+	public int ApproximateMatchRowIndex(dynamic value, dynamic columnParameter)
 	{
+		int column = (int)columnParameter;
 		if(IsNumeric(value))
 		{
 			decimal valueNum = Convert.ToDecimal(value);
@@ -237,8 +242,9 @@ public class Matrix
 		return -1;
 	}
 
-	public int ApproximateMatchColumnIndex(dynamic value, int row)
+	public int ApproximateMatchColumnIndex(dynamic value, dynamic rowParameter)
 	{
+		int row = (int)rowParameter;
 		if(IsNumeric(value))
 		{
 			decimal valueNum = Convert.ToDecimal(value);
@@ -271,12 +277,17 @@ public class Matrix
 		}
 		return -1;
 	}
-
-	public dynamic this[int row, int column]
+	
+	public dynamic this[dynamic rowParameter, dynamic columnParameter]
 	{
-		get => Items.GetLength(0) < row && Items.GetLength(1) < column
-               ? new FormulaError("Index out of range")
-		        : Items [row - 1, column - 1];
+		get
+		{
+			int row = (int)rowParameter;
+			int column = (int)columnParameter;
+			return Items.GetLength(0) < row && Items.GetLength(1) < column
+				   ? new FormulaError("Index out of range")
+					: Items [row - 1, column - 1];
+		}
 	}
 }
 
@@ -289,10 +300,12 @@ public class Row : Collection
 		return row;
 	}
 
-	public dynamic this[int row, int column]
+	public dynamic this[dynamic rowParameter, dynamic columnParameter]
 	{
 		get
 		{
+			int row = (int)rowParameter;
+			int column = (int)columnParameter;
 			if (row != 1)
                 return new FormulaError("Row number must be 1");
 			return Items.Length < column ? new FormulaError("Column number out of range") : Items[column - 1];
@@ -308,11 +321,13 @@ public class Column : Collection
 		column.Items = items;
 		return column;
 	}	
-
-	public dynamic this[int row, int column]
+	
+	public dynamic this[dynamic rowParameter, dynamic columnParameter]
 	{
 		get
 		{
+			int row = (int)rowParameter;
+			int column = (int)columnParameter;
 			if (column != 1) throw new IndexOutOfRangeException("Column number must be 1");
             return Items.Length < row ? new FormulaError("Row number out of range") : Items[row - 1];
         }
@@ -353,8 +368,9 @@ public class Collection
 	public int Count() { return Items.Count(); }
 	public double Average() { return Items.Average(); }	
 
-	public dynamic Match(dynamic lookupValue, int matchType = 1)
+	public dynamic Match(dynamic lookupValue, dynamic matchTypeParameter = null)
 	{
+		int matchType = matchTypeParameter == null ? 1 : (int)matchTypeParameter;
 		for(int i = 0; i < Items.Length; i++)
 		{
 			dynamic curr = Items[i];
@@ -385,9 +401,13 @@ public class Collection
 		return new FormulaError("Error in Match");
 	}
 
-	public dynamic this[int index]
+	public dynamic this[dynamic indexParameter]
 	{
-		get => Items.Length < index ? new FormulaError("Index out of range") : Items[index - 1];
+		get
+		{
+			int index = (int)indexParameter;
+			return Items.Length < index ? new FormulaError("Index out of range") : Items[index - 1];
+		}
 	}
 }
 
@@ -536,7 +556,7 @@ public struct EmptyCell
     public static implicit operator bool(EmptyCell a) => false;
 
     public override bool Equals(dynamic a)
-	{ 
+	{
 		if (a is EmptyCell) return true;
 		if (IsNumeric(a)) return a == 0;
         switch (a)

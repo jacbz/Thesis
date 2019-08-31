@@ -37,6 +37,7 @@ namespace Thesis.Views
             catch (IOException e)
             {
                 Logger.Log(LogItemType.Error, "Could not open file: " + e.Message);
+                generateGraphButton.IsEnabled = magicButton.IsEnabled = false;
             }
 
             spreadsheet.Opacity = 100;

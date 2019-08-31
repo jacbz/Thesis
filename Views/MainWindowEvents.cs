@@ -301,6 +301,7 @@ namespace Thesis.Views
                     spreadsheet.SetActiveSheet(App.Settings.SelectedWorksheet);
                 }
 
+                generateGraphButton.IsEnabled = magicButton.IsEnabled = true;
                 generateGraphTab.IsSelected = true;
             }
         }
