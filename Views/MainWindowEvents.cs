@@ -160,21 +160,6 @@ namespace Thesis.Views
             SaveCustomClassNames();
         }
 
-        private void SaveCustomClassNames()
-        {
-            var classNames = _generator?.ClassCollection?.GetCustomClassNames();
-            if (classNames == null) return;
-
-            foreach (var kvp in _generator.ClassCollection.GetCustomClassNames())
-            {
-                if (App.Settings.CurrentWorksheetSettings.CustomClassNames.ContainsKey(kvp.Key))
-                    App.Settings.CurrentWorksheetSettings.CustomClassNames[kvp.Key] = kvp.Value;
-                else
-                    App.Settings.CurrentWorksheetSettings.CustomClassNames.Add(kvp.Key, kvp.Value);
-            }
-            App.Settings.Persist();
-        }
-
         private async void TestCodeButton_Click(object sender, RoutedEventArgs e)
         {
             await TestCode();
@@ -222,6 +207,7 @@ namespace Thesis.Views
             {
                 SelectVertexInDiagrams(vertex);
                 SelectVertexInOutputListView(vertex);
+                SelectVertexInCode(vertex);
                 InitiateToolbox(vertex);
             }
             else

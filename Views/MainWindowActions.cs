@@ -42,6 +42,21 @@ namespace Thesis.Views
             DisableClassGenerationOptions();
         }
 
+        private void SaveCustomClassNames()
+        {
+            var classNames = _generator?.ClassCollection?.GetCustomClassNames();
+            if (classNames == null) return;
+
+            foreach (var kvp in _generator.ClassCollection.GetCustomClassNames())
+            {
+                if (App.Settings.CurrentWorksheetSettings.CustomClassNames.ContainsKey(kvp.Key))
+                    App.Settings.CurrentWorksheetSettings.CustomClassNames[kvp.Key] = kvp.Value;
+                else
+                    App.Settings.CurrentWorksheetSettings.CustomClassNames.Add(kvp.Key, kvp.Value);
+            }
+            App.Settings.Persist();
+        }
+
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
             spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
@@ -169,6 +184,23 @@ namespace Thesis.Views
                 outputFieldsListView.SelectedItem = cell;
                 outputFieldsListView.Tag = null;
             }
+        }
+
+        private void SelectVertexInCode(Vertex vertex)
+        {
+            if (_generator.Code == null || vertex.Class == null || generateCodeTab.IsSelected == false) return;
+
+            var code = codeTextBox.Text;
+
+            var indexOfClassNameInCode = code.IndexOf($"class {vertex.Class.Name}", StringComparison.InvariantCulture);
+            if (indexOfClassNameInCode == -1) return;
+
+            var indexOfVariableInCode = code.IndexOf(vertex.Name, indexOfClassNameInCode, StringComparison.InvariantCulture);
+            if (indexOfVariableInCode == -1) return;
+
+            var line = codeTextBox.Document.GetLineByOffset(indexOfVariableInCode);
+            codeTextBox.ScrollTo(line.LineNumber, line.Length);
+            codeTextBox.Select(indexOfVariableInCode, vertex.Name.Length);
         }
 
         /// <summary>
