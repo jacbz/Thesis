@@ -388,8 +388,8 @@ namespace Thesis.ViewModels
 
             if (to.IsExternal && !connectToExternal)
             {
-                var length = Math.Min(VERTEX_BOX, from.Node.UnitWidth - 5);
-                connector.TargetPoint = new Point(from.Node.OffsetX + length, from.Node.OffsetY - length);
+                var length = from.Node.UnitWidth / 2.0 + 20.0;
+                connector.TargetPoint = new Point(from.Node.OffsetX + length, from.Node.OffsetY - length / 2.5);
                 connector.ConnectorGeometryStyle = _externalConnectorGeometryStyle;
                 connector.TargetDecoratorStyle = _externalTargetDecoratorStyle;
             }

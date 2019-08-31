@@ -19,6 +19,9 @@ namespace Thesis.Models.CodeGeneration.CSharp
             {
                 string line = lines[i];
 
+                // ignore comments
+                if (line.Contains("//")) continue;
+
                 // match ?, :, Row.Of, but not inside quotes
                 var pattern = @"(?=\?|:|Row\.Of)(?=(?:[^""]*""[^""]*"")*[^""]*$)";
 

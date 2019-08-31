@@ -53,10 +53,10 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
             {"=", CellType.Bool},
             {"<>", CellType.Bool},
-            {"<", CellType.Number},
-            {"<=", CellType.Number},
-            {">=", CellType.Number},
-            {">", CellType.Number},
+            {"<", CellType.Bool},
+            {"<=", CellType.Bool},
+            {">=", CellType.Bool},
+            {">", CellType.Bool},
 
             {"&", CellType.Text},
             {"CONCATENATE", CellType.Text},
@@ -548,7 +548,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
         {
             if (arguments.Length != 2) return FunctionError(functionName, arguments);
             return GenerateBinaryExpression(functionName,
-                (ExpressionSyntax) TreeNodeToExpression(arguments[0], vertex),
+                TreeNodeToExpression(arguments[0], vertex),
                 TreeNodeToExpression(arguments[1], vertex));
         }
 
