@@ -113,9 +113,15 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 }
 
                 case "*":
-                case "/":
                 {
                     return GenerateBinaryExpression(functionName, arguments, currentVertex, true);
+                }
+                case "/":
+                {
+                    _forceConstantsIntoDecimal = true;
+                    var expression = GenerateBinaryExpression(functionName, arguments, currentVertex, true);
+                    _forceConstantsIntoDecimal = false;
+                    return expression;
                 }
                 case "%":
                 {

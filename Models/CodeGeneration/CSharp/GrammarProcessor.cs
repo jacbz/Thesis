@@ -10,6 +10,8 @@ namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator
     {
+        private bool _forceConstantsIntoDecimal = false;
+
         private ExpressionSyntax TreeNodeToExpression(ParseTreeNode node, CellVertex currentVertex)
         {
             // Non-Terminals
@@ -33,7 +35,9 @@ namespace Thesis.Models.CodeGeneration.CSharp
                             case "Bool":
                                 return ParseExpression(constant.ToLower());
                             case "Number":
-                                return ParseExpression(constant.Contains(".") ? constant : constant + ".0");
+                                return ParseExpression(constant.Contains(".") || !_forceConstantsIntoDecimal
+                                    ? constant 
+                                    : constant + ".0");
                             case "Text":
                                 return ParseExpression(constant);
                             case "Error":
