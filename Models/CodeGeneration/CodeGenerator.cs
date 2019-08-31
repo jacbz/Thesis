@@ -15,7 +15,7 @@ namespace Thesis.Models.CodeGeneration
         protected Dictionary<string, Vertex> NameDictionary;
 
         public abstract Task<Code> GenerateCodeAsync(TestResults testResults = null);
-        protected abstract string[] LanguageKeywords { get; }
+        protected abstract string[] BlockedVariableNames { get; }
 
         protected CodeGenerator(ClassCollection classCollection,
             Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
@@ -30,7 +30,7 @@ namespace Thesis.Models.CodeGeneration
         protected void GenerateVariableNamesForAll()
         {
             // generate unique class names
-            var blockedClassNames = LanguageKeywords.ToHashSet();
+            var blockedClassNames = BlockedVariableNames.ToHashSet();
             foreach (var generatedClass in ClassCollection.Classes)
             {
                 generatedClass.Name = GenerateUniqueName(blockedClassNames, generatedClass.Name.MakeNameVariableConform());

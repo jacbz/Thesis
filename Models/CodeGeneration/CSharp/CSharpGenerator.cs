@@ -21,9 +21,10 @@ namespace Thesis.Models.CodeGeneration.CSharp
         // vertices in this list must have type dynamic
         private HashSet<Vertex> _useDynamic;
 
-        protected override string[] LanguageKeywords =>
+        protected override string[] BlockedVariableNames =>
             new[]
             {
+                "Matrix", "Collection", "Row", "Column", "EmptyCell", "Empty",
                 "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float",
                 "decimal", "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if",
                 "else", "while", "for", "foreach", "do", "switch", "case", "default", "lock", "try", "throw",
@@ -501,7 +502,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     return ObjectCreationExpression(IdentifierName("FormulaError"))
                         .AddArgumentListArguments(Argument(ParseExpression(vertexValue)));
                 case CellType.Unknown:
-                    return ObjectCreationExpression(IdentifierName("EmptyCell")).WithArgumentList(ArgumentList());
+                    return IdentifierName("Empty");
                 default:
                     return LiteralExpression(SyntaxKind.NullLiteralExpression);
             }

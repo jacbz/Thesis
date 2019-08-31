@@ -520,6 +520,8 @@ public static double Average(this dynamic[] items)
 	return items.Sum() / items.Count();
 }
 
+public static EmptyCell Empty = new EmptyCell();
+
 // mimics the behavior of an empty cell in Excel
 public struct EmptyCell
 {
