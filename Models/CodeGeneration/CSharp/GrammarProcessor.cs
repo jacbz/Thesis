@@ -34,7 +34,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                                 return ParseExpression(constant.ToLower());
                             case "Number":
                                 return ParseExpression(constant.Contains(".") ? constant : constant + ".0");
-                            case "String":
+                            case "Text":
                                 return ParseExpression(constant);
                             case "Error":
                                 return ObjectCreationExpression( IdentifierName("FormulaError"))

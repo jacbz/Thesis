@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Syncfusion.UI.Xaml.CellGrid;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.UI.Xaml.Grid.ScrollAxis;
 using Syncfusion.UI.Xaml.Spreadsheet.Helpers;
 using Syncfusion.XlsIO;
 using Thesis.Models;
@@ -51,10 +52,16 @@ namespace Thesis.Views
             if (vertex is CellVertex cell)
             {
                 FlashAndSelectSpreadsheetCells(spreadsheet.ActiveSheet.Range[cell.StringAddress]);
+                // scroll into view
+                spreadsheet.ActiveGrid.CurrentCell.MoveCurrentCell(cell.Address.row, cell.Address.col);
             }
             else if (vertex is RangeVertex rangeVertex)
             {
                 FlashAndSelectSpreadsheetCells(rangeVertex.CellsInRange);
+                spreadsheet.ActiveGrid.CurrentCell
+                    .MoveCurrentCell(rangeVertex.StartAddress.row, rangeVertex.StartAddress.column);
+                spreadsheet.ActiveGrid.CurrentCell
+                    .MoveCurrentCell(rangeVertex.EndAddress.row, rangeVertex.EndAddress.column);
             }
         }
 
@@ -214,18 +221,17 @@ namespace Thesis.Views
         /// <param name="styleBorder">Border styling function</param>
         public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
         {
-            foreach (var vertex in vertices)
+            var vertexList = vertices.ToList();
+            foreach (var rangeVertex in vertexList.OfType<RangeVertex>())
             {
-                if (vertex is CellVertex cellVertex)
-                {
-                    var range = spreadsheet.ActiveSheet.Range[cellVertex.StringAddress];
-                    styleCell(cellVertex, range.CellStyle);
-                    styleBorder(cellVertex, range.Borders);
-                }
-                else if (vertex is RangeVertex rangeVertex)
-                {
-                    ColorSpreadsheetCells(rangeVertex.CellsInRange.Select(c => new CellVertex(c)), styleCell, styleBorder);
-                }
+                ColorSpreadsheetCells(rangeVertex.CellsInRange.Select(c => new CellVertex(c)), styleCell, styleBorder);
+            }
+
+            foreach (var cellVertex in vertexList.OfType<CellVertex>())
+            {
+                var cellRange = spreadsheet.ActiveSheet.Range[cellVertex.StringAddress];
+                styleCell(cellVertex, cellRange.CellStyle);
+                    styleBorder(cellVertex, cellRange.Borders);
             }
         }
 

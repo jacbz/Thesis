@@ -198,18 +198,21 @@ namespace Thesis.ViewModels
 
             Application.Current.Dispatcher.Invoke(() =>
             {
+                LayoutClasses();
+
                 _window.ResetSpreadsheetColors();
                 foreach (var generatedClass in ClassCollection.Classes)
                 {
                     _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal),
-                        (vertex, style) => { _window.StyleCellByColor(generatedClass.Color, style); },
+                        (vertex, style) =>
+                        {
+                            _window.StyleCellByColor(generatedClass.Color, style);
+                        },
                         _window.StyleBorderByNodeType);
                 }
 
                 _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);
                 _window.spreadsheet.ActiveGrid.InvalidateCells();
-
-                LayoutClasses();
             }, DispatcherPriority.Background);
 
             Logger.Log(LogItemType.Success, $"Generated {ClassCollection.Classes.Count} classes.");

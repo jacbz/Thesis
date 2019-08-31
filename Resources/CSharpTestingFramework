@@ -515,10 +515,8 @@ public struct EmptyCell
     public static dynamic operator %(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static bool operator ==(dynamic a, EmptyCell empty) { return empty.Equals(a); }
     public static bool operator ==(EmptyCell a, dynamic b) { return a.Equals(b); }
-    public static bool operator ==(EmptyCell a, EmptyCell b) { return true; }
-    public static bool operator !=(dynamic a, EmptyCell b) { return !(a == b); }
-    public static bool operator !=(EmptyCell a, dynamic b) { return !(b == a); }
-    public static bool operator !=(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator !=(dynamic a, EmptyCell b) { return !a.Equals(b); }
+    public static bool operator !=(EmptyCell a, dynamic b) { return !b.Equals(a); }
     public static bool operator <(dynamic a, EmptyCell b) { return a < 0; }
     public static bool operator <(EmptyCell a, dynamic b) { return 0 < b; }
     public static bool operator <(EmptyCell a, EmptyCell b) { return false; }

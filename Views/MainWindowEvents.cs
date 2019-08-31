@@ -300,6 +300,8 @@ namespace Thesis.Views
                     Logger.Log(LogItemType.Info, $"Loading last selected worksheet {App.Settings.SelectedWorksheet}");
                     spreadsheet.SetActiveSheet(App.Settings.SelectedWorksheet);
                 }
+
+                generateGraphTab.IsSelected = true;
             }
         }
 
