@@ -9,7 +9,7 @@ namespace Thesis.Models
 {
     public class Class
     {
-        public static readonly Color StaticColor = ColorTranslator.FromHtml("#CFD8DC");
+        public static readonly Color GlobalColor = ColorTranslator.FromHtml("#CFD8DC");
         public static readonly Color ExternalColor = ColorTranslator.FromHtml("#c4f7ed");
 
         public string Name { get; set; }
@@ -19,7 +19,7 @@ namespace Thesis.Models
         public List<Vertex> Vertices { get; set; }
         public Color Color { get; set; }
 
-        public Class(string name, string defaultName, Vertex outputVertex, List<Vertex> vertices, Random rnd = null)
+        public Class(string name, string defaultName, Vertex outputVertex, List<Vertex> vertices, Color? color = null)
         {
             Name = name;
             DefaultName = defaultName;
@@ -35,9 +35,7 @@ namespace Thesis.Models
                 vertex.Class = this;
             }
 
-            Color = name == "External" ? ExternalColor
-                : rnd == null ? StaticColor
-                : Color.FromArgb(rnd.Next(180, 256), rnd.Next(180, 256), rnd.Next(180, 256));
+            Color = color.GetValueOrDefault();
         }
 
         // Implementation of Kahn's algorithm

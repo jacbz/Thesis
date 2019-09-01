@@ -228,9 +228,6 @@
     <Compile Include="Views\BraceFoldingStrategy.cs" />
     <Compile Include="Views\MainWindowEvents.cs" />
     <Compile Include="Views\MainWindowActions.cs" />
-    <Compile Include="Views\TestWindow.xaml.cs">
-      <DependentUpon>TestWindow.xaml</DependentUpon>
-    </Compile>
     <Page Include="Views\LogControl.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -253,10 +250,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="Views\TestWindow.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

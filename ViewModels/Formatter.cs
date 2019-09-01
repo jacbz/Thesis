@@ -419,5 +419,93 @@ namespace Thesis.ViewModels
         {
             return DColor.FromArgb(color.A, color.R, color.G, color.B);
         }
+
+        /// <summary>
+        /// Generates <paramref name="n"/> distinct colors using the HSL color model. Only the hue is varied, saturation and lightness are set to
+        /// produce a light color suitable for backgrounds.
+        /// </summary>
+        /// <param name="n">Number of colors to generate</param>
+        /// <returns>An array of System.Drawing.Color</returns>
+        public static DColor[] GenerateNDistinctColors(int n)
+        {
+            var output = new DColor[n];
+
+            double stepSize = 1.0 / n;
+            var random = new Random();
+
+            var initial = random.NextDouble();
+
+            for (int i = 0; i < n; i++)
+            {
+                var hue = (initial + i * stepSize) % 1.0;
+                output[i] = HslColorToRgbColor(hue, 1, 0.90);
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Converts a HSL color to RGB color.
+        /// Source: https://geekymonkey.com/Programming/CSharp/RGB2HSL_HSL2RGB.htm
+        /// </summary>
+        /// <param name="hue">[0,1]</param>
+        /// <param name="saturation">[0,1]</param>
+        /// <param name="lightness">[0,1]</param>
+        /// <returns></returns>
+        public static DColor HslColorToRgbColor(double hue, double saturation, double lightness)
+        {
+            var r = lightness;
+            var g = lightness;
+            var b = lightness;
+            var v = lightness <= 0.5 
+                ? lightness * (1.0 + saturation) 
+                : lightness + saturation - lightness * saturation;
+            if (v > 0)
+            {
+                var m = lightness + lightness - v;
+                var sv = (v - m) / v;
+                hue *= 6.0;
+                var sextant = (int)hue;
+                var fract = hue - sextant;
+                var vsf = v * sv * fract;
+                var mid1 = m + vsf;
+                var mid2 = v - vsf;
+                switch (sextant)
+                {
+                    case 0:
+                        r = v;
+                        g = mid1;
+                        b = m;
+                        break;
+                    case 1:
+                        r = mid2;
+                        g = v;
+                        b = m;
+                        break;
+                    case 2:
+                        r = m;
+                        g = v;
+                        b = mid1;
+                        break;
+                    case 3:
+                        r = m;
+                        g = mid2;
+                        b = v;
+                        break;
+                    case 4:
+                        r = mid1;
+                        g = m;
+                        b = v;
+                        break;
+                    case 5:
+                        r = v;
+                        g = m;
+                        b = mid2;
+                        break;
+                }
+            }
+
+            return DColor.FromArgb(Convert.ToInt32(r * 255.0f), Convert.ToInt32(g * 255.0f), Convert.ToInt32(b * 255.0f));
+        }
     }
 }

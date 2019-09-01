@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Media;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
@@ -20,7 +21,6 @@ namespace Thesis.Models
             ClassCollection classCollection = new ClassCollection();
 
             var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<CellVertex>());
-            var rnd = new Random();
             
             // output fields without children: formulas such as =TODAY()
             var outputFieldsWithoutChildren = graph.GetOutputFields().Where(v => v.Children.Count == 0).ToList();
@@ -35,7 +35,7 @@ namespace Thesis.Models
                 var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var newClass = new Class(className, defaultName, vertex, reachableVertices.ToList(), rnd);
+                var newClass = new Class(className, defaultName, vertex, reachableVertices.ToList());
                 classCollection.Classes.Add(newClass);
             }
 
@@ -68,7 +68,7 @@ namespace Thesis.Models
                 var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var externalClass = new Class(className, defaultName, null, graph.ExternalVertices);
+                var externalClass = new Class(className, defaultName, null, graph.ExternalVertices, Class.ExternalColor);
                 externalClass.TopologicalSort();
                 classCollection.Classes.Add(externalClass);
             }
@@ -79,10 +79,16 @@ namespace Thesis.Models
                 var className = defaultName;
                 if (customClassNames != null && customClassNames.TryGetValue(className, out var customName))
                     className = customName;
-                var globalClass = new Class(className, defaultName, null, sharedVertices);
+                var globalClass = new Class(className, defaultName, null, sharedVertices, Class.GlobalColor);
                 globalClass.TopologicalSort();
                 classCollection.Classes.Add(globalClass);
             }
+
+            // generate colors
+            var classesWithoutColors = classCollection.Classes.Where(c => c.Color == default).ToArray();
+            var colors = Formatter.GenerateNDistinctColors(classesWithoutColors.Length);
+            for (int i = 0; i < classesWithoutColors.Length; i++)
+                classesWithoutColors[i].Color = colors[i];
 
             if (graph.Vertices.Count + graph.ExternalVertices.Count != 
                 classCollection.Classes.Sum(l => l.Vertices.Count))
