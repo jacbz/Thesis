@@ -83,15 +83,19 @@
             </Style>
 
             <DataTemplate x:Key="normalLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontFamily="Arial Narrow" />
+                <TextBlock Text="{Binding Path=Content}" FontFamily="Arial Narrow" />
             </DataTemplate>
 
             <DataTemplate x:Key="redLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" Foreground="Red" FontFamily="Arial Narrow" />
+                <TextBlock Text="{Binding Path=Content}" Foreground="Red" FontFamily="Arial Narrow" />
+            </DataTemplate>
+
+            <DataTemplate x:Key="rangeLabel">
+                <TextBlock Text="{Binding Path=Content}" FontSize="16" FontFamily="Arial Narrow Bold"/>
             </DataTemplate>
 
             <DataTemplate x:Key="classLabel">
-                <TextBlock Text="{Binding Path=Content, Mode=TwoWay}" FontWeight="Bold" FontSize="14" FontFamily="Consolas" />
+                <TextBlock Text="{Binding Path=Content}" FontWeight="Bold" FontSize="14" FontFamily="Consolas" />
             </DataTemplate>
 
             <DataTemplate x:Key="staticLabel">

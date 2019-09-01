@@ -35,6 +35,7 @@ namespace Thesis.ViewModels
 
         private static DataTemplate _normalLabelTemplate;
         private static DataTemplate _redLabelTemplate;
+        private static DataTemplate _rangeLabelTemplate;
         private static DataTemplate _classLabelTemplate;
         private static DataTemplate _staticLabelTemplate;
 
@@ -66,6 +67,7 @@ namespace Thesis.ViewModels
 
             _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
             _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
+            _rangeLabelTemplate = Application.Current.Resources["rangeLabel"] as DataTemplate;
             _classLabelTemplate = Application.Current.Resources["classLabel"] as DataTemplate;
             _staticLabelTemplate = Application.Current.Resources["staticLabel"] as DataTemplate;
 
@@ -188,6 +190,7 @@ namespace Thesis.ViewModels
         public static NodeViewModel FormatRangeVertex(this RangeVertex rangeVertex, 
             double posX, double posY, double width = 40, double height = 40)
         {
+            var isLarge = width > VERTEX_BOX || height > VERTEX_BOX;
             var node = new NodeViewModel
             {
                 ID = _nodeCounter++,
@@ -203,16 +206,15 @@ namespace Thesis.ViewModels
                 {
                     new AnnotationEditorViewModel
                     {
-                        Offset = new Point(0, 0),
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = rangeVertex.Name,
-                        ViewTemplate = _normalLabelTemplate,
-                        UnitWidth = 200
+                        Offset = isLarge ? new Point(0, 0.5) : new Point(0, 0),
+                        HorizontalAlignment = isLarge ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                        VerticalAlignment = isLarge ? default : VerticalAlignment.Bottom,
+                        Content = rangeVertex.Name + "  ",
+                        ViewTemplate = isLarge ? _rangeLabelTemplate : _normalLabelTemplate
                     }
                 }
             };
-            if (width > VERTEX_BOX || height > VERTEX_BOX)
+            if (isLarge)
                 node.ZIndex = -1000;
             SetNodeConstraints(node);
             rangeVertex.Node = node;
