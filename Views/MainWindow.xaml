@@ -125,7 +125,7 @@
                         </TextBlock>
 
                         <TextBlock Text="Name:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
+                        <TextBox x:Name="nameTextBox" Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
 
                         <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
                         <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>   

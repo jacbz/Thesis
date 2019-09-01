@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Windows.Input;
+using System.Windows.Threading;
 using System.Xml;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -150,17 +152,26 @@ namespace Thesis.Views
 
         private void InitiateToolbox(dynamic obj)
         {
-            if (obj == null)
-            {
-                toolboxContent.Opacity = 0.3f;
-                toolboxContent.IsEnabled = false;
-            }
-            else
+            if (obj != null)
             {
                 toolboxContent.Opacity = 1f;
                 toolboxContent.IsEnabled = true;
                 toolboxTab.IsSelected = true;
                 DataContext = obj;
+
+                // select and focus name text box
+                Dispatcher.BeginInvoke(DispatcherPriority.Input,
+                    new Action(delegate
+                    {
+                        nameTextBox.Focus();
+                        Keyboard.Focus(nameTextBox);
+                        nameTextBox.SelectAll();
+                    }));
+            }
+            else
+            {
+                toolboxContent.Opacity = 0.3f;
+                toolboxContent.IsEnabled = false;
             }
         }
 
