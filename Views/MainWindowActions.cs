@@ -12,7 +12,6 @@ using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
-using Region = System.Drawing.Region;
 
 namespace Thesis.Views
 {

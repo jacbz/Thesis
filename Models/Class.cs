@@ -53,7 +53,8 @@ namespace Thesis.Models
             while (verticesWithNoParents.Count > 0)
             {
                 // get first vertex that has the lowest number of children
-                var currentVertex = verticesWithNoParents.OrderBy(v => v.Children.Count).First();
+                // reverse first to preverse argument order
+                var currentVertex = verticesWithNoParents.Reverse().OrderBy(v => v.Children.Count).First();
 
                 verticesWithNoParents.Remove(currentVertex);
                 // do not re-add deleted vertices
