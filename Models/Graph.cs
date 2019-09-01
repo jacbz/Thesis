@@ -71,11 +71,8 @@ namespace Thesis.Models
 
             // generate labels
             var cellVertices = graph.Vertices.GetCellVertices();
-            LabelGenerator.Instantiate(graph.Vertices.GetCellVertices());
-            graph.Regions = LabelGenerator.CreateRegions();
-            LabelGenerator.GenerateLabelsFromRegions(graph.Vertices.GetCellVertices());
-
-//            LabelGenerator.GenerateLabels(graph.Vertices.GetCellVertices());
+            graph.Regions = LabelGenerator.CreateRegions(cellVertices);
+            LabelGenerator.GenerateLabelsFromRegions(cellVertices);
 
             graph.AllVertices = graph.Vertices.ToList();
 

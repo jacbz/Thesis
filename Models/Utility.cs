@@ -82,7 +82,12 @@ namespace Thesis.Models
                 return string.Empty;
 
             char[] a = s.ToCharArray();
-            a[0] = char.ToLower(a[0]);
+            int i = 0;
+            while (i < a.Length && char.IsUpper(a[i]))
+            {
+                a[i] = char.ToLower(a[i]);
+                i++;
+            }
             return new string(a);
         }
 
@@ -93,13 +98,6 @@ namespace Thesis.Models
             if (sheetName.Substring(sheetName.Length - 1, 1) == "'")
                 sheetName = sheetName.Substring(0, sheetName.Length - 1);
             return sheetName;
-        }
-
-        public static string ToCamelCase(this string inputString)
-        {
-            var output = ToPascalCase(inputString);
-            if (output == "") return "";
-            return LowerFirstCharacter(output);
         }
 
         public static string ToPascalCase(this string inputString)

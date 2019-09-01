@@ -16,7 +16,8 @@ namespace Thesis.Models
         public static int HeaderAssociationRange { get; set; }
         public static int AttributeAssociationRange { get; set; }
 
-        public static void Instantiate(List<CellVertex> cellVertices)
+
+        public static List<Region> CreateRegions(List<CellVertex> cellVertices)
         {
             _regionDictionary = new Dictionary<(int row, int col), Region>();
             foreach (var cellVertex in cellVertices)
@@ -26,10 +27,7 @@ namespace Thesis.Models
                 else if (cellVertex.NodeType == NodeType.None && cellVertex.CellType == CellType.Text)
                     _regionDictionary.Add(cellVertex.Address, new LabelRegion(cellVertex));
             }
-        }
 
-        public static List<Region> CreateRegions()
-        {
             var regions = new List<Region>();
 
             var dataRegionsList = _regionDictionary.Values.OfType<DataRegion>().ToList();
@@ -46,7 +44,7 @@ namespace Thesis.Models
                 {
                     for(int j = i + 1; j < dataRegionsList.Count; j++)
                     {
-                        var regionsToRemove = dataRegionsList[i].MergeIfPossible(dataRegionsList[j]);
+                        var regionsToRemove = dataRegionsList[i].MergeIfAllowed(dataRegionsList[j]);
                         if (regionsToRemove.Count > 0)
                         {
                             didSomething = true;
@@ -75,7 +73,7 @@ namespace Thesis.Models
                 {
                     for (int j = i + 1; j < labelRegionList.Count; j++)
                     {
-                        var regionsToRemove = labelRegionList[i].MergeIfPossible(labelRegionList[j]);
+                        var regionsToRemove = labelRegionList[i].MergeIfAllowed(labelRegionList[j]);
                         if (regionsToRemove.Count > 0)
                         {
                             didSomething = true;
@@ -118,8 +116,9 @@ namespace Thesis.Models
                 }
             }
 
-
             regions.AddRange(labelRegionList);
+
+            _regionDictionary = null;
             return regions;
         }
 
@@ -146,7 +145,7 @@ namespace Thesis.Models
                     .ToList();
                 var name = string.Join("_", headers.Concat(attributes));
                 if (!string.IsNullOrWhiteSpace(name))
-                    vertex.Name = name;
+                    vertex.Name = name.LowerFirstCharacter();
             }
         }
 
@@ -157,7 +156,7 @@ namespace Thesis.Models
             public (int row, int column) TopLeft { get; private set; }
             public (int row, int column) BottomRight { get; private set; }
 
-            protected RegionOrientation Orientation => BottomRight.row - TopLeft.row > BottomRight.column - TopLeft.column
+            protected RegionOrientation Orientation => BottomRight.row - TopLeft.row >= BottomRight.column - TopLeft.column
                 ? RegionOrientation.Vertical
                 : RegionOrientation.Horizontal;
 
@@ -204,7 +203,7 @@ namespace Thesis.Models
             }
 
             // returns empty list if can't merge
-            public List<Region> MergeIfPossible(Region otherRegion)
+            public List<Region> MergeIfAllowed(Region otherRegion)
             {
                 var regionsToRemove = new List<Region>();
                 if (GetType() != otherRegion.GetType())
