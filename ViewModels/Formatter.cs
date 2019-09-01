@@ -14,7 +14,9 @@ using DColor = System.Drawing.Color;
 
 namespace Thesis.ViewModels
 {
-    // Extension methods to layout and format objects
+    /// <summary>
+    /// Methods to layout and format objects
+    /// </summary>
     public static class Formatter
     {
         public static CultureInfo CurrentCultureInfo;
@@ -374,7 +376,7 @@ namespace Thesis.ViewModels
                 NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
-        public static ConnectorViewModel FormatEdge(this CellVertex from, Vertex to, bool connectToExternal = true)
+        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to, bool connectToExternal = true)
         {
             var connector = new ConnectorViewModel
             {

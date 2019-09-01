@@ -140,6 +140,7 @@ namespace Thesis.ViewModels
                         : ((RangeVertex)vertex).FormatRangeVertexLarge(Graph));
             }
 
+            // do not format edges from range vertices
             foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
                 ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child, false));
@@ -174,7 +175,7 @@ namespace Thesis.ViewModels
                 ((GroupCollection)_window.diagram2.Groups).Add(group);
             }
             
-            foreach (var vertex in Graph.Vertices.GetCellVertices())
+            foreach (var vertex in Graph.Vertices)
             foreach (var child in vertex.Children)
             {
                 if (HideConnections && vertex.Class != child.Class) continue;
