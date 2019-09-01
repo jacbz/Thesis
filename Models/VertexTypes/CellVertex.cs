@@ -18,7 +18,7 @@ namespace Thesis.Models.VertexTypes
         public dynamic Value { get; set; }
         public string DisplayValue { get; set; }
         public string Formula { get; set; }
-        public Label Label { get; set; }
+        public LabelGenerator.Region Region { get; set; }
         public ParseTreeNode ParseTree { get; set; }
 
         public CellType CellType { get; set; }

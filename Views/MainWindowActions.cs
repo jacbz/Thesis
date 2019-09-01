@@ -12,6 +12,7 @@ using Syncfusion.XlsIO;
 using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
+using Region = System.Drawing.Region;
 
 namespace Thesis.Views
 {
@@ -203,41 +204,7 @@ namespace Thesis.Views
             codeTextBox.Select(indexOfVariableInCode, vertex.Name.Length);
         }
 
-        /// <summary>
-        /// Reset all spreadsheet cell colors, then color cell backgrounds using label type, and borders using ColorSpreadsheetCells
-        /// </summary>
-        /// <param name="allVertices"></param>
-        /// <param name="filteredVertices"></param>
-        public void ResetAndColorAllCells(List<Vertex> allVertices)
-        {
-            ResetSpreadsheetColors();
-            ColorSpreadsheetCells(allVertices.GetCellVertices(), StyleCellByLabelType, StyleBorderByNodeType);
-            spreadsheet.ActiveGrid.InvalidateCells();
-        }
-
-        public void StyleCellByLabelType(CellVertex cellVertex, IStyle cellStyle)
-        {
-            Color color;
-            switch (cellVertex.Label.Type)
-            {
-                case LabelType.Attribute:
-                    color = ((System.Windows.Media.Color)Application.Current.Resources["AttributeColor"]).ToDColor();
-                    break;
-                case LabelType.Data:
-                    color = ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
-                    break;
-                case LabelType.Header:
-                    color = ((System.Windows.Media.Color)Application.Current.Resources["HeaderColor"]).ToDColor();
-                    break;
-                default:
-                    color = Color.Transparent;
-                    break;
-            }
-
-            StyleCellByColor(color, cellStyle);
-        }
-
-        public void StyleCellByColor(Color color, IStyle cellStyle)
+        public void StyleBackground(Color color, IStyle cellStyle)
         {
             cellStyle.Color = color;
             cellStyle.Font.RGBColor = color.GetTextColor();
@@ -253,21 +220,22 @@ namespace Thesis.Views
         /// Color cells by given vertices and styling functions.
         /// </summary>
         /// <param name="vertices">Cells to style</param>
-        /// <param name="styleCell">Cell styling function</param>
         /// <param name="styleBorder">Border styling function</param>
-        public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<CellVertex, IStyle> styleCell, Action<CellVertex, IBorders> styleBorder)
+        /// <param name="styleCell">Cell styling function</param>
+        public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<CellVertex, IBorders> styleBorder,
+            Action<CellVertex, IStyle> styleCell = null)
         {
             var vertexList = vertices.ToList();
             foreach (var rangeVertex in vertexList.OfType<RangeVertex>())
             {
-                ColorSpreadsheetCells(rangeVertex.CellsInRange.Select(c => new CellVertex(c)), styleCell, styleBorder);
+                ColorSpreadsheetCells(rangeVertex.CellsInRange.Select(c => new CellVertex(c)), styleBorder, styleCell);
             }
 
             foreach (var cellVertex in vertexList.OfType<CellVertex>())
             {
                 var cellRange = spreadsheet.ActiveSheet.Range[cellVertex.StringAddress];
-                styleCell(cellVertex, cellRange.CellStyle);
-                    styleBorder(cellVertex, cellRange.Borders);
+                styleCell?.Invoke(cellVertex, cellRange.CellStyle);
+                styleBorder?.Invoke(cellVertex, cellRange.Borders);
             }
         }
 

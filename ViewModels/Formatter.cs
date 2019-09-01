@@ -106,6 +106,18 @@ namespace Thesis.ViewModels
             }
         }
 
+        public static DColor GetRegionColor(this LabelGenerator.Region region)
+        {
+            if (region is LabelGenerator.LabelRegion labelRegion)
+                return ((System.Windows.Media.Color)Application.Current.Resources[
+                    labelRegion.Type == LabelGenerator.LabelRegionType.Header
+                        ? "HeaderColor"
+                        : "AttributeColor"]).ToDColor();
+            if (region is LabelGenerator.DataRegion)
+                return ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
+            return DColor.Transparent;
+        }
+
         public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, Graph graph)
         {
             return FormatCellVertex(cellVertex,

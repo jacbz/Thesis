@@ -25,6 +25,7 @@ namespace Thesis.Models
         // For layouting purposes
         public int[] PopulatedRows { get; set; }
         public int[] PopulatedColumns { get; set; }
+        public List<LabelGenerator.Region> Regions { get; set; }
 
         public Graph(string worksheetName)
         {
@@ -69,7 +70,12 @@ namespace Thesis.Models
             graph.Vertices.AddRange(rangeVertices);
 
             // generate labels
-            LabelGenerator.GenerateLabels(graph.Vertices.GetCellVertices());
+            var cellVertices = graph.Vertices.GetCellVertices();
+            LabelGenerator.Instantiate(graph.Vertices.GetCellVertices());
+            graph.Regions = LabelGenerator.CreateRegions();
+            LabelGenerator.GenerateLabelsFromRegions(graph.Vertices.GetCellVertices());
+
+//            LabelGenerator.GenerateLabels(graph.Vertices.GetCellVertices());
 
             graph.AllVertices = graph.Vertices.ToList();
 

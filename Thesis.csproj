@@ -211,7 +211,6 @@
     <Compile Include="Models\CodeGeneration\Tester.cs" />
     <Compile Include="Models\Class.cs" />
     <Compile Include="Models\Graph.cs" />
-    <Compile Include="Models\Label.cs" />
     <Compile Include="Models\LabelGenerator.cs" />
     <Compile Include="Models\Utility.cs" />
     <Compile Include="Models\VertexTypes\CellVertex.cs" />

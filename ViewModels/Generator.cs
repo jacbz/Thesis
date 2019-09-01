@@ -51,13 +51,18 @@ namespace Thesis.ViewModels
 
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
+            LabelGenerator.HorizontalMergingRange = (int) _window.horizontalMergingRangeNum.Value;
+            LabelGenerator.VerticalMergingRange = (int)_window.verticalMergingRangeNum.Value;
+            LabelGenerator.MergeOutputFieldLabels = _window.mergeOutputFieldLabelsCheckBox.IsChecked.Value;
+            LabelGenerator.HeaderAssociationRange = (int) _window.headerAssociationRangeNum.Value;
+            LabelGenerator.AttributeAssociationRange = (int) _window.attributeAssosicationRangeNum.Value;
+
             Graph = Graph.FromSpreadsheet(
                 ActiveWorksheet, 
                 allCells, 
                 _window.GetRangeFromCurrentWorksheet,
                 _window.spreadsheet.Workbook.Names);
 
-            Logger.Log(LogItemType.Success, "Graph generation successful.");
             ClassCollection = null;
             Code = null;
 
@@ -69,6 +74,8 @@ namespace Thesis.ViewModels
             _window.outputFieldsListView.ItemsSource = OutputVertices;
 
             LayoutGraph();
+
+            Logger.Log(LogItemType.Success, "Graph generation successful.");
 
             return true;
         }
@@ -147,7 +154,15 @@ namespace Thesis.ViewModels
 
             logItem.AppendElapsedTime();
 
-            _window.ResetAndColorAllCells(Graph.AllVertices);
+            _window.ResetSpreadsheetColors();
+            _window.ColorSpreadsheetCells(Graph.AllVertices.GetCellVertices(), _window.StyleBorderByNodeType);
+            foreach (var region in Graph.Regions)
+            {
+                var range = _window.spreadsheet.ActiveSheet.Range[region.TopLeft.row, region.TopLeft.column,
+                    region.BottomRight.row, region.BottomRight.column];
+                _window.StyleBackground(region.GetRegionColor(), range.CellStyle);
+            }
+            _window.spreadsheet.ActiveGrid.InvalidateCells();
         }
 
         public void LayoutClasses()
@@ -217,11 +232,10 @@ namespace Thesis.ViewModels
                 foreach (var generatedClass in ClassCollection.Classes)
                 {
                     _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal),
-                        (vertex, style) =>
+                        _window.StyleBorderByNodeType, (vertex, style) =>
                         {
-                            _window.StyleCellByColor(generatedClass.Color, style);
-                        },
-                        _window.StyleBorderByNodeType);
+                            _window.StyleBackground(generatedClass.Color, style);
+                        });
                 }
 
                 _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);

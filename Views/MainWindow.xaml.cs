@@ -88,13 +88,12 @@ namespace Thesis.Views
 
         public void ProvideGraphGenerationOptions()
         {
-            generateGraphButton.IsEnabled = true;
+            generateGraphButton.IsEnabled = labelGenerationOptionsGrid.IsEnabled = labelGenerationOptionsLabel.IsEnabled = true;
             filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = false;
         }
         
         public void ProvideGraphFilteringOptions()
         {
-            generateGraphButton.IsEnabled = false;
             filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = true;
         }
 

@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
@@ -6,118 +9,297 @@ namespace Thesis.Models
 {
     public class LabelGenerator
     {
-        public static void GenerateLabels(List<CellVertex> cellVertices)
+        private static Dictionary<(int row, int col), Region> _regionDictionary;
+        public static int HorizontalMergingRange { get; set; }
+        public static int VerticalMergingRange { get; set; }
+        public static bool MergeOutputFieldLabels { get; set; }
+        public static int HeaderAssociationRange { get; set; }
+        public static int AttributeAssociationRange { get; set; }
+
+        public static void Instantiate(List<CellVertex> cellVertices)
         {
-            var logItem = Logger.Log(LogItemType.Info, "Generating labels...", true);
-            // Create labels
-            Dictionary<(int row, int col), Label> labelDictionary = new Dictionary<(int row, int col), Label>();
-
-            foreach (var cell in cellVertices)
+            _regionDictionary = new Dictionary<(int row, int col), Region>();
+            foreach (var cellVertex in cellVertices)
             {
-                Label label = new Label(cell);
-                if (cell.CellType == CellType.Unknown && cell.NodeType == NodeType.None)
+                if (cellVertex.NodeType != NodeType.None)
+                    _regionDictionary.Add(cellVertex.Address, new DataRegion(cellVertex));
+                else if (cellVertex.NodeType == NodeType.None && cellVertex.CellType == CellType.Text)
+                    _regionDictionary.Add(cellVertex.Address, new LabelRegion(cellVertex));
+            }
+        }
+
+        public static List<Region> CreateRegions()
+        {
+            var regions = new List<Region>();
+
+            var dataRegionsList = _regionDictionary.Values.OfType<DataRegion>().ToList();
+
+            // merge data regions
+            bool didSomething = true;
+            int iterations = 0;
+            while (didSomething)
+            {
+                iterations++;
+                didSomething = false;
+
+                for (int i = 0; i < dataRegionsList.Count; i++)
                 {
-                    label.Type = LabelType.None;
-                }
-                else if (cell.Children.Count == 0 && cell.Parents.Count == 0 && cell.CellType == CellType.Text)
-                {
-                    if (labelDictionary.TryGetValue((cell.Address.row - 1, cell.Address.col), out Label labelAbove)
-                        && (labelAbove.Type == LabelType.Attribute || labelAbove.Type == LabelType.Header))
+                    for(int j = i + 1; j < dataRegionsList.Count; j++)
                     {
-                        label.Type = LabelType.Attribute;
-                        label.Text = cell.DisplayValue;
-                        labelAbove.Type = LabelType.Attribute;
+                        var regionsToRemove = dataRegionsList[i].MergeIfPossible(dataRegionsList[j]);
+                        if (regionsToRemove.Count > 0)
+                        {
+                            didSomething = true;
+                            dataRegionsList.RemoveAll(dr => regionsToRemove.Contains(dr));
+                        }
                     }
+                }
+            }
+
+            Logger.Log(LogItemType.Info,
+                $"Discovered {dataRegionsList.Count} data regions after {iterations} iterations");
+
+            regions.AddRange(dataRegionsList);
+
+            var labelRegionList = _regionDictionary.Values.OfType<LabelRegion>().ToList();
+
+            // merge data regions
+            didSomething = true;
+            iterations = 0;
+            while (didSomething)
+            {
+                iterations++;
+                didSomething = false;
+
+                for (int i = 0; i < labelRegionList.Count; i++)
+                {
+                    for (int j = i + 1; j < labelRegionList.Count; j++)
+                    {
+                        var regionsToRemove = labelRegionList[i].MergeIfPossible(labelRegionList[j]);
+                        if (regionsToRemove.Count > 0)
+                        {
+                            didSomething = true;
+                            labelRegionList.RemoveAll(dr => regionsToRemove.Contains(dr));
+                        }
+                    }
+                }
+            }
+            Logger.Log(LogItemType.Info,
+                $"Discovered {labelRegionList.Count} label regions after {iterations} iterations");
+
+            // assign DataRegions for each LabelRegion
+            foreach (var labelRegion in labelRegionList)
+            {
+                if (labelRegion.Type == LabelRegionType.Header)
+                {
+                    var initialRow = labelRegion.BottomRight.row;
+                    for (int row = initialRow; row <= initialRow + HeaderAssociationRange; row++)
+                    {
+                        for (int column = labelRegion.TopLeft.column; column <= labelRegion.BottomRight.column; column++)
+                        {
+                            if (_regionDictionary.TryGetValue((row, column), out var region) &&
+                                region is DataRegion dataRegion)
+                                dataRegion.LabelRegions.Add(labelRegion);
+                        }
+                    }
+                }
+                else if (labelRegion.Type == LabelRegionType.Attribute)
+                {
+                    var initialColumn = labelRegion.BottomRight.column;
+                    for (int column = initialColumn; column <= initialColumn + AttributeAssociationRange; column++)
+                    {
+                        for (int row = labelRegion.TopLeft.row; row <= labelRegion.BottomRight.row; row++)
+                        {
+                            if (_regionDictionary.TryGetValue((row, column), out var region) &&
+                                region is DataRegion dataRegion)
+                                dataRegion.LabelRegions.Add(labelRegion);
+                        }
+                    }
+                }
+            }
+
+
+            regions.AddRange(labelRegionList);
+            return regions;
+        }
+
+        public static void GenerateLabelsFromRegions(List<CellVertex> cellVertices)
+        {
+            foreach (var vertex in cellVertices)
+            {
+                if (!(vertex.Region is DataRegion dataRegion)) continue;
+                var headers = dataRegion.LabelRegions
+                    .Where(lr => lr.Type == LabelRegionType.Header)
+                    .SelectMany(lr => lr.Cells)
+                    .Where(cell => cell.Address.col == vertex.Address.col)
+                    .OrderBy(cell => cell.Address.row)
+                    .Select(cell => cell.DisplayValue.ToPascalCase())
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .ToList();
+                var attributes = dataRegion.LabelRegions
+                    .Where(lr => lr.Type == LabelRegionType.Attribute)
+                    .SelectMany(lr => lr.Cells)
+                    .Where(cell => cell.Address.row == vertex.Address.row)
+                    .OrderBy(cell => cell.Address.col)
+                    .Select(cell => cell.DisplayValue.ToPascalCase())
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .ToList();
+                var name = string.Join("_", headers.Concat(attributes));
+                if (!string.IsNullOrWhiteSpace(name))
+                    vertex.Name = name;
+            }
+        }
+
+        public abstract class Region
+        {
+            public CellVertex[] Cells { get; private set; }
+
+            public (int row, int column) TopLeft { get; private set; }
+            public (int row, int column) BottomRight { get; private set; }
+
+            protected RegionOrientation Orientation => BottomRight.row - TopLeft.row > BottomRight.column - TopLeft.column
+                ? RegionOrientation.Vertical
+                : RegionOrientation.Horizontal;
+
+            public enum RegionOrientation
+            {
+                Horizontal, Vertical
+            }
+
+
+            protected Region(CellVertex cellVertex)
+            {
+                cellVertex.Region = this;
+                Cells = new CellVertex[1];
+                Cells[0] = cellVertex;
+                TopLeft = BottomRight = cellVertex.Address;
+            }
+
+            // is not commutative
+            private bool LiesWithin((int row, int column) topLeft, (int row, int column) bottomRight)
+            {
+                return TopLeft.row >= topLeft.row && TopLeft.column >= topLeft.column
+                                                   && BottomRight.row <= bottomRight.row
+                                                   && BottomRight.column <= bottomRight.column;
+            }
+
+            // is commutative
+            private int HorizontalDistanceTo(Region otherRegion)
+            {
+                if (BottomRight.column <= otherRegion.TopLeft.column)
+                    return otherRegion.TopLeft.column - BottomRight.column;
+                if (otherRegion.BottomRight.column <= TopLeft.column)
+                    return TopLeft.column - otherRegion.BottomRight.column;
+                return -1;
+            }
+
+            // is commutative
+            private int VerticalDistanceTo(Region otherRegion)
+            {
+                if (BottomRight.row <= otherRegion.TopLeft.row)
+                    return otherRegion.TopLeft.row - BottomRight.row;
+                if (otherRegion.BottomRight.row <= TopLeft.row)
+                    return TopLeft.row - otherRegion.BottomRight.row;
+                return -1;
+            }
+
+            // returns empty list if can't merge
+            public List<Region> MergeIfPossible(Region otherRegion)
+            {
+                var regionsToRemove = new List<Region>();
+                if (GetType() != otherRegion.GetType())
+                    return regionsToRemove;
+
+                if (VerticalDistanceTo(otherRegion) > VerticalMergingRange || HorizontalDistanceTo(otherRegion) > HorizontalMergingRange)
+                    return regionsToRemove;
+
+                var newTopLeftRow = Math.Min(TopLeft.row, otherRegion.TopLeft.row);
+                var newTopLeftColumn = Math.Min(TopLeft.column, otherRegion.TopLeft.column);
+                var newBottomRightRow = Math.Max(BottomRight.row, otherRegion.BottomRight.row);
+                var newBottomRightColumn = Math.Max(BottomRight.column, otherRegion.BottomRight.column);
+
+                var regionsToMergeTogether = new List<Region> {this, otherRegion};
+
+                var newDictionaryEntries = new Dictionary<(int row, int col), Region>();
+                for (int i = newTopLeftRow; i <= newBottomRightRow; i++)
+                {
+                    for (int j = newTopLeftColumn; j <= newBottomRightColumn; j++)
+                    {
+                        // if we find another label region that lies within the new region, merge that too, else abort
+                        if (_regionDictionary.TryGetValue((i, j), out var thirdRegion))
+                        {
+                            if (thirdRegion == this)
+                                continue;
+
+                            if (MergeOutputFieldLabels && this is LabelRegion && thirdRegion is DataRegion dataRegion
+                                && dataRegion.Cells.All(c => c.NodeType == NodeType.OutputField))
+                            {
+                               regionsToMergeTogether.Add(thirdRegion);
+                            }
+                            // abort if would merge a region of different type
+                            else if (thirdRegion.GetType() != GetType())
+                            {
+                                return regionsToRemove;
+                            }
+
+                            if (thirdRegion.LiesWithin((newTopLeftRow, newTopLeftColumn),
+                                (newBottomRightRow, newBottomRightColumn)))
+                            {
+                                regionsToMergeTogether.Add(thirdRegion);
+                            }
+                            else
+                            {
+                                return regionsToRemove;
+                            }
+                        }
+                        newDictionaryEntries.Add((i,j), this);
+                    }
+                }
+
+                foreach (var kvp in newDictionaryEntries)
+                {
+                    if (_regionDictionary.ContainsKey(kvp.Key))
+                        _regionDictionary[kvp.Key] = kvp.Value;
                     else
-                    {
-                        label.Type = LabelType.Header;
-                        label.Text = cell.DisplayValue;
-                    }
-                }
-                else
-                {
-                    label.Type = LabelType.Data;
+                        _regionDictionary.Add(kvp.Key, kvp.Value);
                 }
 
-                cell.Label = label;
-                labelDictionary.Add((cell.Address.row, cell.Address.col), label);
+                Cells = regionsToMergeTogether.SelectMany(r => r.Cells).Distinct().ToArray();
+                Cells.ForEach(c => c.Region = this);
+                TopLeft = (newTopLeftRow, newTopLeftColumn);
+                BottomRight = (newBottomRightRow, newBottomRightColumn);
+                
+                return regionsToMergeTogether.Skip(1).ToList();
             }
 
-            // assign attributes and headers for each data type
-            foreach (var cell in cellVertices)
+            public override string ToString()
             {
-                if (cell.Label.Type != LabelType.Data) continue;
-
-                (int row, int col) currentPos = cell.Address;
-
-                // add attributes
-                bool foundAttribute = false;
-                int distanceToAttribute = 0;
-                // a list that stores how far all attributes are to the vertex. e.g. attribute in 2,3, vertex in 8: [5,6]
-                List<int> distancesToAttribute = new List<int>();
-                while (currentPos.col-- > 1)
-                {
-                    var currentLabel = labelDictionary[currentPos];
-                    if (foundAttribute && currentLabel.Type != LabelType.Attribute) break;
-
-                    distanceToAttribute++;
-                    if (currentLabel.Type == LabelType.Attribute)
-                    {
-                        foundAttribute = true;
-                        cell.Label.Attributes.Add(currentLabel);
-                        distancesToAttribute.Add(distanceToAttribute);
-                    }
-                }
-
-                // add headers
-                currentPos = cell.Address;
-                if (!foundAttribute)
-                {
-                    // no attributes, use first header on the top
-                    while (currentPos.row-- > 1)
-                    {
-                        var currentLabel = labelDictionary[currentPos];
-                        if (currentLabel.Type == LabelType.Header)
-                        {
-                            cell.Label.Headers.Add(currentLabel);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    // keep adding headers, until there is no attribute to the left or left bottom with the exact distance
-                    bool foundHeader = false;
-                    while (currentPos.row-- > 1)
-                    {
-                        var currentLabel = labelDictionary[currentPos];
-
-                        bool anyAttributeDistanceMatch = false;
-                        foreach (int dist in distancesToAttribute)
-                        {
-                            if (labelDictionary[(currentPos.row, currentPos.col - dist)].Type == LabelType.Attribute ||
-                                labelDictionary[(currentPos.row + 1, currentPos.col - dist)].Type == LabelType.Attribute)
-                                anyAttributeDistanceMatch = true;
-                        }
-
-                        if (!anyAttributeDistanceMatch)
-                            break;
-                        if (foundHeader && currentLabel.Type != LabelType.Header)
-                            break;
-
-                        if (currentLabel.Type == LabelType.Header)
-                        {
-                            foundHeader = true;
-                            cell.Label.Headers.Add(currentLabel);
-                        }
-                    }
-                }
-
-                // do not override name if name was already assigned, e.g. per named range
-                if (string.IsNullOrEmpty(cell.Name))
-                    cell.Label.GenerateVariableName();
+                return $"[{string.Join(",", Cells.Select(c => c.StringAddress))}]";
             }
-            logItem.AppendElapsedTime();
+        }
+
+        public class LabelRegion : Region
+        {
+            public LabelRegionType Type => Orientation == RegionOrientation.Horizontal
+                ? LabelRegionType.Header
+                : LabelRegionType.Attribute;
+            public LabelRegion(CellVertex cellVertex) : base(cellVertex)
+            {
+            }
+        }
+
+        public enum LabelRegionType
+        {
+            Header, Attribute
+        }
+
+        public class DataRegion : Region
+        {
+            public HashSet<LabelRegion> LabelRegions { get; }
+            public DataRegion(CellVertex cellVertex) : base(cellVertex)
+            {
+                LabelRegions = new HashSet<LabelRegion>();
+            }
         }
     }
 }

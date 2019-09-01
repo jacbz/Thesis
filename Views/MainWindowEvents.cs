@@ -62,6 +62,16 @@ namespace Thesis.Views
 
         private void GenerateGraphButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_generator?.Graph != null && App.Settings.SelectedWorksheet == spreadsheet.ActiveSheet.Name)
+            {
+                var messageBoxResult = MessageBox
+                    .Show("This will recreate the entire graph. Any custom labels you entered (except for classes) will be discarded. Are you sure?",
+                        App.AppName,
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+                if (messageBoxResult != MessageBoxResult.Yes)
+                    return;
+            }
             GenerateGraph();
         }
 
