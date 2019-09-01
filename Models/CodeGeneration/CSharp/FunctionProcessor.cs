@@ -85,28 +85,15 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
                     if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
-                    // adding a Date and a number yields Date.AddDays(number)
+                    // Date operations
                     var typeLeft = GetType(arguments[0], currentVertex);
                     var typeRight = GetType(arguments[1], currentVertex);
-                    if (typeLeft.HasValue && typeRight.HasValue)
+                    if (typeLeft.HasValue && typeRight.HasValue && (typeLeft == CellType.Date || typeRight == CellType.Date))
                     {
                         var leftExpr = TreeNodeToExpression(arguments[0], currentVertex);
                         var rightExpr = TreeNodeToExpression(arguments[1], currentVertex);
-                        if (typeLeft.Value == CellType.Date)
-                        {
-                            return InvocationExpression(MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    leftExpr, IdentifierName("AddDays")))
-                                .AddArgumentListArguments(Argument(rightExpr));
-                        }
 
-                        if (typeRight.Value == CellType.Date)
-                        {
-                            return InvocationExpression(MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    rightExpr, IdentifierName("AddDays")))
-                                .AddArgumentListArguments(Argument(leftExpr));
-                        }
+                        return GenerateDateArithmeticExpression(functionName, typeLeft.Value, typeRight.Value, leftExpr, rightExpr);
                     }
 
                     return GenerateBinaryExpression(functionName, arguments, currentVertex);
@@ -474,6 +461,28 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         true);
                 }
             }
+        }
+
+        private ExpressionSyntax GenerateDateArithmeticExpression(string functionName, CellType typeLeft, CellType typeRight,
+            ExpressionSyntax leftExpr, ExpressionSyntax rightExpr)
+        {
+            if (typeLeft == CellType.Date && typeRight == CellType.Date)
+            {
+                // (left + right).Days
+                return MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, ParenthesizedExpression(BinaryExpression(
+                            functionName == "+" ? SyntaxKind.AddExpression : SyntaxKind.SubtractExpression,
+                            leftExpr,
+                            rightExpr)),
+                    IdentifierName("Days"));
+            }
+
+            var rightArgument = typeLeft == CellType.Date ? rightExpr : leftExpr;
+            if (functionName == "-")
+                rightArgument = PrefixUnaryExpression(SyntaxKind.UnaryMinusExpression, rightArgument);
+            return InvocationExpression(MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    typeLeft == CellType.Date ? leftExpr : rightExpr, IdentifierName("AddDays")))
+                .AddArgumentListArguments(Argument(rightArgument));
         }
 
         private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments,
