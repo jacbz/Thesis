@@ -198,7 +198,7 @@
             <TabItem x:Name="generateGraphTab" Header="1. Generate graph" >
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="206" />
+                        <RowDefinition Height="210" />
                         <RowDefinition Height="5" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
@@ -283,7 +283,8 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding StringAddress}" />
-                                    <GridViewColumn Header="Value" Width="410" DisplayMemberBinding="{Binding Value}" />
+                                    <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
                                 </GridView>
                             </ListView.View>
                         </ListView>

@@ -212,16 +212,19 @@ namespace Thesis.Views
 
             string sheetName = spreadsheet.ActiveSheet.Name;
             var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
-            if (vertex != null)
+
+            if (vertex == null || (vertex is CellVertex cellVertex 
+                                   && cellVertex.NodeType == NodeType.None 
+                                   && cellVertex.CellType == CellType.Unknown))
+            {
+                InitiateToolbox(null);
+            }
+            else
             {
                 SelectVertexInDiagrams(vertex);
                 SelectVertexInOutputListView(vertex);
                 SelectVertexInCode(vertex);
                 InitiateToolbox(vertex);
-            }
-            else
-            {
-                InitiateToolbox(null);
             }
         }
 
