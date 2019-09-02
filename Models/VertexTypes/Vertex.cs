@@ -11,22 +11,14 @@ namespace Thesis.Models.VertexTypes
     {
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
-        public string Name { get; set; } // for ranges, this will be either a name (named range), or address (e.g. A1:C3)
+        private string _name;
+        public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
         public string StringAddress { get; set; }
         public bool IsExternal => !string.IsNullOrEmpty(ExternalWorksheetName);
         public string ExternalWorksheetName { get; set; }
         public string WorksheetName => IsExternal ? ExternalWorksheetName : null;
-
         private bool _include;
-        public bool Include
-        {
-            get => _include;
-            set
-            {
-                _include = value;
-                OnPropertyChanged();
-            }
-        }
+        public bool Include { get => _include; set { _include = value; OnPropertyChanged(); } }
 
         public NodeViewModel Node { get; set; }
         public Class Class { get; set; }
