@@ -23,9 +23,9 @@ public static bool IsNumeric(this object o) =>
 public static bool Compare(dynamic a, dynamic b)
 {
 	if (IsNumeric(a) && IsNumeric(b))
-	{
 		return a == b;
-	}
+	if (a is string s1 && b is string s2)
+		return s1.CIEquals(s2);
 	return Object.Equals(a, b);
 }
 

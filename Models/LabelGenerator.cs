@@ -133,7 +133,7 @@ namespace Thesis.Models
                     .Where(cell => cell.Address.col == vertex.Address.col)
                     .OrderBy(cell => cell.Address.row)
                     .Select(cell => cell.DisplayValue.ToPascalCase())
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Where(s => !string.IsNullOrWhiteSpace(s) && s != "_")
                     .ToList();
                 var attributes = dataRegion.LabelRegions
                     .Where(lr => lr.Type == LabelRegionType.Attribute)
@@ -141,7 +141,7 @@ namespace Thesis.Models
                     .Where(cell => cell.Address.row == vertex.Address.row)
                     .OrderBy(cell => cell.Address.col)
                     .Select(cell => cell.DisplayValue.ToPascalCase())
-                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Where(s => !string.IsNullOrWhiteSpace(s) && s != "_")
                     .ToList();
                 var name = string.Join("_", headers.Concat(attributes));
                 if (!string.IsNullOrWhiteSpace(name))

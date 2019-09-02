@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Syncfusion.UI.Xaml.Diagram;
+using Thesis.ViewModels;
 
 namespace Thesis.Models.VertexTypes
 {
@@ -55,11 +57,12 @@ namespace Thesis.Models.VertexTypes
         public HashSet<Vertex> GetReachableVertices(bool ignoreExternal = true)
         {
             var vertices = new HashSet<Vertex> { this };
+
             // exclude external vertices
-            foreach (var v in Children)
+            foreach (var vertex in Children)
             {
-                if (ignoreExternal && v.IsExternal) continue;
-                vertices.UnionWith(v.GetReachableVertices(ignoreExternal));
+                if (ignoreExternal && vertex.IsExternal) continue;
+                vertices.UnionWith(vertex.GetReachableVertices(ignoreExternal));
             }
 
             return vertices;

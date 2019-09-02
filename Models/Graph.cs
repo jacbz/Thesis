@@ -228,8 +228,8 @@ namespace Thesis.Models
                 switch (node.Term.Name)
                 {
                     case "ReferenceFunctionCall":
-                    case "VRange":
-                    case "HRange":
+//                    case "VRange": not implemented yet
+//                    case "HRange":
                     {
                         if (node.Term.Name == "ReferenceFunctionCall")
                         {
@@ -313,10 +313,18 @@ namespace Thesis.Models
                     }
                 }
 
+
                 if (node.Term.Name == "UDFunctionCall")
                 {
                     Logger.Log(LogItemType.Warning,
-                        $"Skipping user defined function {node.FindTokenAndGetText()} in {cellVertex.Address}");
+                        $"Skipping user defined function {node.FindTokenAndGetText()} in {cellVertex.Address}. Declaring as constant!");
+                    foreach (var children in cellVertex.Children)
+                    {
+                        children.Parents.Remove(cellVertex);
+                    }
+                    cellVertex.Children.Clear();
+                    cellVertex.ParseTree = null;
+                    return;
                 }
                 else if (continueWithChildren)
                 {

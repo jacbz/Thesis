@@ -47,20 +47,25 @@ namespace Thesis.Models
 
             var edges = new HashSet<(Vertex from, Vertex to)>();
             foreach (var (vertex, child) in Vertices
-                .SelectMany(vertex => vertex.Children.Select(child => (vertex, child))))
+                .SelectMany(vertex => vertex.Children
+                    .Where(c => IsStaticClass || c.Class == this)
+                    .Select(child => (vertex, child))))
                 edges.Add((vertex, child));
 
             while (verticesWithNoParents.Count > 0)
             {
                 // get first vertex that has the lowest number of children
-                // reverse first to preverse argument order
+                // reverse first to preserve argument order
                 var currentVertex = verticesWithNoParents.Reverse().OrderBy(v => v.Children.Count).First();
 
                 verticesWithNoParents.Remove(currentVertex);
                 // do not re-add deleted vertices
                 if (Vertices.Contains(currentVertex)) sortedVertices.Add(currentVertex);
 
-                foreach (var childOfCurrentVertex in currentVertex.Children)
+                foreach (var childOfCurrentVertex in edges
+                    .Where(edge => edge.from == currentVertex)
+                    .Select(edge => edge.to)
+                    .ToList())
                 {
                     edges.Remove((currentVertex, childOfCurrentVertex));
                     if (edges.Count(x => x.to == childOfCurrentVertex) == 0)
@@ -69,7 +74,7 @@ namespace Thesis.Models
             }
 
             if (edges.Count != 0)
-                Logger.Log(LogItemType.Error, "Error during topological sort. Graph has at least one cycle?");
+                Logger.Log(LogItemType.Error, $"Error during topological sort in class {Name}. Graph has at least one cycle?");
 
             // reverse order
             sortedVertices.Reverse();
