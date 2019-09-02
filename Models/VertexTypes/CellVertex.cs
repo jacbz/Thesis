@@ -44,6 +44,12 @@ namespace Thesis.Models.VertexTypes
             if (cell.HasFormula)
                 ParseTree = XLParser.ExcelFormulaParser.Parse(Formula);
         }
+
+        public CellVertex(IRange cell, string name) : this(cell)
+        {
+            Name = name.MakeNameVariableConform();
+        }
+
         public CellType GetCellType(IRange cell)
         {
             if (cell.HasBoolean || cell.HasFormulaBoolValue) return CellType.Bool;

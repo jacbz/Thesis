@@ -122,10 +122,13 @@ namespace Thesis.Models
             return regions;
         }
 
-        public static void GenerateLabelsFromRegions(List<CellVertex> cellVertices)
+        public static void GenerateLabelsFromRegions(IEnumerable<CellVertex> cellVertices)
         {
             foreach (var vertex in cellVertices)
             {
+                // do not generate name for vertices which already have a name
+                if (!string.IsNullOrEmpty(vertex.Name)) continue;
+
                 if (!(vertex.Region is DataRegion dataRegion)) continue;
                 var headers = dataRegion.LabelRegions
                     .Where(lr => lr.Type == LabelRegionType.Header)

@@ -69,10 +69,11 @@ namespace Thesis.Models
             // add all range vertices
             graph.Vertices.AddRange(rangeVertices);
 
-            // generate labels
+            // create regions
             var cellVertices = graph.Vertices.GetCellVertices();
             graph.Regions = LabelGenerator.CreateRegions(cellVertices);
-            LabelGenerator.GenerateLabelsFromRegions(cellVertices);
+            // generate labels
+            LabelGenerator.GenerateLabelsFromRegions(cellVertices.Where(c => c.Region != null && c.Region is LabelGenerator.DataRegion));
 
             graph.AllVertices = graph.Vertices.ToList();
 
@@ -91,6 +92,7 @@ namespace Thesis.Models
                     }
                 }
             }
+
 
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
@@ -135,7 +137,10 @@ namespace Thesis.Models
                 var nameWorksheetName = nameWorksheetMatch.Groups[1].Value;
                 if (nameWorksheetName != worksheetName)
                 {
-                    nameVertex = new RangeVertex(name.Cells, nameTitle, nameAddress);
+                    if (name.Cells.Length == 1)
+                        nameVertex = new CellVertex(name.Cells[0], nameTitle);
+                    else
+                        nameVertex = new RangeVertex(name.Cells, nameTitle, nameAddress);
                     nameVertex.MarkAsExternal(nameWorksheetName, nameTitle);
                 }
                 else
