@@ -224,6 +224,9 @@ namespace Thesis.Views
         public void ColorSpreadsheetCells(IEnumerable<Vertex> vertices, Action<CellVertex, IBorders> styleBorder,
             Action<CellVertex, IStyle> styleCell = null)
         {
+            if (spreadsheet.ActiveSheet.Name != _generator.ActiveWorksheet)
+                spreadsheet.SetActiveSheet(_generator.ActiveWorksheet);
+
             var vertexList = vertices.ToList();
             foreach (var rangeVertex in vertexList.OfType<RangeVertex>())
             {

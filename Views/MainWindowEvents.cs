@@ -203,6 +203,7 @@ namespace Thesis.Views
 
         private void ShowTestFrameworkButton_Click(object sender, System.Windows.RoutedEventArgs e)
         {
+            codeTextBox.ScrollTo(0,0);
             codeTextBox.Text = Properties.Resources.CSharpTestingFramework;
         }
         

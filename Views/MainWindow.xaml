@@ -10,7 +10,8 @@
         xmlns:vertexTypes="clr-namespace:Thesis.Models.VertexTypes"
         x:Class="Thesis.Views.MainWindow"
         mc:Ignorable="d"
-        Title="Thesis" Height="950" Width="1600" Icon="../icon.ico" WindowStartupLocation="CenterScreen">
+        Title="Thesis" Height="950" Width="1600" Icon="../icon.ico" WindowStartupLocation="CenterScreen"
+        Style="{StaticResource GlobalFont}">
 
     <Grid>
         <Grid.ColumnDefinitions>
@@ -42,13 +43,13 @@
 
             <GridSplitter Grid.Row="2"  HorizontalAlignment="Stretch" />
 
-            <TabControl Grid.Row="3" controls:ControlsHelper.HeaderFontSize="13" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
+            <TabControl Grid.Row="3" controls:ControlsHelper.HeaderFontSize="13" controls:ControlsHelper.HeaderFontFamily="{StaticResource Nunito}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
                 <TabItem x:Name="toolboxTab" Header="Toolbox" >
                     <StackPanel x:Name="toolboxContent" Orientation="Vertical" Opacity="0.3" IsEnabled="False">
                         <TextBlock Margin="6">
-                            <TextBlock FontWeight="Bold" Visibility="{Binding Path=IsExternal, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}" FontSize="16" Text="External" Padding="4,0" Foreground="White" Background="{StaticResource ExternalColorBrush}"/>
-                            <TextBlock FontWeight="Bold" FontSize="16">
-                                <TextBlock x:Name="toolboxType" Padding="4,0" Margin="0,0,4,0">
+                            <TextBlock Visibility="{Binding Path=IsExternal, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}" FontSize="16" Text="External" Padding="6,1" Foreground="White" Background="{StaticResource ExternalColorBrush}" FontFamily="{DynamicResource NunitoExtraBold}"/>
+                            <TextBlock FontSize="16" FontFamily="{DynamicResource NunitoBold}">
+                                <TextBlock x:Name="toolboxType" Padding="6,1" Margin="0,0,4,0" FontFamily="{DynamicResource NunitoExtraBold}">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Style.Triggers>
@@ -84,7 +85,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <TextBlock Text="{Binding StringAddress}"/>
+                                <TextBlock Text="{Binding StringAddress}" VerticalAlignment="Center" Margin="0,1,0,0" />
                             </TextBlock>
                         </TextBlock>
                         
@@ -106,7 +107,7 @@
                         </Grid.RowDefinitions>
                         
                         <TextBlock Text="Type:" Grid.Row="0" VerticalAlignment="Center"/>
-                        <TextBlock VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontWeight="Bold">
+                        <TextBlock VerticalAlignment="Center" Grid.Row="0" Grid.Column="1" FontFamily="{DynamicResource NunitoBold}">
                                 <TextBlock.Style>
                                     <Style TargetType="{x:Type TextBlock}">
                                         <Style.Triggers>
@@ -125,13 +126,13 @@
                         </TextBlock>
 
                         <TextBlock Text="Name:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox x:Name="nameTextBox" Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1"/>
+                        <TextBox x:Name="nameTextBox" Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1" FontFamily="{StaticResource FiraCode}" Height="25.6" FontSize="13"/>
 
                         <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
-                        <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>   
+                        <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}" FontFamily="{DynamicResource Nunito}"/>   
                         
                         <TextBlock Text="Formula:" Grid.Row="6" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
-                        <TextBox Text="{Binding Formula}" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>  
+                        <TextBox Text="{Binding Formula}" Grid.Row="6" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}" FontFamily="{DynamicResource Nunito}"/>  
                     </Grid>
                         
                     </StackPanel>
@@ -151,6 +152,7 @@
                 <TabItem x:Name="helpTab" Header="Help">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="6" />
                             <ColumnDefinition Width="130" />
                             <ColumnDefinition Width="32" />
                             <ColumnDefinition Width="130" />
@@ -161,26 +163,26 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <Label FontWeight="Bold">Label classifications:</Label>
-                        <StackPanel Grid.Row="1" Orientation="Vertical">
-                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource HeaderColorBrush}" Margin="0,0,0,8" FontFamily="Segoe UI Light">Header</TextBlock>
-                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource AttributeColorBrush}" Margin="0,0,0,8" FontFamily="Segoe UI Light">Attribute</TextBlock>
-                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource DataColorBrush}" FontFamily="Segoe UI Light">Data</TextBlock>
+                        <Label Grid.Column="1" Grid.ColumnSpan="2" FontWeight="Bold" FontFamily="{DynamicResource NunitoBold}" FontSize="14" Padding="0" VerticalAlignment="Center">Label classifications:</Label>
+                        <StackPanel Grid.Column="1" Grid.Row="1" Orientation="Vertical">
+                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource HeaderColorBrush}" Margin="0,0,0,8" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Header</TextBlock>
+                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource AttributeColorBrush}" Margin="0,0,0,8" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Attribute</TextBlock>
+                            <TextBlock FontWeight="Bold" Padding="8" Background="{DynamicResource DataColorBrush}" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Data</TextBlock>
                         </StackPanel>
 
-                        <Label Grid.Column="2" FontWeight="Bold">Node types:</Label>
-                        <StackPanel Grid.Column="2" Grid.Row="1" Orientation="Vertical">
+                        <Label Grid.Column="3" FontWeight="Bold" FontFamily="{DynamicResource NunitoBold}" FontSize="14" Padding="0" VerticalAlignment="Center">Node types:</Label>
+                        <StackPanel Grid.Column="3" Grid.Row="1" Orientation="Vertical">
                             <Border BorderBrush="{StaticResource ConstantColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Constant</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Constant</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource FormulaColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Formula</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Formula</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource OutputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Output fields</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Output fields</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource RangeColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="Segoe UI Light">Range</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Range</TextBlock>
                             </Border>
                         </StackPanel>
 
@@ -194,11 +196,11 @@
 
         <!-- Right -->
 
-        <TabControl Grid.Column="2" controls:ControlsHelper.HeaderFontSize="18" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
+        <TabControl Grid.Column="2" controls:ControlsHelper.HeaderFontSize="22" controls:ControlsHelper.HeaderFontFamily="{StaticResource NunitoLight}" BorderBrush="{DynamicResource AccentColorBrush}" BorderThickness="0,2,2,0">
             <TabItem x:Name="generateGraphTab" Header="1. Generate graph" >
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="216" />
+                        <RowDefinition Height="220" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -214,13 +216,15 @@
                             <RowDefinition Height="8" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="4" />
                             <ColumnDefinition Width="235" />
                             <ColumnDefinition Width="16" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="4" />
                         </Grid.ColumnDefinitions>
 
-                        <Label x:Name="labelGenerationOptionsLabel" Grid.Column="0" Content="Label generation options" Margin="0,0,12,0" IsEnabled="False" FontSize="14" FontWeight="Bold"/>
-                        <Grid x:Name="labelGenerationOptionsGrid" Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" IsEnabled="False" ToolTip="Determines the number of cells allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one cell apart, etc.)">
+                        <Label x:Name="labelGenerationOptionsLabel" Grid.Column="1" Content="Label generation options" Margin="0,0,12,0" IsEnabled="False" FontSize="14" FontFamily="{DynamicResource NunitoBold}" />
+                        <Grid x:Name="labelGenerationOptionsGrid" Grid.Row="1" Grid.Column="1" Margin="0,0,5,0" IsEnabled="False" ToolTip="Determines the number of cells allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one cell apart, etc.)">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="3" />
@@ -238,19 +242,19 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Label Grid.Row="0" Grid.Column="0" Content="Horizontal merging range:" ToolTip="Determines the number of columns allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one column apart, etc.)" />
-                            <controls:NumericUpDown x:Name="horizontalMergingRangeNum" Grid.Row="0" Grid.Column="2" Value="1" Minimum="1" Maximum="20"/>
+                            <controls:NumericUpDown x:Name="horizontalMergingRangeNum" Grid.Row="0" Grid.Column="2" Value="1" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
                             <Label Grid.Row="2" Grid.Column="0" Content="Vertical merging range:" ToolTip="Determines the number of rows allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one row apart, etc.)" />
-                            <controls:NumericUpDown x:Name="verticalMergingRangeNum" Grid.Row="2" Grid.Column="2" Value="1" Minimum="1" Maximum="20"/>
-                            <CheckBox x:Name="mergeOutputFieldLabelsCheckBox" Grid.Row="4" Grid.ColumnSpan="3" Content="  :Merge output field labels" FlowDirection="RightToLeft" HorizontalAlignment="Left" Padding="6,5,5,5" ToolTip=".Determines whether to merge labels that are also output fields into label regions"/>
+                            <controls:NumericUpDown x:Name="verticalMergingRangeNum" Grid.Row="2" Grid.Column="2" Value="1" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
+                            <CheckBox x:Name="mergeOutputFieldLabelsCheckBox" Grid.Row="4" Grid.ColumnSpan="3" Content="     :Merge output field labels" FlowDirection="RightToLeft" HorizontalAlignment="Left" Padding="6,5,5,5" ToolTip=".Determines whether to merge labels that are also output fields into label regions" FontFamily="{DynamicResource Nunito}"/>
 
                             <Label Grid.Row="6" Grid.Column="0" Content="Header association range:" ToolTip="Determines the maximum number of rows that a header region can be away from a data region while still being considered a header for that region." />
-                            <controls:NumericUpDown x:Name="headerAssociationRangeNum" Grid.Row="6" Grid.Column="2" Value="3" Minimum="1" Maximum="50"/>
+                            <controls:NumericUpDown x:Name="headerAssociationRangeNum" Grid.Row="6" Grid.Column="2" Value="3" Minimum="1" Maximum="50" FontFamily="{DynamicResource Nunito}"/>
                             <Label Grid.Row="8" Grid.Column="0" Content="Attribute association range:" ToolTip="Determines the maximum number of columns that a attribute region can be away from a data region while still being considered an attribute for that region." />
-                            <controls:NumericUpDown x:Name="attributeAssosicationRangeNum" Grid.Row="8" Grid.Column="2" Value="5" Minimum="1" Maximum="50"/>
+                            <controls:NumericUpDown x:Name="attributeAssosicationRangeNum" Grid.Row="8" Grid.Column="2" Value="5" Minimum="1" Maximum="50" FontFamily="{DynamicResource Nunito}"/>
                         </Grid>
 
-                        <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" IsEnabled="False">
-                            <Label Content="Output fields" Margin="0,0,12,0" FontSize="14" FontWeight="Bold"/>
+                        <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Grid.Column="3" Orientation="Horizontal" IsEnabled="False">
+                            <Label Content="Output fields" Margin="0,0,12,0" FontSize="14" FontFamily="{DynamicResource NunitoBold}" />
                             <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
@@ -263,8 +267,8 @@
                                     <TextBlock FontSize="10"><Run Text="Unselect all"/></TextBlock>
                                 </StackPanel>
                             </Button>
-                        </StackPanel>                        
-                        <ListView x:Name="outputFieldsListView" IsEnabled="False" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
+                        </StackPanel>
+                        <ListView x:Name="outputFieldsListView" IsEnabled="False" Grid.Row="1" Grid.Column="3" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Setter Property="Height" Value="20" />
@@ -272,7 +276,7 @@
                             </ListView.ItemContainerStyle>
                             <ListView.View>
                                 <GridView>
-                                    <GridViewColumn Width="40">
+                                    <GridViewColumn Width="45">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
                                                 <CheckBox IsChecked="{Binding Include}"/>
@@ -280,22 +284,28 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding StringAddress}" />
-                                    <GridViewColumn Header="Name" Width="270" DisplayMemberBinding="{Binding Name}" />
-                                    <GridViewColumn Header="Value" Width="150" DisplayMemberBinding="{Binding Value}" />
+                                    <GridViewColumn Header="Name" Width="235">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Name}" FontSize="12" FontFamily="{DynamicResource FiraCode}" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Value" Width="170" DisplayMemberBinding="{Binding Value}" />
                                 </GridView>
                             </ListView.View>
                         </ListView>
-                        
-                        <GridSplitter Grid.RowSpan="5" Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Width="2" Margin="0,0,4,0" />
 
-                        <Button x:Name="generateGraphButton" Grid.Row="3" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="6,0" HorizontalAlignment="Left">
+                        <GridSplitter Grid.RowSpan="5" Grid.Column="2" HorizontalAlignment="Stretch" Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Width="2" Margin="0,0,4,0" />
+
+                        <Button x:Name="generateGraphButton" Grid.Row="3" Grid.Column="1" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="6,0" HorizontalAlignment="Left">
                             <StackPanel Orientation="Horizontal">
                                 <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
                                 <TextBlock><Run Text="Generate graph and labels"/></TextBlock>
                             </StackPanel>
                         </Button>
 
-                        <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="3">
+                        <StackPanel Orientation="Horizontal" Grid.Column="3" Grid.Row="3">
                             <Button x:Name="filterGraphButton" IsEnabled="False" Margin="0,0,8,0" Click="FilterGraphButton_Click">
                                 <StackPanel Orientation="Horizontal">
                                     <fa5:SvgAwesome Icon="Solid_Filter"/>
@@ -306,7 +316,7 @@
                         </StackPanel>
                     </Grid>
 
-                    <GridSplitter Grid.Row="1"  HorizontalAlignment="Stretch" />
+                    <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" />
 
                     <syncfusion:SfDiagram Grid.Row="2" x:Name="diagram">
                         <syncfusion:SfDiagram.SnapSettings>
@@ -323,7 +333,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to static classes" IsEnabled="False"/>
+                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to static classes" IsEnabled="False" FontFamily="{DynamicResource Nunito}"/>
                             <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                                 <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal">
@@ -350,7 +360,7 @@
                             <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
                         </Border.Background>
                         <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <ComboBox x:Name="languageComboBox" Width="300" HorizontalAlignment="Left" SelectedIndex="0" >
+                            <ComboBox x:Name="languageComboBox" Width="300" HorizontalAlignment="Left" SelectedIndex="0" FontFamily="{DynamicResource Nunito}" >
                                 <ComboBoxItem>C#</ComboBoxItem>
                             </ComboBox>
                             <DockPanel Margin="0,6,0,0" LastChildFill="False">
@@ -385,7 +395,7 @@
                     <avalonEdit:TextEditor
                         xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
                         x:Name="codeTextBox"
-                        FontFamily="Consolas"
+                        FontFamily="{StaticResource FiraCode}"
                         ShowLineNumbers="True"
                         FontSize="10pt"
                         TextChanged="CodeTextBox_TextChanged"
@@ -399,7 +409,7 @@
             <Button x:Name="magicButton" Padding="10,0" ToolTip="Generate graph, generate classes, generate code, test code – in one click." Click="MagicButton_Click" IsEnabled="False">
                 <StackPanel Orientation="Horizontal">
                     <fa5:SvgAwesome Icon="Solid_Magic" Width="12" Height="12"/>
-                    <TextBlock FontSize="10">Do <Bold><Underline>everything</Underline></Bold></TextBlock>
+                    <TextBlock FontSize="10">Do <Bold FontFamily="{DynamicResource NunitoBold}"><Underline>everything</Underline></Bold></TextBlock>
                 </StackPanel>
             </Button>
         </StackPanel>

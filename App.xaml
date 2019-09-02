@@ -1,14 +1,24 @@
 ﻿<Application x:Class="Thesis.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Thesis"
              StartupUri="Views/MainWindow.xaml"
              xmlns:fa5="http://schemas.fontawesome.com/icons/"
-             xmlns:viewModels="clr-namespace:Thesis.ViewModels"
              xmlns:views="clr-namespace:Thesis.Views">
     <Application.Resources>
 
         <ResourceDictionary>
+            <FontFamily x:Key="FiraCode">pack://application:,,,/Resources/#Fira Code Regular</FontFamily>
+            <FontFamily x:Key="FiraCodeBold">pack://application:,,,/Resources/#Fira Code Bold</FontFamily>
+            <FontFamily x:Key="Nunito">pack://application:,,,/Resources/#Nunito Sans Regular</FontFamily>
+            <FontFamily x:Key="NunitoLight">pack://application:,,,/Resources/#Nunito Sans Light</FontFamily>
+            <FontFamily x:Key="NunitoSemiBold">pack://application:,,,/Resources/#Nunito Sans SemiBold</FontFamily>
+            <FontFamily x:Key="NunitoBold">pack://application:,,,/Resources/#Nunito Sans Bold</FontFamily>
+            <FontFamily x:Key="NunitoExtraBold">pack://application:,,,/Resources/#Nunito Sans ExtraBold</FontFamily>
+
+            <Style x:Key="GlobalFont" TargetType="{x:Type Window}">
+                <Setter Property="FontFamily" Value="{StaticResource Nunito}" />
+            </Style>
+
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
             <views:TypeOfConverter x:Key="TypeOfConverter"/>
             <views:ColorToSolidBrushConverter x:Key="ColorToSolidBrushConverter"/>
@@ -83,23 +93,23 @@
             </Style>
 
             <DataTemplate x:Key="normalLabel">
-                <TextBlock Text="{Binding Path=Content}" FontFamily="Arial Narrow" />
+                <TextBlock Text="{Binding Path=Content}" FontSize="10" FontFamily="{StaticResource FiraCode}" />
             </DataTemplate>
 
             <DataTemplate x:Key="redLabel">
-                <TextBlock Text="{Binding Path=Content}" Foreground="Red" FontFamily="Arial Narrow" />
+                <TextBlock Text="{Binding Path=Content}" FontSize="10" Foreground="Red" FontFamily="{StaticResource FiraCode}" />
             </DataTemplate>
 
             <DataTemplate x:Key="rangeLabel">
-                <TextBlock Text="{Binding Path=Content}" FontSize="16" FontFamily="Arial Narrow Bold"/>
+                <TextBlock Text="{Binding Path=Content}" FontSize="14" FontFamily="{StaticResource FiraCodeBold}"/>
             </DataTemplate>
 
             <DataTemplate x:Key="classLabel">
-                <TextBlock Text="{Binding Path=Content}" FontWeight="Bold" FontSize="14" FontFamily="Consolas" />
+                <TextBlock Text="{Binding Path=Content}" FontSize="14" FontFamily="{StaticResource FiraCodeBold}" />
             </DataTemplate>
 
             <DataTemplate x:Key="staticLabel">
-                <TextBlock Text="{Binding Path=Content}" FontSize="12" FontFamily="Consolas" />
+                <TextBlock Text="{Binding Path=Content}" FontSize="11" FontFamily="{StaticResource FiraCode}" />
             </DataTemplate>
 
             <ResourceDictionary.MergedDictionaries>
