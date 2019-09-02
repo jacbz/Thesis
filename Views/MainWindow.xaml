@@ -198,8 +198,7 @@
             <TabItem x:Name="generateGraphTab" Header="1. Generate graph" >
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="210" />
-                        <RowDefinition Height="5" />
+                        <RowDefinition Height="216" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
@@ -210,34 +209,18 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="8" />
+                            <RowDefinition Height="30" />
+                            <RowDefinition Height="8" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="8" />
                             <ColumnDefinition Width="235" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Orientation="Horizontal" IsEnabled="False">
-                            <Label Content="Output fields" Margin="0,0,12,0" FontSize="14" FontWeight="Bold"/>
-                            <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
-                                    <TextBlock FontSize="10"><Run Text="Select all"/></TextBlock>
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click">
-                                <StackPanel Orientation="Horizontal">
-                                    <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
-                                    <TextBlock FontSize="10"><Run Text="Unselect all"/></TextBlock>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-
-                        <GridSplitter Grid.RowSpan="2" Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Width="2" />
-
-                        <Label x:Name="labelGenerationOptionsLabel" Grid.Column="2" Content="Label generation options" Margin="0,0,12,0" IsEnabled="False" FontSize="14" FontWeight="Bold"/>
-                        <Grid x:Name="labelGenerationOptionsGrid" Grid.Row="1" Grid.Column="2" Margin="0,0,5,0" IsEnabled="False" ToolTip="Determines the number of cells allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one cell apart, etc.)">
+                        <Label x:Name="labelGenerationOptionsLabel" Grid.Column="0" Content="Label generation options" Margin="0,0,12,0" IsEnabled="False" FontSize="14" FontWeight="Bold"/>
+                        <Grid x:Name="labelGenerationOptionsGrid" Grid.Row="1" Grid.Column="0" Margin="0,0,5,0" IsEnabled="False" ToolTip="Determines the number of cells allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one cell apart, etc.)">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="3" />
@@ -264,10 +247,24 @@
                             <controls:NumericUpDown x:Name="headerAssociationRangeNum" Grid.Row="6" Grid.Column="2" Value="3" Minimum="1" Maximum="50"/>
                             <Label Grid.Row="8" Grid.Column="0" Content="Attribute association range:" ToolTip="Determines the maximum number of columns that a attribute region can be away from a data region while still being considered an attribute for that region." />
                             <controls:NumericUpDown x:Name="attributeAssosicationRangeNum" Grid.Row="8" Grid.Column="2" Value="5" Minimum="1" Maximum="50"/>
-
                         </Grid>
 
-                        <ListView x:Name="outputFieldsListView" IsEnabled="False" Grid.Row="1" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
+                        <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" IsEnabled="False">
+                            <Label Content="Output fields" Margin="0,0,12,0" FontSize="14" FontWeight="Bold"/>
+                            <Button x:Name="selectAllButton" Margin="0,0,4,0" VerticalAlignment="Center" Height="20" Padding="10,0" Click="SelectAllButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa5:SvgAwesome Icon="Regular_CheckSquare" Width="10" Height="10"/>
+                                    <TextBlock FontSize="10"><Run Text="Select all"/></TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="unselectAllButton" VerticalAlignment="Center" Height="20" Padding="10,0" Click="UnselectAllButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa5:SvgAwesome Icon="Regular_Square" Width="10" Height="10"/>
+                                    <TextBlock FontSize="10"><Run Text="Unselect all"/></TextBlock>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>                        
+                        <ListView x:Name="outputFieldsListView" IsEnabled="False" Grid.Row="1" Grid.Column="2" HorizontalAlignment="Stretch" BorderThickness="1" BorderBrush="{DynamicResource AccentColorBrush}" TextElement.FontSize="10" SelectionMode="Single" SelectionChanged="OutputFieldsListView_SelectionChanged">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="{x:Type ListViewItem}">
                                     <Setter Property="Height" Value="20" />
@@ -283,33 +280,35 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding StringAddress}" />
-                                    <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding Name}" />
-                                    <GridViewColumn Header="Value" Width="200" DisplayMemberBinding="{Binding Value}" />
+                                    <GridViewColumn Header="Name" Width="270" DisplayMemberBinding="{Binding Name}" />
+                                    <GridViewColumn Header="Value" Width="150" DisplayMemberBinding="{Binding Value}" />
                                 </GridView>
                             </ListView.View>
                         </ListView>
-                        <Border Grid.Row="2" Grid.ColumnSpan="3" Padding="6,6,6,0" >
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-                                <Button x:Name="generateGraphButton" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
-                                        <TextBlock><Run Text="Generate graph and labels for worksheet"/></TextBlock>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="filterGraphButton" IsEnabled="False" Margin="0,0,8,0" Click="FilterGraphButton_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa5:SvgAwesome Icon="Solid_Filter"/>
-                                        <TextBlock><Run Text="Filter graph by selected output fields"/></TextBlock>
-                                    </StackPanel>
-                                </Button>
-                                <controls:ProgressRing x:Name="generateGraphProgressRing" IsActive="False" Height="16" Width="16" />
+                        
+                        <GridSplitter Grid.RowSpan="5" Grid.Column="1" HorizontalAlignment="Stretch" Background="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Width="2" Margin="0,0,4,0" />
+
+                        <Button x:Name="generateGraphButton" Grid.Row="3" IsEnabled="False" Click="GenerateGraphButton_Click" Margin="6,0" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <fa5:SvgAwesome Icon="Solid_ProjectDiagram"/>
+                                <TextBlock><Run Text="Generate graph and labels"/></TextBlock>
                             </StackPanel>
-                        </Border>
+                        </Button>
+
+                        <StackPanel Orientation="Horizontal" Grid.Column="2" Grid.Row="3">
+                            <Button x:Name="filterGraphButton" IsEnabled="False" Margin="0,0,8,0" Click="FilterGraphButton_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <fa5:SvgAwesome Icon="Solid_Filter"/>
+                                    <TextBlock><Run Text="Filter graph by selected output fields"/></TextBlock>
+                                </StackPanel>
+                            </Button>
+                            <controls:ProgressRing x:Name="generateGraphProgressRing" IsActive="False" Height="16" Width="16" />
+                        </StackPanel>
                     </Grid>
 
                     <GridSplitter Grid.Row="1"  HorizontalAlignment="Stretch" />
 
-                    <syncfusion:SfDiagram Grid.Row="3" x:Name="diagram">
+                    <syncfusion:SfDiagram Grid.Row="2" x:Name="diagram">
                         <syncfusion:SfDiagram.SnapSettings>
                             <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
                         </syncfusion:SfDiagram.SnapSettings>
