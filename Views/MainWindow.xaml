@@ -126,7 +126,7 @@
                         </TextBlock>
 
                         <TextBlock Text="Name:" Grid.Row="2" VerticalAlignment="Center"/>
-                        <TextBox x:Name="nameTextBox" Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1" FontFamily="{StaticResource FiraCode}" Height="25.6" FontSize="13"/>
+                        <TextBox x:Name="nameTextBox" Text="{Binding Name, Mode=TwoWay}" Grid.Row="2" Grid.Column="1" FontFamily="{StaticResource FiraCode}"/>
 
                         <TextBlock Text="Value:" Grid.Row="4" VerticalAlignment="Center" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}"/>
                         <TextBox Text="{Binding Value}" Grid.Row="4" Grid.Column="1" IsReadOnly="True" Visibility="{Binding Converter={StaticResource CellVertexVisibilityConverter}}" FontFamily="{DynamicResource Nunito}"/>   
@@ -217,7 +217,7 @@
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="4" />
-                            <ColumnDefinition Width="235" />
+                            <ColumnDefinition Width="240" />
                             <ColumnDefinition Width="16" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="4" />
@@ -237,7 +237,7 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="155" />
+                                <ColumnDefinition Width="157" />
                                 <ColumnDefinition Width="5" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
@@ -284,10 +284,10 @@
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
                                     <GridViewColumn Header="Address" Width="55" DisplayMemberBinding="{Binding StringAddress}" />
-                                    <GridViewColumn Header="Name" Width="235">
+                                    <GridViewColumn Header="Name" Width="232">
                                         <GridViewColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding Name}" FontSize="12" FontFamily="{DynamicResource FiraCode}" />
+                                                <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource FiraCode}" />
                                             </DataTemplate>
                                         </GridViewColumn.CellTemplate>
                                     </GridViewColumn>
