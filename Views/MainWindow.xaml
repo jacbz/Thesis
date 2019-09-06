@@ -78,6 +78,11 @@
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Constant"/>
                                                 </DataTrigger>
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.InputField}" >
+                                                    <Setter Property="Background" Value="{StaticResource InputColorBrush}"/>
+                                                    <Setter Property="Foreground" Value="White"/>
+                                                    <Setter Property="Text" Value="Input field"/>
+                                                </DataTrigger>
                                                 <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.None}" >
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                 </DataTrigger>
@@ -172,17 +177,20 @@
 
                         <Label Grid.Column="3" FontWeight="Bold" FontFamily="{DynamicResource NunitoBold}" FontSize="14" Padding="0" VerticalAlignment="Center">Node types:</Label>
                         <StackPanel Grid.Column="3" Grid.Row="1" Orientation="Vertical">
+                            <Border BorderBrush="{StaticResource InputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
+                                <TextBlock FontWeight="Bold" Padding="4,0" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Input field</TextBlock>
+                            </Border>
                             <Border BorderBrush="{StaticResource ConstantColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Constant</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4,0" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Constant</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource FormulaColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Formula</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4,0" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Formula</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource OutputColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Output fields</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4,0" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Output field</TextBlock>
                             </Border>
                             <Border BorderBrush="{StaticResource RangeColorBrush}" Margin="0,0,0,6" BorderThickness="3">
-                                <TextBlock FontWeight="Bold" Padding="4" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Range</TextBlock>
+                                <TextBlock FontWeight="Bold" Padding="4,0" FontFamily="{DynamicResource NunitoLight}" FontSize="13">Range</TextBlock>
                             </Border>
                         </StackPanel>
 
@@ -326,34 +334,7 @@
                 </Grid>
             </TabItem>
 
-            <TabItem x:Name="generateClassesTab" Header="2. Generate classes" >
-                <DockPanel>
-                    <Border Padding="2" DockPanel.Dock="Top">
-                        <Border.Background>
-                            <SolidColorBrush Color="{DynamicResource {x:Static SystemColors.ControlColorKey}}"/>
-                        </Border.Background>
-                        <StackPanel DockPanel.Dock="Top" Orientation="Vertical" Margin="6">
-                            <CheckBox x:Name="hideConnectionsCheckbox" Content="Hide connections to static classes" IsEnabled="False" FontFamily="{DynamicResource Nunito}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                                <Button x:Name="generateClassesButton" IsEnabled="False" Click="GenerateClassesButton_Click" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <fa5:SvgAwesome Icon="Solid_ObjectGroup"/>
-                                        <TextBlock><Run Text="Generate classes"/></TextBlock>
-                                    </StackPanel>
-                                </Button>
-                                <controls:ProgressRing x:Name="generateClassesProgressRing" IsActive="False" Height="16" Width="16" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                    <syncfusion:SfDiagram x:Name="diagram2">
-                        <syncfusion:SfDiagram.SnapSettings>
-                            <syncfusion:SnapSettings SnapConstraints="ShowLines"/>
-                        </syncfusion:SfDiagram.SnapSettings>
-                    </syncfusion:SfDiagram>
-                </DockPanel>
-            </TabItem>
-
-            <TabItem x:Name="generateCodeTab" Header="3. Generate code" >
+            <TabItem x:Name="generateCodeTab" Header="2. Generate code" >
                 <DockPanel>
                     <Border Padding="2" DockPanel.Dock="Top">
                         <Border.Background>

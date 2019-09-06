@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
 using Syncfusion.XlsIO.Implementation;
+using Thesis.Models.FunctionGeneration;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 using XLParser;
@@ -15,9 +16,14 @@ namespace Thesis.Models
     {
         public string WorksheetName { get; }
         public List<Vertex> Vertices { get; set; }
-        public List<Vertex> ExternalVertices { get; set; }
+        public List<Vertex> GlobalVertices { get; set; }
+        public List<Vertex> ExternalVertices { get; set; } // delete this? TODO
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
         public Dictionary<string, RangeVertex> RangeDictionary { get; set; }
+        // for code generator
+        public static Dictionary<CellVertex, Constant> ConstantDictionary { get; set; }
+        public static Dictionary<CellVertex, FormulaFunction> FormulaFunctionDictionary { get; set; }
+        public static Dictionary<CellVertex, OutputFieldFunction> OutputFieldFunctionDictionary { get; set; }
 
         // for the toolbox
         public List<Vertex> AllVertices { get; set; }
@@ -93,11 +99,78 @@ namespace Thesis.Models
                 }
             }
 
-
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
 
+
+            // generate unique names
+            var addressToVertexDictionary = graph.Vertices
+                .GetCellVertices()
+                .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
+            foreach(var kvp in externalVerticesDict)
+                if (kvp.Value is CellVertex externalCellVertex)
+                    addressToVertexDictionary.Add(kvp.Key, externalCellVertex);
+
+            //
+            foreach (var vertex in graph.Vertices)
+            {
+                vertex.Name = vertex is CellVertex cellVertex
+                    ? string.IsNullOrWhiteSpace(vertex.Name)
+                        ? "_" + cellVertex.StringAddress
+                        : vertex.Name.MakeNameVariableConform()
+                    : vertex.Name;
+            }
+            // append string address to duplicates
+            foreach (var vertex in graph.Vertices.GroupBy(v => v.Name).Where(x => x.Count() > 1).SelectMany(x => x))
+            {
+                vertex.Name += "_" + vertex.StringAddress;
+            }
+
+            graph.GlobalVertices = GetGlobalVertices(graph);
+            var formulaToFunctionConverter = FunctionGenerator.Instantiate(graph.GlobalVertices, addressToVertexDictionary,
+                graph.RangeDictionary, graph.NameDictionary);
+            Graph.ConstantDictionary = new Dictionary<CellVertex, Constant>();
+            Graph.FormulaFunctionDictionary = new Dictionary<CellVertex, FormulaFunction>();
+            Graph.OutputFieldFunctionDictionary = new Dictionary<CellVertex, OutputFieldFunction>();
+            foreach(var cellVertex in graph.Vertices.OfType<CellVertex>())
+            {
+                if (cellVertex.NodeType == NodeType.Constant)
+                    Graph.ConstantDictionary.Add(cellVertex, new Constant(cellVertex.Value, cellVertex.CellType));
+                else if(cellVertex.NodeType != NodeType.InputField)
+                    Graph.FormulaFunctionDictionary.Add(cellVertex, new FormulaFunction(cellVertex,
+                        formulaToFunctionConverter.ParseTreeNodeToExpression(cellVertex.ParseTree, cellVertex.Formula)));
+            }
+            foreach (var cellVertex in graph.Vertices.OfType<CellVertex>().Where(v => v.NodeType == NodeType.OutputField))
+            {
+                Graph.OutputFieldFunctionDictionary.Add(cellVertex, formulaToFunctionConverter.OutputFieldToFunction(cellVertex));
+            }
+
+            // create OutputFieldFunctions and sort topologically
+
             return graph;
+        }
+
+        private static List<Vertex> GetGlobalVertices(Graph graph)
+        {
+            var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<CellVertex>());
+
+            // output fields without children: formulas such as =TODAY()
+            var outputFieldsWithoutChildren = graph.GetOutputFields().Where(v => v.Children.Count == 0).ToList();
+
+            foreach (var vertex in graph.GetOutputFields().Except(outputFieldsWithoutChildren))
+            {
+                var reachableVertices = vertex.GetReachableVertices();
+                foreach (var v in reachableVertices)
+                    vertexToOutputFieldVertices[v].Add(vertex);
+            }
+
+            // vertices used by more than one class
+            var sharedVertices = vertexToOutputFieldVertices
+                .Where(kvp => kvp.Value.Count > 1)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            return sharedVertices.Concat(graph.ExternalVertices).ToList();
         }
 
         /// <summary>

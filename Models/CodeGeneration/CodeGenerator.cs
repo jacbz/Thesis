@@ -9,7 +9,7 @@ namespace Thesis.Models.CodeGeneration
 {
     public abstract class CodeGenerator
     {
-        protected ClassCollection ClassCollection;
+        protected Graph Graph;
         protected Dictionary<(string worksheet, string address), CellVertex> AddressToVertexDictionary;
         protected Dictionary<string, RangeVertex> RangeDictionary;
         protected Dictionary<string, Vertex> NameDictionary;
@@ -17,41 +17,41 @@ namespace Thesis.Models.CodeGeneration
         public abstract Task<Code> GenerateCodeAsync(TestResults testResults = null);
         protected abstract string[] BlockedVariableNames { get; }
 
-        protected CodeGenerator(ClassCollection classCollection,
+        protected CodeGenerator(Graph graph,
             Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
             Dictionary<string, RangeVertex> rangeDictionary, Dictionary<string, Vertex> nameDictionary)
         {
-            ClassCollection = classCollection;
+            Graph = graph;
             AddressToVertexDictionary = addressToVertexDictionary;
             RangeDictionary = rangeDictionary;
             NameDictionary = nameDictionary;
         }
 
-        protected void GenerateVariableNamesForAll()
-        {
-            // generate unique class names
-            var blockedClassNames = BlockedVariableNames.ToHashSet();
-            foreach (var generatedClass in ClassCollection.Classes)
-            {
-                generatedClass.Name = GenerateUniqueName(blockedClassNames, generatedClass.Name.MakeNameVariableConform());
-            }
+        //protected void GenerateVariableNamesForAll()
+        //{
+        //    // generate unique class names
+        //    var blockedClassNames = BlockedVariableNames.ToHashSet();
+        //    foreach (var generatedClass in ClassCollection.Classes)
+        //    {
+        //        generatedClass.Name = GenerateUniqueName(blockedClassNames, generatedClass.Name.MakeNameVariableConform());
+        //    }
 
-            // output vertex variable must be unique as they are in the Main class
-            var blockedOutputVertexNames = new HashSet<string>();
-            // generate unique variable names
-            foreach (var generatedClass in ClassCollection.Classes)
-            {
-                var blockedVariableNames = blockedClassNames.ToHashSet();
-                blockedVariableNames.UnionWith(blockedOutputVertexNames);
+        //    // output vertex variable must be unique as they are in the Main class
+        //    var blockedOutputVertexNames = new HashSet<string>();
+        //    // generate unique variable names
+        //    foreach (var generatedClass in ClassCollection.Classes)
+        //    {
+        //        var blockedVariableNames = blockedClassNames.ToHashSet();
+        //        blockedVariableNames.UnionWith(blockedOutputVertexNames);
 
-                foreach (var vertex in generatedClass.Vertices)
-                {
-                    vertex.Name = GenerateUniqueName(blockedVariableNames, vertex.Name.MakeNameVariableConform());
-                    if (vertex == generatedClass.OutputVertex)
-                        blockedOutputVertexNames.Add(vertex.Name);
-                }
-            }
-        }
+        //        foreach (var vertex in generatedClass.Vertices)
+        //        {
+        //            vertex.Name = GenerateUniqueName(blockedVariableNames, vertex.Name.MakeNameVariableConform());
+        //            if (vertex == generatedClass.OutputVertex)
+        //                blockedOutputVertexNames.Add(vertex.Name);
+        //        }
+        //    }
+        //}
 
         protected string GenerateUniqueName(HashSet<string> usedVariableNames, string variableName)
         {

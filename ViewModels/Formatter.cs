@@ -22,28 +22,28 @@ namespace Thesis.ViewModels
         public static CultureInfo CurrentCultureInfo;
         private static int _nodeCounter;
 
+        private static Style _inputShapeStyle;
+        private static Style _constantShapeStyle;
         private static Style _formulaShapeStyle;
         private static Style _outputShapeStyle;
-        private static Style _constantShapeStyle;
         private static Style _rangeShapeStyle;
 
+        private static object _inputShape;
+        private static object _constantShape;
         private static object _formulaShape;
         private static object _outputShape;
-        private static object _constantShape;
-        private static object _classShape;
         private static object _rangeShape;
 
         private static DataTemplate _normalLabelTemplate;
         private static DataTemplate _redLabelTemplate;
         private static DataTemplate _rangeLabelTemplate;
-        private static DataTemplate _classLabelTemplate;
-        private static DataTemplate _staticLabelTemplate;
 
         private static Style _connectorGeometryStyle;
         private static Style _externalConnectorGeometryStyle;
         private static Style _targetDecoratorStyle;
         private static Style _externalTargetDecoratorStyle;
 
+        private static DColor _inputNodeColor;
         private static DColor _externalNodeColor;
         private static DColor _outputNodeColor;
         private static DColor _formulaNodeColor;
@@ -54,28 +54,28 @@ namespace Thesis.ViewModels
             CurrentCultureInfo = CultureInfo.CurrentCulture;
             _nodeCounter = 0;
 
+            _inputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["InputColorBrush"] as SolidColorBrush);
+            _constantShapeStyle = GetNodeShapeStyle(Application.Current.Resources["ConstantColorBrush"] as SolidColorBrush);
             _formulaShapeStyle = GetNodeShapeStyle(Application.Current.Resources["FormulaColorBrush"] as SolidColorBrush);
             _outputShapeStyle = GetNodeShapeStyle(Application.Current.Resources["OutputColorBrush"] as SolidColorBrush);
-            _constantShapeStyle = GetNodeShapeStyle(Application.Current.Resources["ConstantColorBrush"] as SolidColorBrush);
             _rangeShapeStyle = GetNodeShapeStyle(Application.Current.Resources["RangeColorBrush"] as SolidColorBrush);
 
+            _inputShape = Application.Current.Resources["Triangle"];
+            _constantShape = Application.Current.Resources["Ellipse"];
             _formulaShape = Application.Current.Resources["Heptagon"];
             _outputShape = Application.Current.Resources["Trapezoid"];
-            _constantShape = Application.Current.Resources["Ellipse"];
-            _classShape = Application.Current.Resources["Rectangle"];
             _rangeShape = Application.Current.Resources["Rectangle"];
 
             _normalLabelTemplate = Application.Current.Resources["normalLabel"] as DataTemplate;
             _redLabelTemplate = Application.Current.Resources["redLabel"] as DataTemplate;
             _rangeLabelTemplate = Application.Current.Resources["rangeLabel"] as DataTemplate;
-            _classLabelTemplate = Application.Current.Resources["classLabel"] as DataTemplate;
-            _staticLabelTemplate = Application.Current.Resources["staticLabel"] as DataTemplate;
 
             _connectorGeometryStyle = Application.Current.Resources["ConnectorGeometryStyle"] as Style;
             _externalConnectorGeometryStyle = Application.Current.Resources["ExternalConnectorGeometryStyle"] as Style;
             _targetDecoratorStyle = Application.Current.Resources["TargetDecoratorStyle"] as Style;
             _externalTargetDecoratorStyle = Application.Current.Resources["ExternalTargetDecoratorStyle"] as Style;
 
+            _inputNodeColor = ((MColor)Application.Current.Resources["InputColor"]).ToDColor();
             _externalNodeColor = ((MColor) Application.Current.Resources["ExternalColor"]).ToDColor();
             _outputNodeColor = ((MColor)Application.Current.Resources["OutputColor"]).ToDColor();
             _formulaNodeColor = ((MColor)Application.Current.Resources["FormulaColor"]).ToDColor();
@@ -84,9 +84,6 @@ namespace Thesis.ViewModels
 
         private const int DIAGRAM_PADDING = 40;
         private const int VERTEX_BOX = 60; // width and height of a vertex including spacing
-        private const int CLASS_PADDING = 20; // padding inside classes
-        private const int CLASS_SPACING = 40; // spacing between classes
-        private const double VERTEX_BOX_CENTER = VERTEX_BOX / 2.0;
 
         public static DColor GetNodeTypeColor(this CellVertex cellVertex)
         {
@@ -97,12 +94,14 @@ namespace Thesis.ViewModels
 
             switch (cellVertex.NodeType)
             {
+                case NodeType.InputField:
+                    return _inputNodeColor;
+                case NodeType.Constant:
+                    return _constantNodeColor;
                 case NodeType.OutputField:
                     return _outputNodeColor;
                 case NodeType.Formula:
                     return _formulaNodeColor;
-                case NodeType.Constant:
-                    return _constantNodeColor;
                 default:
                     return DColor.Transparent;
             }
@@ -111,12 +110,12 @@ namespace Thesis.ViewModels
         public static DColor GetRegionColor(this LabelGenerator.Region region)
         {
             if (region is LabelGenerator.LabelRegion labelRegion)
-                return ((System.Windows.Media.Color)Application.Current.Resources[
+                return ((Color)Application.Current.Resources[
                     labelRegion.Type == LabelGenerator.LabelRegionType.Header
                         ? "HeaderColor"
                         : "AttributeColor"]).ToDColor();
             if (region is LabelGenerator.DataRegion)
-                return ((System.Windows.Media.Color)Application.Current.Resources["DataColor"]).ToDColor();
+                return ((MColor)Application.Current.Resources["DataColor"]).ToDColor();
             return DColor.Transparent;
         }
 
@@ -139,17 +138,6 @@ namespace Thesis.ViewModels
                 UnitHeight = size,
                 OffsetX = posX,
                 OffsetY = posY,
-                ShapeStyle =  cellVertex.NodeType == NodeType.Formula
-                        ? _formulaShapeStyle
-                        : cellVertex.NodeType == NodeType.OutputField
-                            ? _outputShapeStyle
-                            : _constantShapeStyle,
-                Shape = 
-                    cellVertex.NodeType == NodeType.Formula
-                        ? _formulaShape
-                        : cellVertex.NodeType == NodeType.OutputField
-                            ? _outputShape
-                            : _constantShape,
                 ZIndex = 10000,
                 Annotations = new AnnotationCollection
                 {
@@ -164,13 +152,31 @@ namespace Thesis.ViewModels
                     }
                 }
             };
+            switch (cellVertex.NodeType)
+            {
+                case NodeType.InputField:
+                    node.Shape = _inputShape;
+                    node.ShapeStyle = _inputShapeStyle;
+                    break;
+                case NodeType.Constant:
+                    node.Shape = _constantShape;
+                    node.ShapeStyle = _constantShapeStyle;
+                    break;
+                case NodeType.Formula:
+                    node.Shape = _formulaShape;
+                    node.ShapeStyle = _formulaShapeStyle;
+                    break;
+                case NodeType.OutputField:
+                    node.Shape = _outputShape;
+                    node.ShapeStyle = _outputShapeStyle;
+                    break;
+            }
             SetNodeConstraints(node);
             cellVertex.Node = node;
             return node;
         }
 
-        // formats a range vertex (large)
-        public static NodeViewModel FormatRangeVertexLarge(this RangeVertex rangeVertex, Graph graph)
+        public static NodeViewModel FormatRangeVertex(this RangeVertex rangeVertex, Graph graph)
         {
             double width = rangeVertex.ColumnCount * VERTEX_BOX - VERTEX_BOX / 3.0;
             double height = rangeVertex.RowCount * VERTEX_BOX - VERTEX_BOX / 3.0;
@@ -180,11 +186,6 @@ namespace Thesis.ViewModels
                                                                                                      + height / 2.0 - VERTEX_BOX / 3.0;
 
             return FormatRangeVertex(rangeVertex, posX, posY, width, height);
-        }
-
-        public static NodeViewModel FormatRangeVertexSmall(this RangeVertex rangeVertex, double posX, double posY)
-        {
-            return FormatRangeVertex(rangeVertex, posX, posY);
         }
 
         public static NodeViewModel FormatRangeVertex(this RangeVertex rangeVertex, 
@@ -232,165 +233,13 @@ namespace Thesis.ViewModels
             return shapeStyle;
         }
 
-        public static (GroupViewModel group, double nextPosX) FormatClass(this Class @class, double posX)
-        {
-            var graphLayout = LayoutGraph(@class).ToList();
-            var numOfFormulaColumns = graphLayout.Count == 0 
-                ? 0 
-                : graphLayout.Max(l => l.Count(vertex => vertex is RangeVertex ||
-                                                    vertex is CellVertex cellVertex && cellVertex.NodeType != NodeType.Constant));
-
-            var nodes = new NodeCollection();
-            var group = new GroupViewModel
-            {
-                ID = _nodeCounter++,
-                Content = @class,
-                Nodes = nodes
-            };
-
-            double width = VERTEX_BOX * (numOfFormulaColumns + 1) + CLASS_PADDING * 2;
-            posX = posX == 0 ? DIAGRAM_PADDING : posX;
-            var nextPosX = posX + width + CLASS_SPACING;
-            double posY = DIAGRAM_PADDING;
-
-            var lastColumnX = posX + CLASS_PADDING + numOfFormulaColumns * VERTEX_BOX + VERTEX_BOX_CENTER;
-            var currentRowY = posY + CLASS_PADDING + VERTEX_BOX_CENTER;
-
-            double smallVertexHeight = 40;
-
-            foreach (var row in graphLayout)
-            {
-                var rightColumn = row
-                    .Where(vertex =>  vertex is CellVertex cellVertex && cellVertex.NodeType == NodeType.Constant)
-                    .Cast<CellVertex>()
-                    .ToList();
-                var leftColumns = row.Except(rightColumn).ToList();
-
-                if (rightColumn.Count > 0)
-                {
-                    var startRowY = currentRowY;
-                    // layout to the right, top-to-bottom, center the rest
-                    foreach (var vertex in rightColumn)
-                    {
-                        var node = vertex.FormatCellVertex(lastColumnX, currentRowY);
-                        currentRowY += smallVertexHeight;
-                        nodes.Add(node);
-                    }
-
-                    currentRowY += VERTEX_BOX - smallVertexHeight;
-
-                    var middle = startRowY + (rightColumn.Count - 1) / 2.0 * smallVertexHeight;
-                    for (var i = 0; i < leftColumns.Count; i++)
-                    {
-                        var nodePosX = posX + CLASS_PADDING + VERTEX_BOX_CENTER + i * VERTEX_BOX;
-                        var nodePosY = middle;
-                        if (leftColumns[i] is CellVertex cellVertex)
-                            nodes.Add(cellVertex.FormatCellVertex(nodePosX, nodePosY));
-                        else if (leftColumns[i] is RangeVertex rangeVertex)
-                            nodes.Add(rangeVertex.FormatRangeVertexSmall(nodePosX, nodePosY));
-                    }
-                }
-                else
-                {
-                    for (var i = 0; i < leftColumns.Count; i++)
-                    {
-                        var nodePosX = posX + CLASS_PADDING + VERTEX_BOX_CENTER + i * VERTEX_BOX;
-                        var nodePosY = currentRowY;
-                        if (leftColumns[i] is CellVertex cellVertex)
-                            nodes.Add(cellVertex.FormatCellVertex(nodePosX, nodePosY));
-                        else if (leftColumns[i] is RangeVertex rangeVertex)
-                            nodes.Add(rangeVertex.FormatRangeVertexSmall(nodePosX, nodePosY));
-                    }
-
-                    currentRowY += VERTEX_BOX;
-                }
-            }
-
-            var classNode = new NodeViewModel
-            {
-                ID = _nodeCounter++,
-                Content = @class,
-                ContentTemplate = new DataTemplate(),
-                UnitWidth = width,
-                UnitHeight = currentRowY - VERTEX_BOX + CLASS_PADDING,
-                Pivot = new Point(0, 0),
-                OffsetX = posX,
-                OffsetY = posY,
-                Shape = _classShape,
-                Annotations = new AnnotationCollection
-                {
-                    new AnnotationEditorViewModel
-                    {
-                        Offset = new Point(0, 0),
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = @class.Name,
-                        ViewTemplate = _classLabelTemplate
-                    }
-                },
-                ZIndex = int.MinValue,
-                ShapeStyle = GetNodeShapeStyle(new SolidColorBrush(@class.Color.ToMColor()))
-            };
-            if (@class.IsStaticClass)
-            {
-                ((AnnotationCollection)classNode.Annotations).Add(new AnnotationEditorViewModel
-                {
-                    Offset = new Point(1, 0),
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Content = "<<static>>",
-                    ViewTemplate = _staticLabelTemplate
-                });
-            }
-
-            SetNodeConstraints(classNode);
-
-            nodes.Add(classNode);
-            return (group, nextPosX);
-        }
-
-        // returns as list of vertex lists, each list is a row
-        private static IEnumerable<List<Vertex>> LayoutGraph(Class @class)
-        {
-            var classVertices = @class.Vertices;
-            if (@class.OutputVertex == null)
-            {
-                foreach (var vertex in classVertices)
-                    yield return new List<Vertex> {vertex};
-            }
-            else
-            {
-                var vertexQueue = new Queue<Vertex>(classVertices);
-                yield return new List<Vertex> {vertexQueue.Dequeue()};
-                while (vertexQueue.Count > 0)
-                {
-                    var vertex = vertexQueue.Dequeue();
-                    var entry = new List<Vertex> {vertex};
-                    while (vertexQueue.Count > 0 && vertex.Children.Contains(vertexQueue.Peek()))
-                    {
-                        var child = vertexQueue.Dequeue();
-                        entry.Add(child);
-                        // TODO cleanup
-                        while (vertexQueue.Count > 0 && child.Children.Contains(vertexQueue.Peek()) &&
-                               vertexQueue.Peek() is CellVertex cellVertex && cellVertex.NodeType == NodeType.Constant)
-                        {
-                            var child1 = vertexQueue.Dequeue();
-                            entry.Add(child1);
-                        }
-                    }
-
-                    yield return entry;
-                }
-            }
-        }
-
         private static void SetNodeConstraints(NodeViewModel node)
         {
             node.Constraints = node.Constraints.Remove(NodeConstraints.Delete, NodeConstraints.InheritRotatable,
                 NodeConstraints.Rotatable, NodeConstraints.Connectable);
         }
 
-        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to, bool connectToExternal = true)
+        public static ConnectorViewModel FormatEdge(this Vertex from, Vertex to)
         {
             var connector = new ConnectorViewModel
             {
@@ -402,7 +251,7 @@ namespace Thesis.ViewModels
                 Constraints = ConnectorConstraints.Default & ~ConnectorConstraints.Selectable
             };
 
-            if (to.IsExternal && !connectToExternal)
+            if (to.IsExternal)
             {
                 var length = from.Node.UnitWidth / 2.0 + 20.0;
                 connector.TargetPoint = new Point(from.Node.OffsetX + length, from.Node.OffsetY - length / 2.5);

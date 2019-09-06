@@ -48,9 +48,6 @@ namespace Thesis.Views
             GenerateGraph();
             await FilterGraph();
 
-            generateClassesTab.IsSelected = true;
-            await GenerateClasses();
-
             generateCodeTab.IsSelected = true;
             await GenerateCode();
             await TestCode();
@@ -81,7 +78,7 @@ namespace Thesis.Views
             if (_generator.GenerateGraph())
             {
                 ProvideGraphFilteringOptions();
-                EnableClassGenerationOptions();
+                EnableCodeGenerationOptions();
             }
             else
             {
@@ -108,44 +105,6 @@ namespace Thesis.Views
 
             // scroll to top left
             (diagram.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
-        }
-
-        private async void GenerateClassesButton_Click(object sender, RoutedEventArgs e)
-        {
-            await GenerateClasses();
-        }
-        
-        private async Task GenerateClasses()
-        {
-            // unselect all - otherwise sometimes NullReferenceException is triggered due to a bug in SfDiagram group layouting
-            if (diagram2.Groups != null)
-                foreach (var group in (GroupCollection)diagram2.Groups)
-                {
-                    foreach (var node in (NodeCollection)group.Nodes)
-                        if (node.Content is Vertex)
-                            node.IsSelected = false;
-                    group.IsSelected = false;
-                }
-
-            _generator.HideConnections = hideConnectionsCheckbox.IsChecked.Value;
-
-            generateClassesButton.IsEnabled = false;
-            generateClassesProgressRing.IsActive = true;
-            diagram2.Opacity = 0.3f;
-
-            await Task.Run(() => _generator.GenerateClasses());
-
-            generateClassesProgressRing.IsActive = false;
-            generateClassesButton.IsEnabled = true;
-            diagram2.Opacity = 1;
-
-            EnableCodeGenerationOptions();
-
-            // scroll to top left
-            (diagram2.Info as IGraphInfo).BringIntoViewport(new Rect(new Size(0, 0)));
-
-            // save custom class names
-            SaveCustomClassNames();
         }
 
         private async void GenerateCodeButton_Click(object sender, RoutedEventArgs e)
@@ -209,7 +168,7 @@ namespace Thesis.Views
         
         public void SpreadsheetCellSelected(object sender, CurrentCellActivatedEventArgs e)
         {
-            if (e.ActivationTrigger == ActivationTrigger.Program || _generator.Graph == null) return;
+            if (e.ActivationTrigger == ActivationTrigger.Program || _generator?.Graph == null) return;
 
             string sheetName = spreadsheet.ActiveSheet.Name;
             var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
@@ -274,13 +233,13 @@ namespace Thesis.Views
             var selection = codeTextBox.SelectedText;
 
             // check if user selected class name
-            var classMatch = _generator.ClassCollection.Classes.FirstOrDefault(c => c.Name == selection);
-            if (classMatch != null)
-            {
-                SelectClassVerticesInSpreadsheet(classMatch);
-                InitiateToolbox(classMatch);
-                codeTextBox.Focus();
-            }
+            //var classMatch = _generator.ClassCollection.Classes.FirstOrDefault(c => c.Name == selection);
+            //if (classMatch != null)
+            //{
+            //    SelectClassVerticesInSpreadsheet(classMatch);
+            //    InitiateToolbox(classMatch);
+            //    codeTextBox.Focus();
+            //}
 
             // check if user selected both class and variable name (e.g. Global.A1)
             var vertex = _generator.Code.VariableNameToVertexDictionary

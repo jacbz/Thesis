@@ -2,6 +2,7 @@
 using System.Threading;
 using Irony.Parsing;
 using Syncfusion.XlsIO;
+using Thesis.Models.FunctionGeneration;
 using Thesis.ViewModels;
 
 namespace Thesis.Models.VertexTypes
@@ -26,7 +27,9 @@ namespace Thesis.Models.VertexTypes
         public NodeType NodeType =>
             Parents.Count > 0
                 ? Children.Count == 0
-                    ? NodeType.Constant
+                    ? string.IsNullOrEmpty(Value.ToString())
+                      ? NodeType.InputField
+                      : NodeType.Constant
                     : NodeType.Formula
                 : Children.Count > 0 || ParseTree != null
                     ? NodeType.OutputField
@@ -105,9 +108,10 @@ namespace Thesis.Models.VertexTypes
 
     public enum NodeType
     {
+        InputField,
+        Constant,
         Formula,
         OutputField,
-        Constant,
         None
     }
 }

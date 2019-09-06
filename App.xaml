@@ -31,14 +31,16 @@
                 <Setter Property="Height" Value="16" />
             </Style>
 
+            <Color x:Key="InputColor">#27ae60</Color>
+            <Color x:Key="ConstantColor">#2980b9</Color>
             <Color x:Key="FormulaColor">#8e44ad</Color>
             <Color x:Key="OutputColor">#e74c3c</Color>
-            <Color x:Key="ConstantColor">#2980b9</Color>
             <Color x:Key="ExternalColor">#1abc9c</Color>
             <Color x:Key="RangeColor">#bdc3c7</Color>
+            <SolidColorBrush x:Key="InputColorBrush" Color="{DynamicResource InputColor}" />
+            <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
             <SolidColorBrush x:Key="FormulaColorBrush" Color="{DynamicResource FormulaColor}" />
             <SolidColorBrush x:Key="OutputColorBrush" Color="{DynamicResource OutputColor}" />
-            <SolidColorBrush x:Key="ConstantColorBrush" Color="{DynamicResource ConstantColor}" />
             <SolidColorBrush x:Key="ExternalColorBrush" Color="{DynamicResource ExternalColor}" />
             <SolidColorBrush x:Key="RangeColorBrush" Color="{DynamicResource RangeColor}" />
 
@@ -102,14 +104,6 @@
 
             <DataTemplate x:Key="rangeLabel">
                 <TextBlock Text="{Binding Path=Content}" FontSize="14" FontFamily="{StaticResource FiraCodeBold}"/>
-            </DataTemplate>
-
-            <DataTemplate x:Key="classLabel">
-                <TextBlock Text="{Binding Path=Content}" FontSize="14" FontFamily="{StaticResource FiraCodeBold}" />
-            </DataTemplate>
-
-            <DataTemplate x:Key="staticLabel">
-                <TextBlock Text="{Binding Path=Content}" FontSize="11" FontFamily="{StaticResource FiraCode}" />
             </DataTemplate>
 
             <ResourceDictionary.MergedDictionaries>

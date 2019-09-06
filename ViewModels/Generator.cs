@@ -144,13 +144,13 @@ namespace Thesis.ViewModels
                 ((NodeCollection)_window.diagram.Nodes).Add(
                     vertex is CellVertex cellVertex 
                         ? cellVertex.FormatCellVertex(Graph) 
-                        : ((RangeVertex)vertex).FormatRangeVertexLarge(Graph));
+                        : ((RangeVertex)vertex).FormatRangeVertex(Graph));
             }
 
             // do not format edges from range vertices
             foreach (var vertex in Graph.Vertices.GetCellVertices())
             foreach (var child in vertex.Children)
-                ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child, false));
+                ((ConnectorCollection)_window.diagram.Connectors).Add(vertex.FormatEdge(child));
 
             logItem.AppendElapsedTime();
 
@@ -165,41 +165,6 @@ namespace Thesis.ViewModels
             _window.spreadsheet.ActiveGrid.InvalidateCells();
         }
 
-        public void LayoutClasses()
-        {
-            var logItem = Logger.Log(LogItemType.Info, "Layouting classes...", true);
-
-            _window.diagram2.Nodes = new NodeCollection();
-            _window.diagram2.Connectors = new ConnectorCollection();
-            try
-            {
-                _window.diagram2.Groups = new GroupCollection();
-            }
-            catch (System.Exception)
-            {
-                // error in Syncfusion SfDiagram, rarely triggered, but unknown cause
-                Logger.Log(LogItemType.Error, "Error in diagram control!");
-                return;
-            }
-
-            double nextPos = 0;
-            foreach (var generatedClass in ClassCollection.Classes)
-            {
-                var (group, nextPosX) = generatedClass.FormatClass(nextPos);
-                nextPos = nextPosX;
-                ((GroupCollection)_window.diagram2.Groups).Add(group);
-            }
-            
-            foreach (var vertex in Graph.Vertices)
-            foreach (var child in vertex.Children)
-            {
-                if (HideConnections && vertex.Class != child.Class) continue;
-                ((ConnectorCollection)_window.diagram2.Connectors).Add(vertex.FormatEdge(child));
-            }
-
-            logItem.AppendElapsedTime();
-        }
-
         public void SelectAllOutputFields()
         {
             OutputVertices.ForEach(v => v.Include = true);
@@ -208,41 +173,6 @@ namespace Thesis.ViewModels
         public void UnselectAllOutputFields()
         {
             OutputVertices.ForEach(v => v.Include = false);
-        }
-
-        public void GenerateClasses()
-        {
-            var logItem = Logger.Log(LogItemType.Info, "Generate classes for selected output fields...", true);
-
-            var customClassNames = ClassCollection == null
-                ? App.Settings.CurrentWorksheetSettings.CustomClassNames
-                : ClassCollection.GetCustomClassNames();
-
-            ClassCollection = customClassNames != null 
-                ? ClassCollection.FromGraph(Graph, customClassNames)
-                : ClassCollection.FromGraph(Graph);
-
-            logItem.AppendElapsedTime();
-
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                LayoutClasses();
-
-                _window.ResetSpreadsheetColors();
-                foreach (var generatedClass in ClassCollection.Classes)
-                {
-                    _window.ColorSpreadsheetCells(generatedClass.Vertices.Where(v => !v.IsExternal),
-                        _window.StyleBorderByNodeType, (vertex, style) =>
-                        {
-                            _window.StyleBackground(generatedClass.Color, style);
-                        });
-                }
-
-                _window.ColorSpreadsheetExternalCells(Graph.ExternalVertices);
-                _window.spreadsheet.ActiveGrid.InvalidateCells();
-            }, DispatcherPriority.Background);
-
-            Logger.Log(LogItemType.Success, $"Generated {ClassCollection.Classes.Count} classes.");
         }
 
         public async Task GenerateCode()
@@ -261,7 +191,7 @@ namespace Thesis.ViewModels
             {
                 default:
                     codeGenerator = new CSharpGenerator(
-                        ClassCollection,
+                        Graph,
                         addressToVertexDictionary,
                         Graph.RangeDictionary,
                         Graph.NameDictionary);

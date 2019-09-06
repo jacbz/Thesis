@@ -39,7 +39,6 @@ namespace Thesis.Views
             }
 
             spreadsheet.Opacity = 100;
-            DisableClassGenerationOptions();
         }
 
         private void SaveCustomClassNames()
@@ -141,6 +140,7 @@ namespace Thesis.Views
             if (diagram.Nodes == null || !(vertex is CellVertex cell)) return;
 
             foreach (var node in (NodeCollection)diagram.Nodes)
+            {
                 if (node.Content is CellVertex nodeCell)
                 {
                     if (nodeCell.Address.row == cell.Address.row &&
@@ -148,31 +148,14 @@ namespace Thesis.Views
                     {
                         node.IsSelected = true;
                         (diagram.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
-                        DisableDiagramNodeTools(diagram);
+                        DisableDiagramNodeTools();
                     }
                     else
                     {
                         node.IsSelected = false;
                     }
                 }
-
-            if (diagram2.Groups == null) return;
-            foreach (var group in (GroupCollection)diagram2.Groups)
-            foreach (var node in (NodeCollection)group.Nodes)
-                if (node.Content is CellVertex nodeCell)
-                {
-                    if (nodeCell.Address.row == cell.Address.row &&
-                        nodeCell.Address.col == cell.Address.col)
-                    {
-                        node.IsSelected = true;
-                        (diagram2.Info as IGraphInfo).BringIntoCenter((node.Info as INodeInfo).Bounds);
-                        DisableDiagramNodeTools(diagram2);
-                    }
-                    else
-                    {
-                        node.IsSelected = false;
-                    }
-                }
+            }
         }
 
         private void SelectVertexInOutputListView(Vertex vertex)

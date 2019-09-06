@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Thesis.Models.CodeGeneration;
 using Thesis.Models.VertexTypes;
 using Thesis.ViewModels;
 
-namespace Thesis.Models
+namespace Thesis.Models.CodeGeneration
 {
     public class Code
     {

@@ -56,13 +56,9 @@ namespace Thesis.Views
             diagram.Tool = Tool.ZoomPan | Tool.MultipleSelect;
             ((IGraphInfo)diagram.Info).AnnotationChanged += DiagramAnnotationChanged;
             ((IGraphInfo)diagram.Info).ItemTappedEvent += DiagramItemClicked;
-            diagram2.Tool = Tool.ZoomPan | Tool.MultipleSelect;
-            ((IGraphInfo)diagram2.Info).AnnotationChanged += DiagramAnnotationChanged;
-            ((IGraphInfo)diagram2.Info).ItemTappedEvent += DiagramItemClicked;
 
             // improve diagram loading performance by virtualization
             diagram.Constraints |= GraphConstraints.Virtualize;
-            diagram2.Constraints |= GraphConstraints.Virtualize;
         }
 
         public (int rowCount, int columnCount) GetSheetDimensions()
@@ -102,23 +98,6 @@ namespace Thesis.Views
         public void DisableGraphOptions()
         {
             generateGraphButton.IsEnabled = filterGraphButton.IsEnabled = outputFieldsButtons.IsEnabled = outputFieldsListView.IsEnabled = false;
-            DisableClassGenerationOptions();
-        }
-
-        public void EnableClassGenerationOptions()
-        {
-            toolboxTab.IsEnabled = true;
-            generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = true;
-        }
-
-        private void DisableClassGenerationOptions()
-        {
-            _generator = new Generator(this);
-            toolboxTab.IsEnabled = false;
-            logTab.IsSelected = true;
-            diagram.Nodes = new NodeCollection();
-            diagram.Connectors = new ConnectorCollection();
-            generateClassesButton.IsEnabled = hideConnectionsCheckbox.IsEnabled = false;
             DisableCodeGenerationOptions();
         }
 
@@ -134,12 +113,6 @@ namespace Thesis.Views
         }
 
         private void DisableDiagramNodeTools()
-        {
-            DisableDiagramNodeTools(diagram);
-            DisableDiagramNodeTools(diagram2);
-        }
-
-        private void DisableDiagramNodeTools(SfDiagram diagram)
         {
             // disable remove, rotate buttons etc. on click
             var selectedItem = diagram.SelectedItems as SelectorViewModel;

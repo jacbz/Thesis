@@ -201,7 +201,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Models\ClassCollection.cs" />
-    <Compile Include="Models\Code.cs" />
+    <Compile Include="Models\CodeGeneration\Code.cs" />
     <Compile Include="Models\CodeGeneration\CodeGenerator.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\Formatter.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\FunctionProcessor.cs" />
@@ -210,6 +210,8 @@
     <Compile Include="Models\CodeGeneration\CSharp\GrammarProcessor.cs" />
     <Compile Include="Models\CodeGeneration\Tester.cs" />
     <Compile Include="Models\Class.cs" />
+    <Compile Include="Models\FunctionGeneration\FunctionGenerator.cs" />
+    <Compile Include="Models\FunctionGeneration\Function.cs" />
     <Compile Include="Models\Graph.cs" />
     <Compile Include="Models\LabelGenerator.cs" />
     <Compile Include="Models\Utility.cs" />
@@ -263,6 +265,7 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <None Include="ClassDiagram1.cd" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
