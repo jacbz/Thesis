@@ -20,9 +20,9 @@ namespace Thesis.Models
         public List<Vertex> GlobalVertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; } // delete this? TODO
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
-        public Dictionary<string, RangeVertex> RangeDictionary { get; set; }
+        public static Dictionary<string, RangeVertex> RangeDictionary { get; set; }
         // for code generator
-        public static Dictionary<CellVertex, Constant> ConstantDictionary { get; set; }
+        public static List<(CellVertex cellVertex, Expression expression)> ConstantsAndConstantFormulas { get; set; }
         public static Dictionary<CellVertex, FormulaFunction> FormulaFunctionDictionary { get; set; }
         public static Dictionary<CellVertex, OutputFieldFunction> OutputFieldFunctionDictionary { get; set; }
 
@@ -72,7 +72,7 @@ namespace Thesis.Models
             if (graph.ExternalVertices.Count > 0)
                 Logger.Log(LogItemType.Info, $"Discovered {graph.ExternalVertices.Count} external cells.");
 
-            var rangeVertices = graph.RangeDictionary.Values.ToList();
+            var rangeVertices = Graph.RangeDictionary.Values.ToList();
             // add all range vertices
             graph.Vertices.AddRange(rangeVertices);
 
@@ -103,109 +103,96 @@ namespace Thesis.Models
             Logger.Log(LogItemType.Info,
                 $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
 
-
-            var addressToVertexDictionary = graph.Vertices
-                .GetCellVertices()
-                .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
-            foreach(var kvp in externalVerticesDict)
-                if (kvp.Value is CellVertex externalCellVertex)
-                    addressToVertexDictionary.Add(kvp.Key, externalCellVertex);
-            
             // default name for those without LabelGenerator name
             foreach (var vertex in graph.Vertices.Where(vertex => vertex.Name == null))
             {
                 vertex.Name = new Name(null, null, vertex.StringAddress);
             }
 
-            //// duplicates? use headers
-            //foreach (var vertex in graph.Vertices.GroupBy(v => v.Name.ToString()).Where(x => x.Count() > 1).SelectMany(x => x))
-            //{
-            //    vertex.Name.MakeMoreUnique();
-            //}
-            //// still duplicate? use address
-            //foreach (var vertex in graph.Vertices.GroupBy(v => v.Name.ToString()).Where(x => x.Count() > 1).SelectMany(x => x))
-            //{
-            //    vertex.Name.MakeMoreUnique();
-            //}
-
-            graph.GlobalVertices = GetGlobalVertices(graph);
-            var formulaToFunctionConverter = FunctionGenerator.Instantiate(graph.GlobalVertices, addressToVertexDictionary,
-                graph.RangeDictionary, graph.NameDictionary);
-            Graph.ConstantDictionary = new Dictionary<CellVertex, Constant>();
-            Graph.FormulaFunctionDictionary = new Dictionary<CellVertex, FormulaFunction>();
-            Graph.OutputFieldFunctionDictionary = new Dictionary<CellVertex, OutputFieldFunction>();
-            foreach(var cellVertex in graph.Vertices.OfType<CellVertex>())
-            {
-                if (cellVertex.NodeType == NodeType.Constant)
-                    Graph.ConstantDictionary.Add(cellVertex, new Constant(cellVertex.Value, cellVertex.CellType));
-                else if(cellVertex.NodeType != NodeType.InputField)
-                    Graph.FormulaFunctionDictionary.Add(cellVertex,
-                        formulaToFunctionConverter.FormulaToFunction(cellVertex));
-            }
-
-            // structural equality compare
-            var functions = new HashSet<FormulaFunction>();
-            foreach(var cellVertex in Graph.FormulaFunctionDictionary.Keys.ToArray())
-            {
-                var function = Graph.FormulaFunctionDictionary[cellVertex];
-                var existingFunction = functions.FirstOrDefault(f => f.IsStructurallyEquivalentTo(function));
-                if (existingFunction != null)
-                {
-                    function.Name = existingFunction.Name;
-                    Graph.FormulaFunctionDictionary[cellVertex] = existingFunction;
-                }
-                else
-                {
-                    functions.Add(function);
-                }
-            }
-
-            var constantAndFunctionNames = new HashSet<string>();
-
-            Name.MakeNamesUnique(ConstantDictionary.Keys.Select(vertex => vertex.Name), 
-                constantAndFunctionNames);
-
-            Name.MakeNamesUnique(FormulaFunctionDictionary.Values.Distinct().Select(vertex => vertex.Name), 
-                constantAndFunctionNames);
-
-            // make global constants / functions globally unique
-
-            foreach (var cellVertex in graph.Vertices.OfType<CellVertex>().Where(v => v.NodeType == NodeType.OutputField))
-            {
-                Graph.OutputFieldFunctionDictionary.Add(cellVertex, formulaToFunctionConverter.OutputFieldToFunction(cellVertex));
-            }
-
-            // remove unnecessary headers/addresses in name
-
-
-
-
-            // create OutputFieldFunctions and sort topologically
-
             return graph;
         }
 
-        private static List<Vertex> GetGlobalVertices(Graph graph)
+        public void GenerateFunctions()
         {
-            var vertexToOutputFieldVertices = graph.Vertices.ToDictionary(v => v, v => new HashSet<CellVertex>());
+            var addressToVertexDictionary = Vertices
+                .GetCellVertices()
+                .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
+            foreach (var externalCellVertex in ExternalVertices.OfType<CellVertex>())
+                addressToVertexDictionary.Add(externalCellVertex.GlobalAddress, externalCellVertex);
 
-            // output fields without children: formulas such as =TODAY()
-            var outputFieldsWithoutChildren = graph.GetOutputFields().Where(v => v.Children.Count == 0).ToList();
+            var functionGenerator = FunctionGenerator.Instantiate(addressToVertexDictionary,
+                Graph.RangeDictionary, NameDictionary);
+            Graph.ConstantsAndConstantFormulas = new List<(CellVertex cellVertex, Expression expression)>();
+            Graph.FormulaFunctionDictionary = new Dictionary<CellVertex, FormulaFunction>();
+            Graph.OutputFieldFunctionDictionary = new Dictionary<CellVertex, OutputFieldFunction>();
 
-            foreach (var vertex in graph.GetOutputFields().Except(outputFieldsWithoutChildren))
+            var formulaFunctionVertices = new List<CellVertex>();
+            foreach (CellVertex cellVertex in functionGenerator.TopologicalSort(Vertices.Where(v => v is CellVertex).ToHashSet()))
             {
-                var reachableVertices = vertex.GetReachableVertices();
-                foreach (var v in reachableVertices)
-                    vertexToOutputFieldVertices[v].Add(vertex);
+                if (cellVertex.NodeType == NodeType.Constant ||
+                    cellVertex.NodeType == NodeType.Formula && !cellVertex.GetReachableVertices()
+                        .Any(v => v is CellVertex cv && cv.NodeType == NodeType.InputField))
+                    Graph.ConstantsAndConstantFormulas.Add((cellVertex,
+                        functionGenerator.ConstantAndConstantFormulaVertexToExpression(cellVertex)));
+                else if (cellVertex.NodeType != NodeType.InputField)
+                    formulaFunctionVertices.Add(cellVertex);
+            }
+            foreach (var cellVertex in formulaFunctionVertices)
+            {
+                Graph.FormulaFunctionDictionary.Add(cellVertex, functionGenerator.FormulaVertexToFunction(cellVertex));
             }
 
-            // vertices used by more than one class
-            var sharedVertices = vertexToOutputFieldVertices
-                .Where(kvp => kvp.Value.Count > 1)
-                .Select(kvp => kvp.Key)
-                .ToList();
+            RemoveStructurallyEquivalentFunctions(Graph.FormulaFunctionDictionary);
 
-            return sharedVertices.Concat(graph.ExternalVertices).ToList();
+            foreach (var cellVertex in Vertices.OfType<CellVertex>().Where(v => v.NodeType == NodeType.OutputField))
+            {
+                Graph.OutputFieldFunctionDictionary.Add(cellVertex,
+                    functionGenerator.OutputFieldVertexToFunction(cellVertex));
+            }
+
+            RemoveStructurallyEquivalentFunctions(Graph.OutputFieldFunctionDictionary);
+
+            var constantAndFunctionNames = new HashSet<string>();
+            Name.MakeNamesUnique(ConstantsAndConstantFormulas.Select(tuple => tuple.cellVertex.Name),
+                constantAndFunctionNames);
+            Name.MakeNamesUnique(FormulaFunctionDictionary.Values.Distinct().Select(vertex => vertex.Name),
+                constantAndFunctionNames);
+            Name.MakeNamesUnique(OutputFieldFunctionDictionary.Values.Distinct().Select(vertex => vertex.Name),
+                constantAndFunctionNames);
+
+            foreach(var formulaFunction in FormulaFunctionDictionary.Values)
+            {
+                for (var i = 0; i < formulaFunction.Parameters.Length; i++)
+                    formulaFunction.Parameters[i] = formulaFunction.Parameters[i].Copy();
+
+                Name.MakeNamesUnique(formulaFunction.Parameters.Select(par => par.VariableName));
+            }
+            foreach (var outputFieldFunction in OutputFieldFunctionDictionary.Values)
+            {
+                for (var i = 0; i < outputFieldFunction.Parameters.Length; i++)
+                    outputFieldFunction.Parameters[i] = outputFieldFunction.Parameters[i].Copy();
+                Name.MakeNamesUnique(outputFieldFunction.Statements.Select(statement => statement.VariableName));
+                Name.MakeNamesUnique(outputFieldFunction.Parameters.Select(par => par.VariableName));
+            }
+        }
+
+        private static void RemoveStructurallyEquivalentFunctions<T>(Dictionary<CellVertex, T> functionDictionary) where T : CellFunction
+        {
+            var uniqueFunctions = new HashSet<CellFunction>();
+            foreach (var cellVertex in functionDictionary.Keys.ToArray())
+            {
+                var function = functionDictionary[cellVertex];
+                var existingFunction = uniqueFunctions.FirstOrDefault(f => f.IsStructurallyEquivalentTo(function));
+                if (existingFunction != null)
+                {
+                    function.Name = existingFunction.Name;
+                    functionDictionary[cellVertex] = (T)existingFunction;
+                }
+                else
+                {
+                    uniqueFunctions.Add(function);
+                }
+            }
         }
 
         /// <summary>

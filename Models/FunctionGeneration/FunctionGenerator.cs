@@ -12,16 +12,14 @@ namespace Thesis.Models.FunctionGeneration
 {
     public class FunctionGenerator
     {
-        private List<Vertex> _globalVertices;
         private Dictionary<(string worksheet, string address), CellVertex> _addressToVertexDictionary;
         private Dictionary<string, RangeVertex> _rangeDictionary;
         private Dictionary<string, Vertex> _nameDictionary;
 
-        public static FunctionGenerator Instantiate(List<Vertex> globalVertices, Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, Dictionary<string, RangeVertex> rangeDictionary, Dictionary<string, Vertex> nameDictionary)
+        public static FunctionGenerator Instantiate(Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, Dictionary<string, RangeVertex> rangeDictionary, Dictionary<string, Vertex> nameDictionary)
         {
             var formulaToFunctionConverter = new FunctionGenerator
             {
-                _globalVertices = globalVertices,
                 _addressToVertexDictionary = addressToVertexDictionary,
                 _rangeDictionary = rangeDictionary,
                 _nameDictionary = nameDictionary
@@ -29,29 +27,29 @@ namespace Thesis.Models.FunctionGeneration
             return formulaToFunctionConverter;
         }
 
-        public FormulaFunction FormulaToFunction(CellVertex formulaVertex)
+        public Expression ConstantAndConstantFormulaVertexToExpression(CellVertex vertex)
+        {
+            if (vertex.NodeType == NodeType.Constant)
+                return new Constant(vertex.Value, vertex.CellType);
+            return ParseTreeNodeToExpression(vertex.ParseTree, vertex.Formula);
+        }
+
+        public FormulaFunction FormulaVertexToFunction(CellVertex formulaVertex)
         {
             return new FormulaFunction(formulaVertex,
                 ParseTreeNodeToExpression(formulaVertex.ParseTree, formulaVertex.Formula));
         }
 
-        public OutputFieldFunction OutputFieldToFunction(CellVertex outputFieldVertex)
+        public OutputFieldFunction OutputFieldVertexToFunction(CellVertex outputFieldVertex)
         {
             var verticesInFunction = outputFieldVertex.GetReachableVertices();
-            verticesInFunction.ExceptWith(_globalVertices);
 
             var sortedVerticesInFunction = TopologicalSort(verticesInFunction);
             var statements = sortedVerticesInFunction
                 .OfType<CellVertex>()
-                .Where(vertex => vertex.NodeType != NodeType.InputField)
+                .Where(vertex => Graph.FormulaFunctionDictionary.ContainsKey(vertex))
                 .Select(vertex =>
-                {
-                    if (Graph.ConstantDictionary.TryGetValue(vertex, out var constant))
-                        return (Statement)new ConstantStatement(vertex.Name, vertex.CellType, constant);
-                    if (Graph.FormulaFunctionDictionary.TryGetValue(vertex, out var function))
-                        return new FunctionInvocationStatement(vertex.Name, vertex.CellType, function);
-                    throw new Exception();
-                })
+                    new FunctionInvocationStatement(vertex.Name, vertex.CellType, Graph.FormulaFunctionDictionary[vertex]))
                 .ToArray();
 
             return new OutputFieldFunction(outputFieldVertex, statements);
@@ -110,8 +108,7 @@ namespace Thesis.Models.FunctionGeneration
                     case "Cell":
                     {
                         var cellVertex = _addressToVertexDictionary[(null, node.FindTokenAndGetText())];
-
-                        return CellVertexToReferenceOrConstant(cellVertex);
+                        return CellVertexToReference(cellVertex);
                     }
                     case "Constant":
                     {
@@ -119,7 +116,7 @@ namespace Thesis.Models.FunctionGeneration
                         if (constant.Contains("%") && !constant.Any(char.IsLetter))
                         {
                             // e.g. IF(A1>0, "1%", "2%")  (user entered "1%" instead of 1%)
-                            return new Constant(constant);
+                            return new Constant(constant, true);
                         }
 
                         switch (node.ChildNodes[0].Term.Name)
@@ -170,7 +167,7 @@ namespace Thesis.Models.FunctionGeneration
                             sheetName = sheetName.FormatSheetName();
                             var address = node.ChildNodes[1].FindTokenAndGetText();
 
-                            return CellVertexToReferenceOrConstant(_addressToVertexDictionary[(sheetName, address)]);
+                            return CellVertexToReference(_addressToVertexDictionary[(sheetName, address)]);
                         }
                         
                         throw new NotImplementedException("Rule not implemented");
@@ -208,15 +205,11 @@ namespace Thesis.Models.FunctionGeneration
             }
         }
 
-        private ReferenceOrConstant CellVertexToReferenceOrConstant(CellVertex cellVertex)
+        private ReferenceOrConstant CellVertexToReference(CellVertex cellVertex)
         {
-            if (_globalVertices.Contains(cellVertex))
-                return new GlobalReference(cellVertex);
-
-            if (cellVertex.NodeType == NodeType.Constant)
-                return new Constant(cellVertex.Value, cellVertex.CellType);
-
-            return new InputCellReference(cellVertex);
+            if (Graph.ConstantsAndConstantFormulas.Any(tuple => tuple.cellVertex == cellVertex))
+                return new GlobalCellReference(cellVertex);
+            return new InputReference(cellVertex);
         }
 
         private Function FunctionToExpressionFunction(string functionName, ParseTreeNode[] arguments, string formula)
@@ -225,11 +218,11 @@ namespace Thesis.Models.FunctionGeneration
                 arguments.Select(argument => ParseTreeNodeToExpression(argument, formula)).ToArray());
         }
 
-        private InputRangeReference RangeToRangeReference(ParseTreeNode node, string formula)
+        private GlobalRangeReference RangeToRangeReference(ParseTreeNode node, string formula)
         {
             var range = node.NodeToString(formula);
             if (_rangeDictionary.TryGetValue(range, out var rangeVertex))
-                return new InputRangeReference(rangeVertex);
+                return new GlobalRangeReference(rangeVertex);
             throw new Exception($"Did not find variable for range {range}");
         }
 
@@ -240,8 +233,8 @@ namespace Thesis.Models.FunctionGeneration
                 throw new Exception($"Did not find variable for range {namedRangeName}");
 
             if (namedRangeVertex is CellVertex cellVertex)
-                return new GlobalReference(cellVertex);
-            return new InputRangeReference((RangeVertex) namedRangeVertex);
+                return new GlobalCellReference(cellVertex);
+            return new GlobalRangeReference((RangeVertex) namedRangeVertex);
 
         }
     }

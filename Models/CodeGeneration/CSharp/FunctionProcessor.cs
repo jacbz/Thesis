@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Irony.Parsing;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -90,10 +89,14 @@ namespace Thesis.Models.CodeGeneration.CSharp
             throw new Exception("Unidentified expression");
         }
 
+
         private ExpressionSyntax FunctionToCode(Function function)
         {
-            var functionName = function.FunctionName;
-            var arguments = function.Arguments;
+            return FunctionToCode(function.FunctionName, function.Arguments);
+        }
+
+        private ExpressionSyntax FunctionToCode(string functionName, Expression[] arguments)
+        {
             switch (functionName)
             {
                 // arithmetic
@@ -133,12 +136,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 case "%":
                     {
                         if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                        // arguments[0] * 0.01
+                        // arguments[0] / 100.0
                         return BinaryExpression(
-                            SyntaxKind.MultiplyExpression,
+                            SyntaxKind.DivideExpression,
                             ExpressionToCode(arguments[0]),
-                            LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                                Literal(0.01)));
+                            ParseExpression("100d"));
                     }
                 case "^":
                     {
@@ -147,730 +149,332 @@ namespace Thesis.Models.CodeGeneration.CSharp
                             ExpressionToCode(arguments[0]),
                             ExpressionToCode(arguments[1]));
                     }
-                //case "ROUND":
-                //    {
-                //        return RoundFunction("Round", arguments, currentVertex);
-                //    }
-                //case "ROUNDUP":
-                //    {
-                //        return RoundFunction("RoundUp", arguments, currentVertex);
-                //    }
-                //case "ROUNDDOWN":
-                //    {
-                //        return RoundFunction("RoundDown", arguments, currentVertex);
-                //    }
-                //case "SUM":
-                //case "MIN":
-                //case "MAX":
-                //case "COUNT":
-                //case "AVERAGE":
-                //    {
-                //        // Collection(...).Sum/Min/Max/Count/Average()
-                //        return InvocationExpression(MemberAccessExpression(
-                //            SyntaxKind.SimpleMemberAccessExpression,
-                //            CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
-                //            IdentifierName(functionName.ToTitleCase())));
-                //    }
-
-                //// reference functions
-                //case "VLOOKUP":
-                //case "HLOOKUP":
-                //    {
-                //        if (arguments.Length != 3 && arguments.Length != 4)
-                //            return FunctionError(functionName, arguments);
-
-                //        var matrix = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
-
-                //        var lookupValue = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var columnIndex = TreeNodeToExpression(arguments[2], currentVertex);
-
-                //        functionName = functionName == "VLOOKUP" ? "VLookUp" : "HLookUp";
-                //        var expression = InvocationExpression(
-                //                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                //                    matrix,
-                //                    IdentifierName(functionName)))
-                //            .AddArgumentListArguments(
-                //                Argument(lookupValue),
-                //                Argument(columnIndex));
-
-                //        if (arguments.Length == 4)
-                //            expression = expression.AddArgumentListArguments(
-                //                Argument(TreeNodeToExpression(arguments[3], currentVertex)));
-                //        return expression;
-                //    }
-                //case "CHOOSE":
-                //    {
-                //        if (arguments.Length < 2)
-                //            return FunctionError(functionName, arguments);
-                //        var collection = CollectionOf(arguments
-                //            .Skip(1)
-                //            .Select(a => TreeNodeToExpression(a, currentVertex))
-                //            .ToArray());
-
-                //        // collection[arguments[0]]
-                //        return ElementAccessExpression(collection)
-                //            .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
-                //                Argument(TreeNodeToExpression(arguments[0], currentVertex)))));
-                //    }
-                //case "INDEX":
-                //    {
-                //        if (arguments.Length != 2 && arguments.Length != 3)
-                //            return FunctionError(functionName, arguments);
-                //        var matrixOrCollection = RangeOrNamedRangeToExpression(arguments[0], currentVertex);
-
-                //        var argumentList = new List<SyntaxNodeOrToken>();
-                //        argumentList.Add(Argument(TreeNodeToExpression(arguments[1], currentVertex)));
-                //        if (arguments.Length == 3)
-                //        {
-                //            argumentList.Add(Token(SyntaxKind.CommaToken));
-                //            argumentList.Add(Argument(TreeNodeToExpression(arguments[2], currentVertex)));
-                //        }
-
-                //        return ElementAccessExpression(matrixOrCollection)
-                //            .WithArgumentList(
-                //                BracketedArgumentList(
-                //                    SeparatedList<ArgumentSyntax>(argumentList.ToArray())));
-                //    }
-                //case "MATCH":
-                //    {
-                //        if (arguments.Length != 2 && arguments.Length != 3)
-                //            return FunctionError(functionName, arguments);
-                //        var collection = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
-
-                //        var expression = InvocationExpression(
-                //                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                //                    collection,
-                //                    IdentifierName("Match")))
-                //            .AddArgumentListArguments(
-                //                Argument(TreeNodeToExpression(arguments[0], currentVertex)));
-                //        if (arguments.Length == 3)
-                //            expression = expression.AddArgumentListArguments(
-                //                Argument(TreeNodeToExpression(arguments[2], currentVertex)));
-
-                //        return expression;
-                //    }
-
-                //// logical functions
-                //case "IF":
-                //    {
-                //        if (arguments.Length != 2 && arguments.Length != 3)
-                //            return FunctionError(functionName, arguments);
-
-                //        ExpressionSyntax condition = TreeNodeToExpression(arguments[0], currentVertex);
-                //        ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], currentVertex);
-                //        ExpressionSyntax whenFalse;
-
-                //        // if the condition is not always a bool (e.g. dynamic), use Compare(cond, true)
-                //        // otherwise we might have a number as cond, and number can not be evaluated as bool
-                //        var conditionType = GetType(arguments[0], currentVertex);
-                //        if (!conditionType.HasValue || conditionType.Value != CellType.Bool)
-                //        {
-                //            condition = InvocationExpression(IdentifierName("Compare"))
-                //                .AddArgumentListArguments(
-                //                    Argument(condition),
-                //                    Argument(
-                //                        LiteralExpression(SyntaxKind.TrueLiteralExpression)));
-                //        }
-
-
-                //        // check if there is a mismatch between type of whenTrue and whenFalse
-                //        bool argumentsHaveDifferentTypes;
-                //        if (arguments.Length == 3)
-                //        {
-                //            whenFalse = TreeNodeToExpression(arguments[2], currentVertex);
-                //            argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2], currentVertex) == null;
-                //        }
-                //        else
-                //        {
-                //            // if no else statement is given, Excel defaults to FALSE
-                //            whenFalse = LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                //            argumentsHaveDifferentTypes = !IsTypeBoolean(arguments[1], currentVertex);
-                //        }
-
-                //        // if there is a mismatch in argument types, the variable must be of type dynamic
-                //        if (argumentsHaveDifferentTypes)
-                //        {
-                //            _useDynamic.Add(currentVertex);
-                //            // we must cast to type (dynamic):
-                //            // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
-                //            whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
-                //        }
-
-                //        return ParenthesizedExpression(
-                //            ConditionalExpression(condition, whenTrue, whenFalse));
-                //    }
-                //case "AND":
-                //case "OR":
-                //case "XOR":
-                //    {
-                //        if (arguments.Length == 0) return FunctionError(functionName, arguments);
-                //        if (arguments.Length == 1) return TreeNodeToExpression(arguments[0], currentVertex);
-                //        return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments,
-                //            currentVertex));
-                //    }
-                //case "NOT":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
-                //            TreeNodeToExpression(arguments[0], currentVertex));
-                //    }
-                //case "TRUE":
-                //    {
-                //        return LiteralExpression(SyntaxKind.TrueLiteralExpression);
-                //    }
-                //case "FALSE":
-                //    {
-                //        return LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                //    }
-
-                //// IS functions
-                //case "ISBLANK":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var rightExpression = IdentifierName("EmptyCell");
-                //        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                //    }
-                //case "ISLOGICAL":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var rightExpression = PredefinedType(Token(SyntaxKind.BoolKeyword));
-                //        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                //    }
-                //case "ISNONTEXT":
-                //    {
-                //        // !(argument[0] is string)
-                //        return PrefixUnaryExpression(
-                //            SyntaxKind.LogicalNotExpression,
-                //            ParenthesizedExpression(FunctionToExpression("ISTEXT", arguments,
-                //                currentVertex)));
-                //    }
-                //case "ISNUMBER":
-                //    {
-                //        return InvocationExpression(IdentifierName("IsNumeric"))
-                //            .AddArgumentListArguments(
-                //                Argument(TreeNodeToExpression(arguments[0], currentVertex)));
-                //    }
-                //case "ISTEXT":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var rightExpression = PredefinedType(Token(SyntaxKind.StringKeyword));
-                //        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                //    }
-                //case "ISERR":
-                //case "ISERROR":
-                //case "ISNA":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var rightExpression = IdentifierName("FormulaError");
-                //        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                //    }
-
-                //// comparators
-                //case "=":
-                //    {
-                //        if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                //        var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                //        var rightExpression = TreeNodeToExpression(arguments[1], currentVertex);
-
-                //        ExpressionSyntax equalsExpression;
-                //        var leftType = GetType(arguments[0], currentVertex);
-                //        var rightType = GetType(arguments[1], currentVertex);
-                //        if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value)
-                //        {
-                //            // Excel uses case insensitive string compare
-                //            if (leftType.Value == CellType.Text && rightType.Value == CellType.Text)
-                //            {
-                //                equalsExpression = InvocationExpression(
-                //                        MemberAccessExpression(
-                //                            SyntaxKind.SimpleMemberAccessExpression,
-                //                            ParenthesizedExpression(leftExpression),
-                //                            IdentifierName("CIEquals")))
-                //                    .AddArgumentListArguments(Argument(rightExpression));
-                //            }
-                //            else
-                //            {
-                //                // use normal == compare for legibility
-                //                equalsExpression = BinaryExpression(SyntaxKind.EqualsExpression,
-                //                    leftExpression, rightExpression);
-                //            }
-                //        }
-                //        else
-                //        {
-                //            // if types different, use our custom Compare method (== would throw exception if types are different)
-                //            equalsExpression = InvocationExpression(IdentifierName("Compare"))
-                //                .AddArgumentListArguments(Argument(leftExpression),
-                //                    Argument(rightExpression));
-                //        }
-
-                //        return equalsExpression;
-                //    }
-                //case "<>":
-                //    {
-                //        if (arguments.Length != 2) return FunctionError(functionName, arguments);
-
-                //        // see above code for "=", only if types match and are not strings, use ==
-                //        var leftType = GetType(arguments[0], currentVertex);
-                //        var rightType = GetType(arguments[1], currentVertex);
-                //        if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value &&
-                //            (leftType.Value != CellType.Text || rightType.Value != CellType.Text))
-                //        {
-                //            return GenerateBinaryExpression(functionName, arguments, currentVertex);
-                //        }
-
-                //        return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
-                //            FunctionToExpression("=", arguments, currentVertex));
-                //    }
-                //case "<":
-                //case "<=":
-                //case ">=":
-                //case ">":
-                //    {
-                //        return GenerateBinaryExpression(functionName, arguments, currentVertex);
-                //    }
-
-                //// strings
-                //case "&":
-                //case "CONCATENATE":
-                //    {
-                //        if (arguments.Length < 2) return FunctionError(functionName, arguments);
-                //        return FoldBinaryExpression("+", arguments, currentVertex);
-                //    }
-
-                //// other
-                //case "DATE":
-                //    {
-                //        if (arguments.Length != 3) return FunctionError(functionName, arguments);
-                //        return ObjectCreationExpression(
-                //                IdentifierName("DateTime"))
-                //            .AddArgumentListArguments(
-                //                Argument(TreeNodeToExpression(arguments[0], currentVertex)),
-                //                Argument(TreeNodeToExpression(arguments[1], currentVertex)),
-                //                Argument(TreeNodeToExpression(arguments[2], currentVertex))
-                //            );
-                //    }
-                //case "TODAY":
-                //    {
-                //        // DateTime.Now
-                //        return MemberAccessExpression(
-                //            SyntaxKind.SimpleMemberAccessExpression,
-                //            IdentifierName("DateTime"),
-                //            IdentifierName("Now"));
-                //    }
-                //case "SECOND":
-                //case "MINUTE":
-                //case "HOUR":
-                //case "DAY":
-                //case "MONTH":
-                //case "YEAR":
-                //    {
-                //        if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                //        return MemberAccessExpression(
-                //            SyntaxKind.SimpleMemberAccessExpression,
-                //            TreeNodeToExpression(arguments[0], currentVertex),
-                //            IdentifierName(functionName.ToTitleCase()));
-                //    }
-
-                default:
-                    {
-                        return CommentExpression($"Function {functionName} not implemented yet!", true);
-                    }
-            }
-        }
-
-        private ExpressionSyntax FunctionToExpression(string functionName, ParseTreeNode[] arguments,
-            CellVertex currentVertex)
-        {
-            switch (functionName)
-            {
-                // arithmetic
-                case "+":
-                case "-":
-                {
-                    if (arguments.Length == 1)
-                        return PrefixUnaryExpression(SyntaxKind.UnaryMinusExpression,
-                            TreeNodeToExpression(arguments[0], currentVertex));
-
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-
-                    // Date operations
-                    var typeLeft = GetType(arguments[0], currentVertex);
-                    var typeRight = GetType(arguments[1], currentVertex);
-                    if (typeLeft.HasValue && typeRight.HasValue && (typeLeft == CellType.Date || typeRight == CellType.Date))
-                    {
-                        var leftExpr = TreeNodeToExpression(arguments[0], currentVertex);
-                        var rightExpr = TreeNodeToExpression(arguments[1], currentVertex);
-
-                        return GenerateDateArithmeticExpression(functionName, typeLeft.Value, typeRight.Value, leftExpr, rightExpr);
-                    }
-
-                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
-                }
-
-                case "*":
-                {
-                    return GenerateBinaryExpression(functionName, arguments, currentVertex, true);
-                }
-                case "/":
-                {
-                    _forceConstantsIntoDecimal = true;
-                    var expression = GenerateBinaryExpression(functionName, arguments, currentVertex, true);
-                    _forceConstantsIntoDecimal = false;
-                    return expression;
-                }
-                case "%":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    // arguments[0] * 0.01
-                    return BinaryExpression(
-                        SyntaxKind.MultiplyExpression,
-                        TreeNodeToExpression(arguments[0], currentVertex),
-                        LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                            Literal(0.01)));
-                }
-                case "^":
-                {
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    return ClassFunctionCall("Math", "Pow",
-                        TreeNodeToExpression(arguments[0], currentVertex),
-                        TreeNodeToExpression(arguments[1], currentVertex));
-                }
                 case "ROUND":
-                {
-                    return RoundFunction("Round", arguments, currentVertex);
-                }
+                    {
+                        return RoundFunction("Round", arguments);
+                    }
                 case "ROUNDUP":
-                {
-                    return RoundFunction("RoundUp", arguments, currentVertex);
-                }
+                    {
+                        return RoundFunction("RoundUp", arguments);
+                    }
                 case "ROUNDDOWN":
-                {
-                    return RoundFunction("RoundDown", arguments, currentVertex);
-                }
+                    {
+                        return RoundFunction("RoundDown", arguments);
+                    }
                 case "SUM":
                 case "MIN":
                 case "MAX":
                 case "COUNT":
                 case "AVERAGE":
-                {
-                    // Collection(...).Sum/Min/Max/Count/Average()
-                    return InvocationExpression(MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        CollectionOf(arguments.Select(a => TreeNodeToExpression(a, currentVertex)).ToArray()),
-                        IdentifierName(functionName.ToTitleCase())));
-                }
+                    {
+                        // Collection(...).Sum/Min/Max/Count/Average()
+                        return InvocationExpression(MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            CollectionOf(arguments.Select(ExpressionToCode).ToArray()),
+                            IdentifierName(functionName.ToTitleCase())));
+                    }
 
                 // reference functions
                 case "VLOOKUP":
                 case "HLOOKUP":
-                {
-                    if (arguments.Length != 3 && arguments.Length != 4)
-                        return FunctionError(functionName, arguments);
-
-                    var matrix = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
-
-                    var lookupValue = TreeNodeToExpression(arguments[0], currentVertex);
-                    var columnIndex = TreeNodeToExpression(arguments[2], currentVertex);
-
-                    var function = functionName == "VLOOKUP" ? "VLookUp" : "HLookUp";
-                    var expression = InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                matrix,
-                                IdentifierName(function)))
-                        .AddArgumentListArguments(
-                            Argument(lookupValue),
-                            Argument(columnIndex));
-
-                    if (arguments.Length == 4)
-                        expression = expression.AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[3], currentVertex)));
-                    return expression;
-                }
-                case "CHOOSE":
-                {
-                    if (arguments.Length < 2)
-                        return FunctionError(functionName, arguments);
-                    var collection = CollectionOf(arguments
-                        .Skip(1)
-                        .Select(a => TreeNodeToExpression(a, currentVertex))
-                        .ToArray());
-
-                    // collection[arguments[0]]
-                    return ElementAccessExpression(collection)
-                        .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
-                            Argument(TreeNodeToExpression(arguments[0], currentVertex)))));
-                }
-                case "INDEX":
-                {
-                    if (arguments.Length != 2 && arguments.Length != 3)
-                        return FunctionError(functionName, arguments);
-                    var matrixOrCollection = RangeOrNamedRangeToExpression(arguments[0], currentVertex);
-
-                    var argumentList = new List<SyntaxNodeOrToken>();
-                    argumentList.Add(Argument(TreeNodeToExpression(arguments[1], currentVertex)));
-                    if (arguments.Length == 3)
                     {
-                        argumentList.Add(Token(SyntaxKind.CommaToken));
-                        argumentList.Add(Argument(TreeNodeToExpression(arguments[2], currentVertex)));
+                        if (arguments.Length != 3 && arguments.Length != 4)
+                            return FunctionError(functionName, arguments);
+
+                        var matrixName = RangeToVariableName(arguments[1]);
+
+                        var lookupValue = ExpressionToCode(arguments[0]);
+                        var columnIndex = ExpressionToCode(arguments[2]);
+
+                        functionName = functionName == "VLOOKUP" ? "VLookUp" : "HLookUp";
+                        var expression = InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    IdentifierName(matrixName),
+                                    IdentifierName(functionName)))
+                            .AddArgumentListArguments(
+                                Argument(lookupValue),
+                                Argument(columnIndex));
+
+                        if (arguments.Length == 4)
+                            expression = expression.AddArgumentListArguments(
+                                Argument(ExpressionToCode(arguments[3])));
+                        return expression;
                     }
+                case "CHOOSE":
+                    {
+                        if (arguments.Length < 2)
+                            return FunctionError(functionName, arguments);
+                        var collection = CollectionOf(arguments
+                            .Skip(1)
+                            .Select(ExpressionToCode)
+                            .ToArray());
 
-                    return ElementAccessExpression(matrixOrCollection)
-                        .WithArgumentList(
-                            BracketedArgumentList(
-                                SeparatedList<ArgumentSyntax>(argumentList.ToArray())));
-                }
+                        // collection[arguments[0]]
+                        return ElementAccessExpression(collection)
+                            .WithArgumentList(BracketedArgumentList(SingletonSeparatedList(
+                                Argument(ExpressionToCode(arguments[0])))));
+                    }
+                case "INDEX":
+                    {
+                        if (arguments.Length != 2 && arguments.Length != 3)
+                            return FunctionError(functionName, arguments);
+                        var matrixOrCollection = RangeToVariableName(arguments[0]);
+
+                        var argumentList = new List<SyntaxNodeOrToken>();
+                        argumentList.Add(Argument(ExpressionToCode(arguments[1])));
+                        if (arguments.Length == 3)
+                        {
+                            argumentList.Add(Token(SyntaxKind.CommaToken));
+                            argumentList.Add(Argument(ExpressionToCode(arguments[2])));
+                        }
+
+                        return ElementAccessExpression(IdentifierName(matrixOrCollection))
+                            .WithArgumentList(
+                                BracketedArgumentList(
+                                    SeparatedList<ArgumentSyntax>(argumentList.ToArray())));
+                    }
                 case "MATCH":
-                {
-                    if (arguments.Length != 2 && arguments.Length != 3)
-                        return FunctionError(functionName, arguments);
-                    var collection = RangeOrNamedRangeToExpression(arguments[1], currentVertex);
+                    {
+                        if (arguments.Length != 2 && arguments.Length != 3)
+                            return FunctionError(functionName, arguments);
+                        var collection = RangeToVariableName(arguments[1]);
 
-                    var expression = InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                collection,
-                                IdentifierName("Match")))
-                        .AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[0], currentVertex)));
-                    if (arguments.Length == 3)
-                        expression = expression.AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[2], currentVertex)));
+                        var expression = InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    IdentifierName(collection),
+                                    IdentifierName("Match")))
+                            .AddArgumentListArguments(
+                                Argument(ExpressionToCode(arguments[0])));
+                        if (arguments.Length == 3)
+                            expression = expression.AddArgumentListArguments(
+                                Argument(ExpressionToCode(arguments[2])));
 
-                    return expression;
-                }
+                        return expression;
+                    }
 
                 // logical functions
                 case "IF":
-                {
-                    if (arguments.Length != 2 && arguments.Length != 3)
-                        return FunctionError(functionName, arguments);
-
-                    ExpressionSyntax condition = TreeNodeToExpression(arguments[0], currentVertex);
-                    ExpressionSyntax whenTrue = TreeNodeToExpression(arguments[1], currentVertex);
-                    ExpressionSyntax whenFalse;
-
-                    // if the condition is not always a bool (e.g. dynamic), use Compare(cond, true)
-                    // otherwise we might have a number as cond, and number can not be evaluated as bool
-                    var conditionType = GetType(arguments[0], currentVertex);
-                    if (!conditionType.HasValue || conditionType.Value != CellType.Bool)
                     {
-                        condition = InvocationExpression(IdentifierName("Compare"))
-                            .AddArgumentListArguments(
-                                Argument(condition),
-                                Argument(
-                                    LiteralExpression(SyntaxKind.TrueLiteralExpression)));
-                    }
+                        if (arguments.Length != 2 && arguments.Length != 3)
+                            return FunctionError(functionName, arguments);
 
+                        ExpressionSyntax condition = ExpressionToCode(arguments[0]);
+                        ExpressionSyntax whenTrue = ExpressionToCode(arguments[1]);
+                        ExpressionSyntax whenFalse;
 
-                    // check if there is a mismatch between type of whenTrue and whenFalse
-                    bool argumentsHaveDifferentTypes;
-                    if (arguments.Length == 3)
-                    {
-                        whenFalse = TreeNodeToExpression(arguments[2], currentVertex);
-                        argumentsHaveDifferentTypes = IsSameType(arguments[1], arguments[2], currentVertex) == null;
-                    }
-                    else
-                    {
-                        // if no else statement is given, Excel defaults to FALSE
-                        whenFalse = LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                        argumentsHaveDifferentTypes = !IsTypeBoolean(arguments[1], currentVertex);
-                    }
-
-                    // if there is a mismatch in argument types, the variable must be of type dynamic
-                    if (argumentsHaveDifferentTypes)
-                    {
-                        _useDynamic.Add(currentVertex);
-                        // we must cast to type (dynamic):
-                        // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
-                        whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
-                    }
-
-                    return ParenthesizedExpression(
-                        ConditionalExpression(condition, whenTrue, whenFalse));
-                }
-                case "AND":
-                case "OR":
-                case "XOR":
-                {
-                    if (arguments.Length == 0) return FunctionError(functionName, arguments);
-                    if (arguments.Length == 1) return TreeNodeToExpression(arguments[0], currentVertex);
-                    return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments,
-                        currentVertex));
-                }
-                case "NOT":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
-                        TreeNodeToExpression(arguments[0], currentVertex));
-                }
-                case "TRUE":
-                {
-                    return LiteralExpression(SyntaxKind.TrueLiteralExpression);
-                }
-                case "FALSE":
-                {
-                    return LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                }
-
-                // IS functions
-                case "ISBLANK":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                    var rightExpression = IdentifierName("EmptyCell");
-                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                }
-                case "ISLOGICAL":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                    var rightExpression = PredefinedType(Token(SyntaxKind.BoolKeyword));
-                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                }
-                case "ISNONTEXT":
-                {
-                    // !(argument[0] is string)
-                    return PrefixUnaryExpression(
-                        SyntaxKind.LogicalNotExpression,
-                        ParenthesizedExpression(FunctionToExpression("ISTEXT", arguments,
-                            currentVertex)));
-                }
-                case "ISNUMBER":
-                {
-                    return InvocationExpression(IdentifierName("IsNumeric"))
-                        .AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[0], currentVertex)));
-                }
-                case "ISTEXT":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                    var rightExpression = PredefinedType(Token(SyntaxKind.StringKeyword));
-                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                }
-                case "ISERR":
-                case "ISERROR":
-                case "ISNA":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                    var rightExpression = IdentifierName("FormulaError");
-                    return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
-                }
-
-                // comparators
-                case "=":
-                {
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-                    var leftExpression = TreeNodeToExpression(arguments[0], currentVertex);
-                    var rightExpression = TreeNodeToExpression(arguments[1], currentVertex);
-
-                    ExpressionSyntax equalsExpression;
-                    var leftType = GetType(arguments[0], currentVertex);
-                    var rightType = GetType(arguments[1], currentVertex);
-                    if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value)
-                    {
-                        // Excel uses case insensitive string compare
-                        if (leftType.Value == CellType.Text && rightType.Value == CellType.Text)
+                        // if the condition is not always a bool (e.g. dynamic), use Compare(cond, true)
+                        // otherwise we might have a number as cond, and number can not be evaluated as bool
+                        if (arguments[0].GetCellType() != CellType.Bool)
                         {
-                            equalsExpression = InvocationExpression(
-                                    MemberAccessExpression(
-                                        SyntaxKind.SimpleMemberAccessExpression,
-                                        ParenthesizedExpression(leftExpression),
-                                        IdentifierName("CIEquals")))
-                                .AddArgumentListArguments(Argument(rightExpression));
+                            condition = InvocationExpression(IdentifierName("Compare"))
+                                .AddArgumentListArguments(
+                                    Argument(condition),
+                                    Argument(
+                                        LiteralExpression(SyntaxKind.TrueLiteralExpression)));
+                        }
+
+                        // check if there is a mismatch between type of whenTrue and whenFalse
+                        bool argumentsHaveDifferentTypes;
+                        if (arguments.Length == 3)
+                        {
+                            whenFalse = ExpressionToCode(arguments[2]);
+                            argumentsHaveDifferentTypes = !arguments[1].IsSameTypeAndNotUnknown(arguments[2]);
                         }
                         else
                         {
-                            // use normal == compare for legibility
-                            equalsExpression = BinaryExpression(SyntaxKind.EqualsExpression,
-                                leftExpression, rightExpression);
+                            // if no else statement is given, Excel defaults to FALSE
+                            whenFalse = LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                            argumentsHaveDifferentTypes = arguments[1].GetCellType() != CellType.Bool;
                         }
+
+                        // if there is a mismatch in argument types, the variable must be of type dynamic
+                        if (argumentsHaveDifferentTypes)
+                        {
+                            // we must cast to type (dynamic):
+                            // https://stackoverflow.com/questions/57633328/change-a-dynamics-type-in-a-ternary-conditional-statement#57633386
+                            whenFalse = CastExpression(IdentifierName("dynamic"), whenFalse);
+                        }
+
+                        return ParenthesizedExpression(
+                            ConditionalExpression(condition, whenTrue, whenFalse));
                     }
-                    else
+                case "AND":
+                case "OR":
+                case "XOR":
                     {
-                        // if types different, use our custom Compare method (== would throw exception if types are different)
-                        equalsExpression = InvocationExpression(IdentifierName("Compare"))
-                            .AddArgumentListArguments(Argument(leftExpression),
-                                Argument(rightExpression));
+                        if (arguments.Length == 0) return FunctionError(functionName, arguments);
+                        if (arguments.Length == 1) return ExpressionToCode(arguments[0]);
+                        return ParenthesizedExpression(FoldBinaryExpression(functionName, arguments));
+                    }
+                case "NOT":
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
+                            ExpressionToCode(arguments[0]));
+                    }
+                case "TRUE":
+                    {
+                        return LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                    }
+                case "FALSE":
+                    {
+                        return LiteralExpression(SyntaxKind.FalseLiteralExpression);
                     }
 
-                    return equalsExpression;
-                }
+                // IS functions
+                case "ISBLANK":
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        var leftExpression = ExpressionToCode(arguments[0]);
+                        var rightExpression = IdentifierName("EmptyCell");
+                        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                    }
+                case "ISLOGICAL":
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        var leftExpression = ExpressionToCode(arguments[0]);
+                        var rightExpression = PredefinedType(Token(SyntaxKind.BoolKeyword));
+                        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                    }
+                case "ISNONTEXT":
+                    {
+                        // !(argument[0] is string)
+                        return PrefixUnaryExpression(
+                            SyntaxKind.LogicalNotExpression,
+                            ParenthesizedExpression(FunctionToCode("ISTEXT", arguments)));
+                    }
+                case "ISNUMBER":
+                    {
+                        return InvocationExpression(IdentifierName("IsNumeric"))
+                            .AddArgumentListArguments(
+                                Argument(ExpressionToCode(arguments[0])));
+                    }
+                case "ISTEXT":
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        var leftExpression = ExpressionToCode(arguments[0]);
+                        var rightExpression = PredefinedType(Token(SyntaxKind.StringKeyword));
+                        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                    }
+                case "ISERR":
+                case "ISERROR":
+                case "ISNA":
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        var leftExpression = ExpressionToCode(arguments[0]);
+                        var rightExpression = IdentifierName("FormulaError");
+                        return GenerateBinaryExpression(functionName, leftExpression, rightExpression);
+                    }
+
+                // comparators
+                case "=":
+                    {
+                        if (arguments.Length != 2) return FunctionError(functionName, arguments);
+                        var leftExpression = ExpressionToCode(arguments[0]);
+                        var rightExpression = ExpressionToCode(arguments[1]);
+
+                        ExpressionSyntax equalsExpression;
+                        var leftType = arguments[0].GetCellType();
+                        var rightType = arguments[1].GetCellType();
+                        if (leftType == rightType)
+                        {
+                            // Excel uses case insensitive string compare
+                            if (leftType == CellType.Text && rightType == CellType.Text)
+                            {
+                                equalsExpression = InvocationExpression(
+                                        MemberAccessExpression(
+                                            SyntaxKind.SimpleMemberAccessExpression,
+                                            ParenthesizedExpression(leftExpression),
+                                            IdentifierName("CIEquals")))
+                                    .AddArgumentListArguments(Argument(rightExpression));
+                            }
+                            else
+                            {
+                                // use normal == compare for legibility
+                                equalsExpression = BinaryExpression(SyntaxKind.EqualsExpression,
+                                    leftExpression, rightExpression);
+                            }
+                        }
+                        else
+                        {
+                            // if types different, use our custom Compare method (== would throw exception if types are different)
+                            equalsExpression = InvocationExpression(IdentifierName("Compare"))
+                                .AddArgumentListArguments(Argument(leftExpression),
+                                    Argument(rightExpression));
+                        }
+
+                        return equalsExpression;
+                    }
                 case "<>":
-                {
-                    if (arguments.Length != 2) return FunctionError(functionName, arguments);
-
-                    // see above code for "=", only if types match and are not strings, use ==
-                    var leftType = GetType(arguments[0], currentVertex);
-                    var rightType = GetType(arguments[1], currentVertex);
-                    if (leftType.HasValue && rightType.HasValue && leftType.Value == rightType.Value &&
-                        (leftType.Value != CellType.Text || rightType.Value != CellType.Text))
                     {
-                        return GenerateBinaryExpression(functionName, arguments, currentVertex);
-                    }
+                        if (arguments.Length != 2) return FunctionError(functionName, arguments);
 
-                    return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
-                        FunctionToExpression("=", arguments, currentVertex));
-                }
+                        // see above code for "=", only if types match and are not strings, use ==
+                        var leftType = arguments[0].GetCellType();
+                        var rightType = arguments[1].GetCellType();
+                        if (leftType == rightType &&
+                            (leftType != CellType.Text || rightType != CellType.Text))
+                        {
+                            return GenerateBinaryExpression(functionName, arguments);
+                        }
+
+                        return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression,
+                            FunctionToCode("=", arguments));
+                    }
                 case "<":
                 case "<=":
                 case ">=":
                 case ">":
-                {
-                    return GenerateBinaryExpression(functionName, arguments, currentVertex);
-                }
+                    {
+                        return GenerateBinaryExpression(functionName, arguments);
+                    }
 
                 // strings
                 case "&":
                 case "CONCATENATE":
-                {
-                    if (arguments.Length < 2) return FunctionError(functionName, arguments);
-                    return FoldBinaryExpression("+", arguments, currentVertex);
-                }
+                    {
+                        if (arguments.Length < 2) return FunctionError(functionName, arguments);
+                        return FoldBinaryExpression("+", arguments);
+                    }
 
                 // other
                 case "DATE":
-                {
-                    if (arguments.Length != 3) return FunctionError(functionName, arguments);
-                    return ObjectCreationExpression(
-                            IdentifierName("DateTime"))
-                        .AddArgumentListArguments(
-                            Argument(TreeNodeToExpression(arguments[0], currentVertex)),
-                            Argument(TreeNodeToExpression(arguments[1], currentVertex)),
-                            Argument(TreeNodeToExpression(arguments[2], currentVertex))
-                        );
-                }
+                    {
+                        if (arguments.Length != 3) return FunctionError(functionName, arguments);
+                        return ObjectCreationExpression(
+                                IdentifierName("DateTime"))
+                            .AddArgumentListArguments(
+                                Argument(ExpressionToCode(arguments[0])),
+                                Argument(ExpressionToCode(arguments[1])),
+                                Argument(ExpressionToCode(arguments[2]))
+                            );
+                    }
                 case "TODAY":
-                {
-                    // DateTime.Now
-                    return MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName("DateTime"),
-                        IdentifierName("Now"));
-                }
+                    {
+                        // DateTime.Now
+                        return MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            IdentifierName("DateTime"),
+                            IdentifierName("Now"));
+                    }
                 case "SECOND":
                 case "MINUTE":
                 case "HOUR":
                 case "DAY":
                 case "MONTH":
                 case "YEAR":
-                {
-                    if (arguments.Length != 1) return FunctionError(functionName, arguments);
-                    return MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        TreeNodeToExpression(arguments[0], currentVertex),
-                        IdentifierName(functionName.ToTitleCase()));
-                }
+                    {
+                        if (arguments.Length != 1) return FunctionError(functionName, arguments);
+                        return MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            ExpressionToCode(arguments[0]),
+                            IdentifierName(functionName.ToTitleCase()));
+                    }
 
                 default:
-                {
-                    return CommentExpression($"Function {functionName} not implemented yet! Args: " +
-                                             $"{string.Join("\n", arguments.Select(a => TreeNodeToExpression(a, currentVertex)))}",
-                        true);
-                }
+                    {
+                        return CommentExpression($"Function {functionName} not implemented yet!", true);
+                    }
             }
         }
 
@@ -896,14 +500,13 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 .AddArgumentListArguments(Argument(rightArgument));
         }
 
-        private ExpressionSyntax RoundFunction(string roundFunction, ParseTreeNode[] arguments,
-            CellVertex currentVertex)
+        private ExpressionSyntax RoundFunction(string roundFunction, Expression[] arguments)
         {
             if (arguments.Length != 2) return FunctionError(roundFunction, arguments);
             return InvocationExpression(IdentifierName(roundFunction))
                 .AddArgumentListArguments(
-                    Argument(TreeNodeToExpression(arguments[0], currentVertex)),
-                    Argument(TreeNodeToExpression(arguments[1], currentVertex)));
+                    Argument(ExpressionToCode(arguments[0])),
+                    Argument(ExpressionToCode(arguments[1])));
         }
 
         private ExpressionSyntax CollectionOf(params ExpressionSyntax[] expressions)
@@ -940,24 +543,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
                         IdentifierName(className),
                         IdentifierName(functionName)))
                 .AddArgumentListArguments(expressions.Select(Argument).ToArray());
-        }
-
-        private ExpressionSyntax GenerateBinaryExpression(string functionName, ParseTreeNode[] arguments,
-            CellVertex vertex, bool parenthesize = false)
-        {
-            if (arguments.Length != 2) return FunctionError(functionName, arguments);
-
-            var leftExpression = TreeNodeToExpression(arguments[0], vertex);
-            var rightExpression = TreeNodeToExpression(arguments[1], vertex);
-
-            if (parenthesize && arguments[0].ChildNodes[0].Term.Name != "Constant" && arguments[0].ChildNodes[0].Term.Name != "Reference")
-                leftExpression = ParenthesizedExpression(leftExpression);
-            if (parenthesize && arguments[1].ChildNodes[0].Term.Name != "Constant" && arguments[1].ChildNodes[0].Term.Name != "Reference")
-                rightExpression = ParenthesizedExpression(rightExpression);
-
-            return GenerateBinaryExpression(functionName,
-                leftExpression,
-                rightExpression);
         }
 
         private ExpressionSyntax GenerateBinaryExpression(string functionName, Expression[] arguments, bool parenthesize = false)
@@ -1012,18 +597,14 @@ namespace Thesis.Models.CodeGeneration.CSharp
             return BinaryExpression(syntaxKind, leftExpression, rightExpression);
         }
 
-        private ExpressionSyntax FoldBinaryExpression(string functionName, ParseTreeNode[] arguments, CellVertex vertex)
+        private ExpressionSyntax FoldBinaryExpression(string functionName, Expression[] arguments)
         {
             var syntaxKind = _binaryOperators[functionName];
             // do not parenthesize
-            return arguments.Select(a => TreeNodeToExpression(a, vertex))
+            return arguments.Select(ExpressionToCode)
                 .Aggregate((acc, right) => BinaryExpression(syntaxKind, acc, right));
         }
 
-        private ExpressionSyntax FunctionError(string functionName, ParseTreeNode[] arguments)
-        {
-            return CommentExpression($"Function {functionName} has incorrect number of arguments ({arguments.Length})", true);
-        }
         private ExpressionSyntax FunctionError(string functionName, Expression[] arguments)
         {
             return CommentExpression($"Function {functionName} has incorrect number of arguments ({arguments.Length})", true);

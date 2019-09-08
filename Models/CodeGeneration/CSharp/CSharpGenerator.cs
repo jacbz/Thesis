@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Syncfusion.Windows.Shared;
 using Thesis.Models.FunctionGeneration;
 using Thesis.Models.VertexTypes;
-using XLParser;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using Formatter = Microsoft.CodeAnalysis.Formatting.Formatter;
 
@@ -19,9 +18,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator : CodeGenerator
     {
-        // vertices in this list must have type dynamic
-        private HashSet<Vertex> _useDynamic;
-
         protected override string[] BlockedVariableNames =>
             new[]
             {
@@ -49,25 +45,36 @@ namespace Thesis.Models.CodeGeneration.CSharp
             return await Task.Run(() => GenerateCode(testResults));
         }
 
+        private FieldDeclarationSyntax DeclareFieldWithExpression(string name, Expression expression)
+        {
+            return FieldDeclaration(
+                VariableDeclaration(IdentifierName(CellTypeToTypeString(expression.GetCellType())))
+                    .AddVariables(
+                        VariableDeclarator(
+                                Identifier(name))
+                            .WithInitializer(
+                                EqualsValueClause(ExpressionToCode(expression)))));
+        }
+
+        private FieldDeclarationSyntax DeclareFieldWithRangeVertex(RangeVertex rangeVertex)
+        {
+            return FieldDeclaration(
+                VariableDeclaration(IdentifierName(GetTypeString(rangeVertex)))
+                    .AddVariables(
+                        VariableDeclarator(
+                                Identifier(rangeVertex.Name))
+                            .WithInitializer(
+                                EqualsValueClause(RangeVertexToExpression(rangeVertex)))));
+        }
+
         public MemberDeclarationSyntax FormulaFunctionToCode(FormulaFunction formulaFunction)
         {
-            ////TODO WTF is this?
-            //if (function.Arguments.Length == 0)
-            //{
-            //    return PropertyDeclaration(
-            //            IdentifierName(CellTypeToTypeString(function.ReturnType)), Identifier(function.Name))
-            //        .WithExpressionBody(
-            //            ArrowExpressionClause(
-            //                LiteralExpression(
-            //                    SyntaxKind.NullLiteralExpression)));
-            //}
-
             var methodDeclaration = MethodDeclaration(
-                IdentifierName(CellTypeToTypeString(formulaFunction.ReturnType)), Identifier(formulaFunction.Name.AsFunctionName()))
+                IdentifierName(CellTypeToTypeString(formulaFunction.ReturnType)), Identifier(formulaFunction.Name))
                 .AddParameterListParameters(formulaFunction.Parameters.Select(inputReference =>
                     Parameter(Identifier(inputReference.VariableName))
                         .WithType(IdentifierName(
-                            inputReference is InputCellReference cellReference
+                            inputReference is InputReference cellReference
                                 ? CellTypeToTypeString(cellReference.InputType)
                                 : "Matrix"))).ToArray())
                 .WithBody(Block(ReturnStatement(ExpressionToCode(formulaFunction.Expression))));
@@ -78,7 +85,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
         {
             var rightSideExpression = statement is FunctionInvocationStatement functionInvocationStatement
                 ? FunctionInvocationStatementToCode(functionInvocationStatement)
-                : ExpressionToCode(((ConstantStatement)statement).Constant);
+                : throw new Exception("Wrong statement");
 
             return LocalDeclarationStatement(VariableDeclaration(
                    IdentifierName(CellTypeToTypeString(statement.VariableType)))
@@ -92,11 +99,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
         {
             var parameters = functionInvocationStatement.Parameters;
             if (parameters.Length == 2 &&
-                _binaryOperators.ContainsKey(functionInvocationStatement.FunctionName.AsFunctionName()))
+                _binaryOperators.ContainsKey(functionInvocationStatement.FunctionName))
                 return BinaryExpression(_binaryOperators[functionInvocationStatement.FunctionName],
                     IdentifierName(parameters[0].VariableName),
                     IdentifierName(parameters[1].VariableName));
-            return InvocationExpression(IdentifierName(functionInvocationStatement.FunctionName.AsFunctionName()))
+            return InvocationExpression(IdentifierName(functionInvocationStatement.FunctionName))
                 .AddArgumentListArguments(functionInvocationStatement.GetParameterNames()
                     .Select(parameterName => Argument(IdentifierName(parameterName)))
                     .ToArray());
@@ -111,45 +118,66 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     IdentifierName(CellTypeToTypeString(function.ReturnType)), Identifier(function.Name))
                 .AddParameterListParameters(function.Parameters.Select(inputReference =>
                     Parameter(Identifier(inputReference.VariableName))
-                        .WithType(IdentifierName(
-                            inputReference is InputCellReference cellReference
-                                ? CellTypeToTypeString(cellReference.InputType)
-                                : "Matrix"))).ToArray())
+                        .WithType(IdentifierName(CellTypeToTypeString(inputReference.InputType)))).ToArray())
                 .WithBody(Block(statements.ToArray()));
             return methodDeclaration;
         }
 
         public Code GenerateCode(TestResults testResults = null)
         {
-            var globalConstants = Graph.ConstantDictionary
-                .Select(kvp => FieldDeclaration(
-                    VariableDeclaration(IdentifierName(CellTypeToTypeString(kvp.Key.CellType)))
-                        .AddVariables(
-                            VariableDeclarator(
-                                    Identifier(kvp.Key.Name))
-                                .WithInitializer(
-                                    EqualsValueClause(ConstantToExpression(kvp.Value))))))
+            var constantsAndFormulaConstants = Graph.ConstantsAndConstantFormulas
+                .Select(tuple => DeclareFieldWithExpression(tuple.cellVertex.Name, tuple.expression))
+                .ToArray<MemberDeclarationSyntax>();
+
+            var ranges = Graph.RangeDictionary.Values
+                .OrderBy(v => v.Name)
+                .Select(DeclareFieldWithRangeVertex)
                 .ToArray<MemberDeclarationSyntax>();
 
             var outputFields = Graph.OutputFieldFunctionDictionary.Values
                 .Distinct()
+                .OrderBy(v => v.Name)
                 .Select(OutputFieldFunctionToCode)
                 .ToArray();
 
             var functionList = Graph.FormulaFunctionDictionary.Values
                 .Distinct()
+                .OrderBy(v => v.Name)
                 .Select(FormulaFunctionToCode).ToArray();
 
-            var compilationUnit = CompilationUnit()
-                .AddMembers(globalConstants)
-                .AddMembers(outputFields)
-                .AddMembers(functionList);
+            var compilationUnit = CompilationUnit();
+            
+            if (constantsAndFormulaConstants.Length > 0)
+                compilationUnit = compilationUnit
+                    .AddMembers(IncompleteMember(IdentifierName("COMMENT1")))
+                    .AddMembers(constantsAndFormulaConstants);
+
+            if (ranges.Length > 0)
+                compilationUnit = compilationUnit
+                    .AddMembers(IncompleteMember(IdentifierName("COMMENT2")))
+                    .AddMembers(ranges);
+
+            if (outputFields.Length > 0)
+                compilationUnit = compilationUnit
+                    .AddMembers(IncompleteMember(IdentifierName("COMMENT3")))
+                    .AddMembers(outputFields);
+
+            if (functionList.Length > 0)
+                compilationUnit = compilationUnit
+                    .AddMembers(IncompleteMember(IdentifierName("COMMENT4")))
+                    .AddMembers(functionList);
 
             // format with Roslyn formatter
             var workspace = new AdhocWorkspace();
             var options = workspace.Options;
             var node = Formatter.Format(compilationUnit, workspace, options);
             var sourceCode = node.ToFullString();
+
+            sourceCode = sourceCode
+                .Replace("COMMENT1 ", "// Global constants and formula constants\r\n")
+                .Replace("COMMENT2 ", "// Referenced ranges\r\n")
+                .Replace("COMMENT3 ", "// Output fields\r\n")
+                .Replace("COMMENT4 ", "// Formulas\r\n");
 
             // format with our custom formatter
             sourceCode = FormatCode(sourceCode);
@@ -208,115 +236,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
             //return new Code(sourceCode, variableNameToVertexDictionary, new CSharpTester(classesCode));
         }
 
-        private (ClassDeclarationSyntax classDeclarationSyntax, ClassCode classCode)
-            GenerateClass(Class @class, TestResults testResults = null)
-        {
-            // public class {generatedClass.Name}
-            var newClass = ClassDeclaration(@class.Name)
-                .AddModifiers(Token(SyntaxKind.PublicKeyword));
-            // static classes are static
-            if (@class.IsStaticClass)
-                newClass = newClass.AddModifiers(Token(SyntaxKind.StaticKeyword));
-
-            // split vertex list into two
-            var lookup = @class.Vertices
-                .ToLookup(v => v.IsExternal || v is CellVertex c && c.NodeType == NodeType.Constant);
-            var constants = lookup[true].ToList();
-            var formulas = lookup[false].ToList();
-
-            // generate assignments
-            var statements = new List<StatementSyntax>();
-            foreach (var formula in formulas)
-            {
-                var expression = formula is CellVertex cellVertex 
-                    ? TreeNodeToExpression(cellVertex.ParseTree, cellVertex)
-                    : RangeVertexToExpression(formula as RangeVertex);
-
-                if (@class.IsStaticClass)
-                {
-                    // for static classes: omit type name as already declared
-
-                    // test result comment
-                    var identifier =  GenerateIdentifierNameSyntaxWithTestResult(formula, testResults);
-
-                    var assignmentExpression = AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        identifier,
-                        expression);
-                    statements.Add(ExpressionStatement(assignmentExpression));
-                }
-                else
-                {
-                    // test result comment
-                    var type = GenerateTypeSyntaxWithTestResult(formula, testResults);
-                    var variableDeclaration = VariableDeclaration(type)
-                        .AddVariables(VariableDeclarator(formula.Name)
-                            .WithInitializer(
-                                EqualsValueClause(expression)));
-                    statements.Add(LocalDeclarationStatement(variableDeclaration));
-                }
-            }
-
-            // generate fields
-            // this happens after assignments generation because assignments generation can infer types
-            // e.g. dynamic x = null can become int x = 0
-            var fields = new List<MemberDeclarationSyntax>();
-            foreach (var constant in constants)
-            {
-                // {type} {variableName} = {value};
-                var expression = VertexValueToExpression(constant);
-                var field =
-                    FieldDeclaration(
-                        VariableDeclaration(
-                                ParseTypeName(GetTypeString(constant)))
-                            .AddVariables(VariableDeclarator(constant.Name)
-                                .WithInitializer(
-                                    EqualsValueClause(expression))));
-                if (@class.IsStaticClass)
-                    field = field.AddModifiers(
-                        Token(SyntaxKind.PublicKeyword),
-                        Token(SyntaxKind.StaticKeyword));
-                else
-                    field = field.AddModifiers(Token(SyntaxKind.PrivateKeyword));
-
-                fields.Add(field);
-            }
-
-            // extra fields for static classes
-            if (@class.IsStaticClass)
-            {
-                // add formula fields
-                foreach (var formula in formulas)
-                {
-                    var formulaField = FieldDeclaration(
-                            VariableDeclaration(ParseTypeName(GetTypeString(formula)))
-                                .AddVariables(VariableDeclarator(formula.Name)))
-                        .AddModifiers(
-                            Token(SyntaxKind.PublicKeyword),
-                            Token(SyntaxKind.StaticKeyword));
-                    fields.Add(formulaField);
-                }
-            }
-
-            newClass = newClass.AddMembers(fields.ToArray());
-
-            if (statements.Count > 0)
-            {
-                // generate Calculate/Init method
-                var method = GenerateMethod(@class, statements);
-
-                // add fields and method to class
-                newClass = newClass.AddMembers(method);
-            }
-
-            var classCode = new ClassCode(
-                @class.IsStaticClass,
-                @class.Name,
-                newClass.NormalizeWhitespace().ToFullString(),
-                string.Join("\n", fields.Select(f => f.NormalizeWhitespace().ToFullString())),
-                string.Join("\n", statements.Select(f => f.NormalizeWhitespace().ToFullString())));
-            return (newClass, classCode);
-        }
 
         private TypeSyntax GenerateTypeSyntaxWithTestResult(Vertex vertex, TestResults testResults)
         {
@@ -347,96 +266,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     TriviaList(Comment(testResult.ToString()), LineFeed),
                     vertex.Name,
                     TriviaList()));
-        }
-
-        private MemberDeclarationSyntax GenerateMethod(Class @class, List<StatementSyntax> statements)
-        {
-            if (@class.IsStaticClass)
-            {
-                // public static void Init()
-                var initMethod = MethodDeclaration(ParseTypeName("void"), "Init")
-                    .AddModifiers(
-                        Token(SyntaxKind.PublicKeyword),
-                        Token(SyntaxKind.StaticKeyword))
-                    .WithBody(Block(statements));
-                return initMethod;
-            }
-            else
-            {
-                // return output vertex
-                statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.Name)));
-
-                // public {type} Calculate()
-                var outputField = @class.OutputVertex;
-                var calculateMethod = MethodDeclaration(ParseTypeName(GetTypeString(outputField)), "Calculate")
-                    .AddModifiers(
-                        Token(SyntaxKind.PublicKeyword))
-                    .WithBody(Block(statements));
-                return calculateMethod;
-            }
-        }
-
-        //private ClassDeclarationSyntax GenerateResultClass(TestResults testResults = null)
-        //{
-        //    var resultClass = ClassDeclaration("Result")
-        //        .AddModifiers(Token(SyntaxKind.PublicKeyword));
-
-        //    // public static void Main(string[] args)
-        //    var mainMethod = MethodDeclaration(ParseTypeName("void"), "Main")
-        //        .AddModifiers(
-        //            Token(SyntaxKind.PublicKeyword),
-        //            Token(SyntaxKind.StaticKeyword))
-        //        .AddParameterListParameters(Parameter(Identifier("args"))
-        //            .WithType(ParseTypeName("string[]")));
-
-        //    // method body
-        //    var methodBody = new List<StatementSyntax>();
-        //    foreach (var generatedClass in ClassCollection.Classes
-        //        .Where(c => c.Vertices.Count(v => !v.IsExternal && 
-        //                                          v is CellVertex cellVertex && cellVertex.NodeType != NodeType.Constant) > 0)
-        //        .OrderBy(v => !v.IsStaticClass))
-        //    {
-        //        if (generatedClass.IsStaticClass)
-        //        {
-        //            // {classname}.Init()
-        //            methodBody.Add(ExpressionStatement(
-        //                InvocationExpression(
-        //                    MemberAccessExpression(
-        //                        SyntaxKind.SimpleMemberAccessExpression,
-        //                        IdentifierName(generatedClass.Name),
-        //                        IdentifierName("Init")))));
-        //        }
-        //        else
-        //        {
-        //            // test
-        //            var type =  GenerateTypeSyntaxWithTestResult(generatedClass.OutputVertex, testResults);
-
-        //            // {type} {outputvertexname} = new {classname}().Calculate()
-        //            methodBody.Add(LocalDeclarationStatement(
-        //                VariableDeclaration(type)
-        //                    .AddVariables(VariableDeclarator(generatedClass.OutputVertex.Name)
-        //                        .WithInitializer(EqualsValueClause(InvocationExpression(
-        //                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-        //                                        ObjectCreationExpression(
-        //                                                IdentifierName(generatedClass.Name))
-        //                                            .WithArgumentList(
-        //                                                ArgumentList()),
-        //                                        IdentifierName("Calculate"))))))));
-        //        }
-        //    }
-
-        //    mainMethod = mainMethod.WithBody(Block(methodBody));
-        //    resultClass = resultClass.AddMembers(mainMethod);
-
-        //    return resultClass;
-        //}
-
-        private ExpressionSyntax RangeToExpression(ParseTreeNode node, CellVertex currentVertex)
-        {
-            var range = node.NodeToString(currentVertex.Formula);
-            if (RangeDictionary.TryGetValue(range, out var rangeVertex))
-                return VariableReferenceToExpression(rangeVertex, currentVertex);
-            return CommentExpression($"Did not find variable for range {range}", true);
         }
 
         private ExpressionSyntax RangeVertexToExpression(RangeVertex rangeVertex)
@@ -478,47 +307,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
             }
         }
 
-        private ExpressionSyntax RangeOrNamedRangeToExpression(ParseTreeNode node, CellVertex currentVertex)
+        private string RangeToVariableName(Expression expression)
         {
-            if (node.Term.Name == "NamedRange")
-                return NamedRangeToExpression(node, currentVertex);
-            if (node.Term.Name == "ReferenceFunctionCall" && node.GetFunction() == ":" ||
-                node.ChildNodes.Count == 2 && (node.ChildNodes[1].Term.Name == "VRange" || node.ChildNodes[1].Term.Name == "HRange"))
-                return RangeToExpression(node, currentVertex);
-            if (node.ChildNodes.Count == 1)
-                return RangeOrNamedRangeToExpression(node.ChildNodes[0], currentVertex);
-            return CommentExpression($"Argument is not a (named) range!", true);
-        }
-
-        // node is ReferenceFunctionCall with function :
-
-        // node is NamedRange
-        private ExpressionSyntax NamedRangeToExpression(ParseTreeNode node, CellVertex currentVertex)
-        {
-            var namedRangeName = node.FindTokenAndGetText();
-            return NameDictionary.TryGetValue(namedRangeName, out var namedRangeVertex)
-                ? VariableReferenceToExpression(namedRangeVertex, currentVertex)
-                : CommentExpression($"Did not find variable for named range {namedRangeName}", true);
-        }
-
-        // if a cell vertex already exists, use that one, else format as constant
-
-        // gets the type of a node
-        // if multiple types are found, or type is unknown or dynamic, return null
-
-        // checks if two parse tree nodes have the same type
-
-        // e.g. function &&, arg [a,b,c,d] => a && (b && (c && d))
-
-        private ExpressionSyntax VariableReferenceFromAddressToExpression(string address, Vertex currentVertex)
-        {
-            if (AddressToVertexDictionary.TryGetValue((currentVertex.WorksheetName, address)
-                , out var variableVertex))
-            {
-                return VariableReferenceToExpression(variableVertex, currentVertex);
-            }
-
-            return CommentExpression($"{address} not found", true);
+            return expression is GlobalReference gr
+                ? gr.ReferencedVertex.Name.ToString()
+                : throw new Exception("Unidentified reference");
         }
 
         private static ExpressionSyntax VariableReferenceToExpression(Vertex variableVertex, Vertex currentVertex)
@@ -538,8 +331,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
         private string GetTypeString(Vertex vertex)
         {
-            if (_useDynamic.Contains(vertex)) return "dynamic";
-
             CellVertex cellVertex;
             if (vertex is RangeVertex rangeVertex)
             {
@@ -642,7 +433,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     return LiteralExpression(SyntaxKind.NullLiteralExpression);
             }
         }
-
         private ExpressionSyntax CommentExpression(string comment, bool isError = false)
         {
             return IdentifierName(

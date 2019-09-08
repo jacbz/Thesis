@@ -18,7 +18,7 @@ namespace Thesis.Models.CodeGeneration
         protected abstract string[] BlockedVariableNames { get; }
 
         protected CodeGenerator(Graph graph,
-            Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary, 
+            Dictionary<(string worksheet, string address), CellVertex> addressToVertexDictionary,
             Dictionary<string, RangeVertex> rangeDictionary, Dictionary<string, Vertex> nameDictionary)
         {
             Graph = graph;

@@ -10,8 +10,8 @@
         xmlns:vertexTypes="clr-namespace:Thesis.Models.VertexTypes"
         x:Class="Thesis.Views.MainWindow"
         mc:Ignorable="d"
-        Title="Thesis" Height="950" Width="1600" Icon="../icon.ico" WindowStartupLocation="CenterScreen"
-        Style="{StaticResource GlobalFont}">
+        Title="Thesis" Icon="../icon.ico"
+        Style="{StaticResource GlobalFont}" WindowState="Maximized">
 
     <Grid>
         <Grid.ColumnDefinitions>

@@ -16,6 +16,9 @@ namespace Thesis.Models
         private string _headers;
         private string _address;
 
+        public bool IsFunction { get; set; }
+        public bool IsOutputField { get; set; }
+
         private int _suffix = 1;
         private bool _useHeader;
         private bool _useAddress;
@@ -48,7 +51,9 @@ namespace Thesis.Models
             return new Name(_customName, _address)
             {
                 _attributes = _attributes,
-                _headers = _headers
+                _headers = _headers,
+                IsFunction = IsFunction,
+                IsOutputField = IsOutputField
             };
         }
 
@@ -93,12 +98,15 @@ namespace Thesis.Models
             _address = MakeNameVariableConform(address);
         }
 
-        public string AsFunctionName()
-        {
-            return "Calc" + ToString().RaiseFirstCharacter();
-        }
-
         public override string ToString()
+        {
+            if (IsFunction)
+                return "Calc" + ToStringInner().RaiseFirstCharacter();
+            if (IsOutputField)
+                return "OUTPUT_" + ToStringInner().RaiseFirstCharacter();
+            return ToStringInner();
+        }
+        private string ToStringInner()
         {
             if (!string.IsNullOrWhiteSpace(_customName))
                 return _customName + (_useSuffix ? "_" + _suffix : "");

@@ -73,7 +73,8 @@ namespace Thesis.ViewModels
             LoadPersistedOutputFields();
             _window.outputFieldsListView.ItemsSource = OutputVertices;
 
-            LayoutGraph();
+            // filter and layout graph
+            FilterGraph();
 
             Logger.Log(LogItemType.Success, "Graph generation successful.");
 
@@ -177,6 +178,8 @@ namespace Thesis.ViewModels
 
         public async Task GenerateCode()
         {
+            Graph.GenerateFunctions();
+
             var logItem = Logger.Log(LogItemType.Info, $"Generating code...", true);
 
             _window.codeTextBox.Text = "";

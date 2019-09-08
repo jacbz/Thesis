@@ -16,7 +16,6 @@ namespace Thesis.Models.FunctionGeneration
         protected CellFunction(CellVertex vertex)
         {
             Name = vertex.Name.Copy();
-            ReturnType = vertex.CellType;
         }
 
         public abstract bool IsStructurallyEquivalentTo(CellFunction otherFunction);
@@ -28,11 +27,10 @@ namespace Thesis.Models.FunctionGeneration
 
         public FormulaFunction(CellVertex formulaVertex, Expression expression) : base(formulaVertex)
         {
+            Name.IsFunction = true;
             Expression = expression;
             Parameters = expression.GetLeafsOfType<InputReference>().ToArray();
-
-            // make parameter names unique
-            Name.MakeNamesUnique(Parameters.Select(par => par.VariableName));
+            ReturnType = expression.GetCellType();
         }
 
         public override bool IsStructurallyEquivalentTo(CellFunction otherFunction)
@@ -49,16 +47,17 @@ namespace Thesis.Models.FunctionGeneration
 
         public OutputFieldFunction(CellVertex outputFieldVertex, Statement[] statements) : base(outputFieldVertex)
         {
+            Name.IsOutputField = true;
             Statements = statements;
-            Name.MakeNamesUnique(statements.Select(statement => statement.VariableName));
 
-            var statementVariableNames = Statements.Select(statement => statement.VariableName).ToHashSet();
+            var statementVariableNames = Statements.Select(statement => statement.VariableName.ToString()).ToHashSet();
             Parameters = Statements
                 .OfType<FunctionInvocationStatement>()
                 .SelectMany(statement => statement.Parameters)
-                .Where(inputReference => !statementVariableNames.Contains(inputReference.VariableName))
+                .Where(inputReference => !statementVariableNames.Contains(inputReference.VariableName.ToString()))
                 .ToArray();
-            Name.MakeNamesUnique(Parameters.Select(par => par.VariableName));
+
+            ReturnType = statements.Last().VariableType;
         }
 
         public override bool IsStructurallyEquivalentTo(CellFunction otherFunction)
@@ -80,6 +79,12 @@ namespace Thesis.Models.FunctionGeneration
         public abstract CellType GetCellType();
         public abstract T[] GetLeafsOfType<T>();
         public abstract bool IsStructurallyEquivalentTo(Expression otherExpression);
+
+        public bool IsSameTypeAndNotUnknown(Expression otherExpression)
+        {
+            var cellType = GetCellType();
+            return cellType == otherExpression.GetCellType() && cellType != CellType.Unknown;
+        }
     }
 
     public abstract class ReferenceOrConstant : Expression
@@ -102,18 +107,13 @@ namespace Thesis.Models.FunctionGeneration
         }
     }
 
-    public class GlobalReference : Reference
+    public abstract class GlobalReference : Reference
     {
-        public CellVertex ReferencedVertex { get; }
+        public Vertex ReferencedVertex { get; }
 
-        public GlobalReference(CellVertex cellVertex) : base(cellVertex.Name)
+        protected GlobalReference(Vertex cellVertex) : base(cellVertex.Name)
         {
             ReferencedVertex = cellVertex;
-        }
-
-        public override CellType GetCellType()
-        {
-            return ReferencedVertex.CellType;
         }
 
         public override bool IsStructurallyEquivalentTo(Expression otherExpression)
@@ -123,20 +123,54 @@ namespace Thesis.Models.FunctionGeneration
         }
     }
 
-    public abstract class InputReference : Reference
+    public class GlobalCellReference : GlobalReference
     {
-        protected InputReference(Name variableName) : base(variableName)
+        public new CellVertex ReferencedVertex { get; }
+
+        public GlobalCellReference(CellVertex cellVertex) : base(cellVertex)
         {
+            ReferencedVertex = cellVertex;
+        }
+
+        public override CellType GetCellType()
+        {
+            return ReferencedVertex.CellType;
         }
     }
 
-    public class InputCellReference : InputReference
+    public class GlobalRangeReference : GlobalReference
+    {
+        public new RangeVertex ReferencedVertex { get; }
+
+        public GlobalRangeReference(RangeVertex rangeVertex) : base(rangeVertex)
+        {
+            ReferencedVertex = rangeVertex;
+        }
+
+        public override CellType GetCellType()
+        {
+            return CellType.Unknown;
+        }
+    }
+
+    public class InputReference : Reference
     {
         public CellType InputType { get; }
 
-        public InputCellReference(CellVertex cellVertex) : base(cellVertex.Name)
+
+        public InputReference(CellVertex cellVertex) : base(cellVertex.Name)
         {
             InputType = cellVertex.CellType;
+        }
+
+        protected InputReference(Name name, CellType inputType) : base(name)
+        {
+            InputType = inputType;
+        }
+
+        public InputReference Copy()
+        {
+            return new InputReference(VariableName.Copy(), InputType);
         }
 
         public override CellType GetCellType()
@@ -146,32 +180,8 @@ namespace Thesis.Models.FunctionGeneration
 
         public override bool IsStructurallyEquivalentTo(Expression otherExpression)
         {
-            return otherExpression is InputCellReference otherInputCellReference &&
+            return otherExpression is InputReference otherInputCellReference &&
                    InputType == otherInputCellReference.InputType;
-        }
-    }
-
-    public class InputRangeReference : InputReference
-    {
-        public int ColumnCount { get; }
-        public int RowCount { get; }
-
-        public InputRangeReference(RangeVertex rangeVertex) : base(rangeVertex.Name)
-        {
-            ColumnCount = rangeVertex.ColumnCount;
-            RowCount = rangeVertex.RowCount;
-        }
-
-        public override CellType GetCellType()
-        {
-            return CellType.Unknown;
-        }
-
-        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
-        {
-            return otherExpression is InputRangeReference otherInputRangeReference &&
-                   ColumnCount == otherInputRangeReference.ColumnCount &&
-                   RowCount == otherInputRangeReference.RowCount;
         }
     }
 
@@ -180,18 +190,25 @@ namespace Thesis.Models.FunctionGeneration
         public dynamic ConstantValue { get; }
         public CellType ConstantType { get; }
 
-        public Constant(string numberString)
+        public Constant(string numberString, bool isPercentage = false)
         {
             ConstantType = CellType.Number;
+            if (isPercentage)
+                numberString = numberString.Replace("%", "").Replace("\"", "");
             if (int.TryParse(numberString, out int result))
                 ConstantValue = result;
             ConstantValue = double.Parse(numberString);
+            if (isPercentage)
+                ConstantValue /= 100.0;
         }
 
         public Constant(dynamic value, CellType type)
         {
             ConstantValue = value;
             ConstantType = type;
+
+            if (value is string s && s[0] == '"' && s[s.Length - 1] == '"')
+                ConstantValue = s.Substring(1, s.Length - 2);
         }
 
         public override CellType GetCellType()
@@ -263,13 +280,13 @@ namespace Thesis.Models.FunctionGeneration
             {"CONCATENATE", CellType.Text},
 
             {"DATE", CellType.Date},
-            {"SECOND", CellType.Date},
-            {"MINUTE", CellType.Date},
-            {"HOUR", CellType.Date},
-            {"DAY", CellType.Date},
-            {"MONTH", CellType.Date},
-            {"YEAR", CellType.Date},
             {"TODAY", CellType.Date},
+            {"SECOND", CellType.Number},
+            {"MINUTE", CellType.Number},
+            {"HOUR", CellType.Number},
+            {"DAY", CellType.Number},
+            {"MONTH", CellType.Number},
+            {"YEAR", CellType.Number},
         };
 
         public Function(string name, Expression[] arguments)
@@ -311,7 +328,7 @@ namespace Thesis.Models.FunctionGeneration
     public abstract class Statement
     {
         public Name VariableName { get; }
-        public CellType VariableType { get; }
+        public CellType VariableType { get; protected set; }
         protected Statement(Name variableName, CellType variableType)
         {
             VariableName = variableName;
@@ -320,34 +337,35 @@ namespace Thesis.Models.FunctionGeneration
         public abstract bool IsStructurallyEquivalentTo(Statement otherStatement);
     }
 
-    public class ConstantStatement : Statement
-    {
-        // for Constant, store entire expression
-        public Constant Constant { get; }
+    //public class ConstantStatement : Statement
+    //{
+    //    // for Constant, store entire expression
+    //    public Constant Constant { get; }
 
-        public ConstantStatement(Name variableName, CellType variableType, Constant constant) : base(variableName, variableType)
-        {
-            Constant = constant;
-        }
+    //    public ConstantStatement(Name variableName, CellType variableType, Constant constant) : base(variableName, variableType)
+    //    {
+    //        Constant = constant;
+    //    }
 
-        public override bool IsStructurallyEquivalentTo(Statement otherStatement)
-        {
-            return otherStatement is ConstantStatement otherConstantStatement &&
-                  Constant.IsStructurallyEquivalentTo(otherConstantStatement.Constant);
-        }
-    }
+    //    public override bool IsStructurallyEquivalentTo(Statement otherStatement)
+    //    {
+    //        return otherStatement is ConstantStatement otherConstantStatement &&
+    //              Constant.IsStructurallyEquivalentTo(otherConstantStatement.Constant);
+    //    }
+    //}
 
     public class FunctionInvocationStatement : Statement
     {
-        private readonly FormulaFunction _formulaFunction;
-
         // for Functions, only store the names of the parameters which will be used for invocation
-        public Name FunctionName => _formulaFunction.Name;
-        public InputReference[] Parameters => _formulaFunction.Parameters;
+        public Name FunctionName { get; }
+        public InputReference[] Parameters;
 
         public FunctionInvocationStatement(Name variableName, CellType variableType, FormulaFunction function) : base(variableName, variableType)
         {
-            _formulaFunction = function;
+            if (function.ReturnType == CellType.Unknown)
+                VariableType = CellType.Unknown;
+            FunctionName = function.Name;
+            Parameters = function.Parameters.ToArray();
         }
 
         public string[] GetParameterNames()
