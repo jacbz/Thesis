@@ -18,7 +18,6 @@ namespace Thesis.ViewModels
         private readonly MainWindow _window;
 
         public Graph Graph { get; set; }
-        public ClassCollection ClassCollection { get; set; }
         public Code Code { get; set; }
 
         public bool HideConnections { get; set; }
@@ -63,7 +62,6 @@ namespace Thesis.ViewModels
                 _window.GetRangeFromCurrentWorksheet,
                 _window.spreadsheet.Workbook.Names);
 
-            ClassCollection = null;
             Code = null;
 
             _window.generateGraphButton.IsEnabled = true;

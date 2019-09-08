@@ -12,65 +12,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
 {
     public partial class CSharpGenerator
     {
-        private readonly Dictionary<string, CellType> _functionToCellTypeDictionary = new Dictionary<string, CellType>
-        {
-            {"+", CellType.Unknown},
-            {"-", CellType.Number},
-            {"*", CellType.Number},
-            {"/", CellType.Number},
-            {"%", CellType.Number},
-            {"^", CellType.Number},
-            {"ROUND", CellType.Number},
-            {"ROUNDUP", CellType.Number},
-            {"ROUNDDOWN", CellType.Number},
-            {"SUM", CellType.Number},
-            {"MIN", CellType.Number},
-            {"MAX", CellType.Number},
-            {"COUNT", CellType.Number},
-            {"AVERAGE", CellType.Number},
-
-            {"HLOOKUP", CellType.Unknown},
-            {"VLOOKUP", CellType.Unknown},
-            {"CHOOSE", CellType.Unknown},
-            {"MATCH", CellType.Number},
-            {"INDEX", CellType.Unknown},
-
-            {"IF", CellType.Unknown},
-            {"AND", CellType.Bool},
-            {"NOT", CellType.Bool},
-            {"OR", CellType.Bool},
-            {"XOR", CellType.Bool},
-            {"TRUE", CellType.Bool},
-            {"FALSE", CellType.Bool},
-
-            {"ISBLANK", CellType.Bool},
-            {"ISLOGICAL", CellType.Bool},
-            {"ISNONTEXT", CellType.Bool},
-            {"ISNUMBER", CellType.Bool},
-            {"ISTEXT", CellType.Bool},
-            {"ISERR", CellType.Unknown},
-            {"ISERROR", CellType.Unknown},
-            {"ISNA", CellType.Unknown},
-
-            {"=", CellType.Bool},
-            {"<>", CellType.Bool},
-            {"<", CellType.Bool},
-            {"<=", CellType.Bool},
-            {">=", CellType.Bool},
-            {">", CellType.Bool},
-
-            {"&", CellType.Text},
-            {"CONCATENATE", CellType.Text},
-
-            {"DATE", CellType.Date},
-            {"SECOND", CellType.Date},
-            {"MINUTE", CellType.Date},
-            {"HOUR", CellType.Date},
-            {"DAY", CellType.Date},
-            {"MONTH", CellType.Date},
-            {"YEAR", CellType.Date},
-            {"TODAY", CellType.Date},
-        };
+        private bool _forceConstantsIntoDecimal = false;
 
         private ExpressionSyntax ExpressionToCode(Expression expression)
         {
@@ -88,7 +30,6 @@ namespace Thesis.Models.CodeGeneration.CSharp
             }
             throw new Exception("Unidentified expression");
         }
-
 
         private ExpressionSyntax FunctionToCode(Function function)
         {
@@ -220,8 +161,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
                             return FunctionError(functionName, arguments);
                         var matrixOrCollection = RangeToVariableName(arguments[0]);
 
-                        var argumentList = new List<SyntaxNodeOrToken>();
-                        argumentList.Add(Argument(ExpressionToCode(arguments[1])));
+                        var argumentList = new List<SyntaxNodeOrToken>
+                        {
+                            Argument(ExpressionToCode(arguments[1]))
+                        };
+
                         if (arguments.Length == 3)
                         {
                             argumentList.Add(Token(SyntaxKind.CommaToken));

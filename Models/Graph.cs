@@ -17,7 +17,6 @@ namespace Thesis.Models
     {
         public string WorksheetName { get; }
         public List<Vertex> Vertices { get; set; }
-        public List<Vertex> GlobalVertices { get; set; }
         public List<Vertex> ExternalVertices { get; set; } // delete this? TODO
         public Dictionary<string, Vertex> NameDictionary { get; set; } // user defined names
         public static Dictionary<string, RangeVertex> RangeDictionary { get; set; }

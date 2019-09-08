@@ -16,7 +16,7 @@ namespace Thesis.Models.CodeGeneration
         }
 
         public abstract Task PerformTestAsync();
-        public abstract TestReport GenerateTestReport(Dictionary<(string className, string variableName), Vertex> variableNameToVertexDictionary);
+        //public abstract TestReport GenerateTestReport(Dictionary<string, Vertex> variableNameToVertexDictionary);
 
         public static bool IsNumeric(object o) => o is byte || o is sbyte || o is ushort || o is uint || o is ulong || o is short || o is int || o is long || o is float || o is double || o is decimal;
     }
@@ -57,39 +57,32 @@ namespace Thesis.Models.CodeGeneration
 
     public class TestResults
     {
-        private readonly Dictionary<(string className, string variableName), TestResult> _testResults;
+        private readonly Dictionary<string, TestResult> _testResults;
 
         public TestResults()
         {
-            _testResults = new Dictionary<(string className, string variableName), TestResult>();
+            _testResults = new Dictionary<string, TestResult>();
         }
 
-        public void Add((string className, string variableName) tuple, TestResult testResult)
+        public void Add(string name, TestResult testResult)
         {
-            _testResults.Add(tuple, testResult);
+            _testResults.Add(name, testResult);
         }
 
-        public TestResult this[(string className, string variableName) tuple] =>
-            _testResults.TryGetValue(tuple, out var testResult)
+        public TestResult this[string name] =>
+            _testResults.TryGetValue(name, out var testResult)
                 ? testResult
                 : null;
 
-        public TestResult this[Vertex vertex]
-        {
-            get
-            {
-                var tuple = (vertex.Class.Name, vertex.Name);
-                return _testResults.TryGetValue(tuple, out var testResult) 
-                    ? testResult 
-                    : null;
-            }
-        }
+        public TestResult this[Vertex vertex] =>
+            _testResults.TryGetValue(vertex.Name, out var testResult) 
+                ? testResult 
+                : null;
     }
     
 
     public class TestResult
     {
-        public string ClassName { get; }
         public string VariableName { get; }
         public dynamic ActualValue { get; }
         public dynamic ExpectedValue { get; set; }
@@ -98,9 +91,8 @@ namespace Thesis.Models.CodeGeneration
         public Type ActualValueType { get; }
         public string Annotation { get; set; }
 
-        public TestResult(string className, string variableName, dynamic actualValue, Type actualValueType)
+        public TestResult(string variableName, dynamic actualValue, Type actualValueType)
         {
-            ClassName = className;
             VariableName = variableName;
             ActualValue = actualValue;
             ActualValueType = actualValueType;

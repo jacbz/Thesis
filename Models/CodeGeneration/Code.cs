@@ -8,18 +8,18 @@ namespace Thesis.Models.CodeGeneration
     public class Code
     {
         public string SourceCode { get; }
-        public Dictionary<(string className, string variableName), Vertex> VariableNameToVertexDictionary { get; }
+        public Dictionary<string, List<Vertex>> VariableNameToVerticesDictionary { get; }
 
         protected CodeGenerator CodeGenerator;
         protected Tester Tester;
 
         public Code(
             string sourceCode,
-            Dictionary<(string className, string variableName), Vertex> variableNameToVertexDictionary,
+            Dictionary<string, List<Vertex>> variableNameToVerticesDictionary,
             Tester tester)
         {
             SourceCode = sourceCode;
-            VariableNameToVertexDictionary = variableNameToVertexDictionary;
+            VariableNameToVerticesDictionary = variableNameToVerticesDictionary;
             Tester = tester;
         }
 
@@ -34,10 +34,11 @@ namespace Thesis.Models.CodeGeneration
         public async Task<TestReport> GenerateTestReportAsync()
         {
             await Tester.PerformTestAsync();
-            var testReport = Tester.GenerateTestReport(VariableNameToVertexDictionary);
-            Logger.Log(LogItemType.Info, "Generating code with test results as comments...");
-            testReport.Code = (await CodeGenerator.GenerateCodeAsync(Tester.TestResults)).SourceCode;
-            return testReport;
+            //var testReport = Tester.GenerateTestReport(VariableNameToVerticesDictionary);
+            //Logger.Log(LogItemType.Info, "Generating code with test results as comments...");
+            //testReport.Code = (await CodeGenerator.GenerateCodeAsync(Tester.TestResults)).SourceCode;
+            //return testReport;
+            return null;
         }
     }
 }

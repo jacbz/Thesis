@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -11,6 +12,7 @@ using Thesis.Models;
 using Thesis.Models.VertexTypes;
 using MColor = System.Windows.Media.Color;
 using DColor = System.Drawing.Color;
+using Point = System.Windows.Point;
 
 namespace Thesis.ViewModels
 {
@@ -48,6 +50,9 @@ namespace Thesis.ViewModels
         private static DColor _outputNodeColor;
         private static DColor _formulaNodeColor;
         private static DColor _constantNodeColor;
+
+        public static readonly DColor GlobalColor = ColorTranslator.FromHtml("#CFD8DC");
+        public static readonly DColor ExternalColor = ColorTranslator.FromHtml("#c4f7ed");
 
         public static void InitFormatter()
         {
@@ -110,7 +115,7 @@ namespace Thesis.ViewModels
         public static DColor GetRegionColor(this LabelGenerator.Region region)
         {
             if (region is LabelGenerator.LabelRegion labelRegion)
-                return ((Color)Application.Current.Resources[
+                return ((MColor)Application.Current.Resources[
                     labelRegion.Type == LabelGenerator.LabelRegionType.Header
                         ? "HeaderColor"
                         : "AttributeColor"]).ToDColor();

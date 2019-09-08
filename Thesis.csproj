@@ -200,16 +200,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Models\ClassCollection.cs" />
     <Compile Include="Models\CodeGeneration\Code.cs" />
     <Compile Include="Models\CodeGeneration\CodeGenerator.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\Formatter.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\FunctionProcessor.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\CSharpGenerator.cs" />
     <Compile Include="Models\CodeGeneration\CSharp\CSharpTester.cs" />
-    <Compile Include="Models\CodeGeneration\CSharp\GrammarProcessor.cs" />
     <Compile Include="Models\CodeGeneration\Tester.cs" />
-    <Compile Include="Models\Class.cs" />
     <Compile Include="Models\FunctionGeneration\FunctionGenerator.cs" />
     <Compile Include="Models\FunctionGeneration\Function.cs" />
     <Compile Include="Models\Graph.cs" />

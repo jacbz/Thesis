@@ -41,21 +41,6 @@ namespace Thesis.Views
             spreadsheet.Opacity = 100;
         }
 
-        private void SaveCustomClassNames()
-        {
-            var classNames = _generator?.ClassCollection?.GetCustomClassNames();
-            if (classNames == null) return;
-
-            foreach (var kvp in _generator.ClassCollection.GetCustomClassNames())
-            {
-                if (App.Settings.CurrentWorksheetSettings.CustomClassNames.ContainsKey(kvp.Key))
-                    App.Settings.CurrentWorksheetSettings.CustomClassNames[kvp.Key] = kvp.Value;
-                else
-                    App.Settings.CurrentWorksheetSettings.CustomClassNames.Add(kvp.Key, kvp.Value);
-            }
-            App.Settings.Persist();
-        }
-
         private void SelectVertexInSpreadsheet(Vertex vertex)
         {
             spreadsheet.SetActiveSheet(string.IsNullOrEmpty(vertex.ExternalWorksheetName) 
@@ -78,10 +63,10 @@ namespace Thesis.Views
             }
         }
 
-        private void SelectClassVerticesInSpreadsheet(Class @class)
+        private void SelectVerticesInSpreadsheet(List<Vertex> vertices)
         {
             // get the most common worksheet (current worksheet is null)
-            var mostCommonWorksheetList = @class.Vertices
+            var mostCommonWorksheetList = vertices
                 .GroupBy(v => v.ExternalWorksheetName)
                 .OrderByDescending(gp => gp.Count())
                 .Take(1)
@@ -93,7 +78,7 @@ namespace Thesis.Views
             // navigate to the most common worksheet
             spreadsheet.SetActiveSheet(mostCommonWorksheet ?? _generator.ActiveWorksheet);
 
-            var ranges = @class.Vertices
+            var ranges = vertices
                 .Where(v => v.WorksheetName == mostCommonWorksheet)
                 .Select(vertex => spreadsheet.ActiveSheet.Range[vertex.StringAddress])
                 .ToArray();
@@ -171,15 +156,15 @@ namespace Thesis.Views
 
         private void SelectVertexInCode(Vertex vertex)
         {
-            if (_generator.Code == null || vertex.Class == null || generateCodeTab.IsSelected == false) return;
+            if (_generator.Code == null || generateCodeTab.IsSelected == false) return;
 
             var code = codeTextBox.Text;
-
-            var indexOfClassNameInCode = code.IndexOf($"class {vertex.Class.Name}", StringComparison.InvariantCulture);
-            if (indexOfClassNameInCode == -1) return;
-
-            var indexOfVariableInCode = code.IndexOf(vertex.Name, indexOfClassNameInCode, StringComparison.InvariantCulture);
-            if (indexOfVariableInCode == -1) return;
+            
+            var indexOfVariableInCode = code.IndexOf(vertex.Name, StringComparison.InvariantCulture);
+            if (indexOfVariableInCode == -1)
+            {
+                indexOfVariableInCode = code.IndexOf(vertex.Name.AsFunctionName(), StringComparison.InvariantCulture);
+            }
 
             var line = codeTextBox.Document.GetLineByOffset(indexOfVariableInCode);
             codeTextBox.ScrollTo(line.LineNumber, line.Length);
@@ -233,14 +218,14 @@ namespace Thesis.Views
 
                 if (externalVertex is CellVertex cellVertex)
                 {
-                    grid.Worksheet.Range[cellVertex.StringAddress].CellStyle.Color = Class.ExternalColor;
+                    grid.Worksheet.Range[cellVertex.StringAddress].CellStyle.Color = Formatter.ExternalColor;
                     grid.InvalidateCell(cellVertex.Address.row, cellVertex.Address.col);
                 }
                 else if (externalVertex is RangeVertex rangeVertex)
                 {
                     foreach (var cell in rangeVertex.CellsInRange)
                     {
-                        cell.CellStyle.Color = Class.ExternalColor;
+                        cell.CellStyle.Color = Formatter.ExternalColor;
                         grid.InvalidateCell(cell.Row, cell.Column);
                     }
                 }

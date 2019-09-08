@@ -67,12 +67,9 @@ namespace Thesis.ViewModels
         public class WorksheetSettings
         {
             public List<string> SelectedOutputFields { get; set; }
-            // maps default class name to user-defined class name
-            public Dictionary<string, string> CustomClassNames { get; }
 
             public WorksheetSettings()
             {
-                CustomClassNames = new Dictionary<string, string>();
             }
         }
 

@@ -101,11 +101,17 @@ namespace Thesis.Models
         public override string ToString()
         {
             if (IsFunction)
-                return "Calc" + ToStringInner().RaiseFirstCharacter();
+                return AsFunctionName();
             if (IsOutputField)
                 return "OUTPUT_" + ToStringInner().RaiseFirstCharacter();
             return ToStringInner();
         }
+
+        public string AsFunctionName()
+        {
+            return "Calc" + ToStringInner().RaiseFirstCharacter();
+        }
+
         private string ToStringInner()
         {
             if (!string.IsNullOrWhiteSpace(_customName))

@@ -21,7 +21,6 @@ namespace Thesis.Models.VertexTypes
         public bool Include { get => _include; set { _include = value; OnPropertyChanged(); } }
 
         public NodeViewModel Node { get; set; }
-        public Class Class { get; set; }
 
         protected Vertex()
         {

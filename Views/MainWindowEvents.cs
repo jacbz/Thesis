@@ -123,9 +123,6 @@ namespace Thesis.Views
             codeGeneratorProgressRing.IsActive = false;
             testCodeButton.IsEnabled = true;
             generateCodeButton.IsEnabled = true;
-
-            // save custom class names
-            SaveCustomClassNames();
         }
 
         private async void TestCodeButton_Click(object sender, RoutedEventArgs e)
@@ -199,11 +196,6 @@ namespace Thesis.Views
                     SelectVertexInOutputListView(vertex);
                     InitiateToolbox(vertex);
                 }
-                else if (item.Content is Class @class)
-                {
-                    SelectClassVerticesInSpreadsheet(@class);
-                    InitiateToolbox(@class);
-                }
             }
             else
             {
@@ -228,52 +220,21 @@ namespace Thesis.Views
 
         private void CodeTextBoxSelectionChanged(object sender, EventArgs e)
         {
-            if (_generator.Code?.VariableNameToVertexDictionary == null) return;
+            if (_generator.Code?.VariableNameToVerticesDictionary == null) return;
 
             var selection = codeTextBox.SelectedText;
-
-            // check if user selected class name
-            //var classMatch = _generator.ClassCollection.Classes.FirstOrDefault(c => c.Name == selection);
-            //if (classMatch != null)
-            //{
-            //    SelectClassVerticesInSpreadsheet(classMatch);
-            //    InitiateToolbox(classMatch);
-            //    codeTextBox.Focus();
-            //}
-
-            // check if user selected both class and variable name (e.g. Global.A1)
-            var vertex = _generator.Code.VariableNameToVertexDictionary
-                .FirstOrDefault(kvp => selection == kvp.Key.className + "." + kvp.Key.variableName).Value;
-
-            // check if user selected only variable name (e.g. A1)
-            if (vertex == null)
+            if (_generator.Code.VariableNameToVerticesDictionary.TryGetValue(selection, out var vertexList))
             {
-                var verticesWithSelectedVariableName = _generator.Code.VariableNameToVertexDictionary
-                    .Where(kvp => selection == kvp.Key.variableName).Select(kvp => kvp.Value).ToList();
-                if (verticesWithSelectedVariableName.Count > 0)
+                if (vertexList.Count == 1)
                 {
-                    if (verticesWithSelectedVariableName.Count == 1)
-                    {
-                        vertex = verticesWithSelectedVariableName[0];
-                    }
-                    else
-                    {
-                        // perform regex such for the correct class name
-                        var regexMatch = Regex.Match(codeTextBox.Text.Substring(0, codeTextBox.SelectionStart),
-                            "class ([A-Za-z0-9_]+)", RegexOptions.RightToLeft);
-                        if (regexMatch.Success)
-                        {
-                            var className = regexMatch.Groups[1].Value;
-                            vertex = verticesWithSelectedVariableName.FirstOrDefault(v => v.Class.Name == className);
-                        }
-                    }
+                    SelectVertexInSpreadsheet(vertexList[0]);
+                    InitiateToolbox(vertexList[0]);
                 }
-            }
-
-            if (vertex != null)
-            {
-                SelectVertexInSpreadsheet(vertex);
-                InitiateToolbox(vertex);
+                else
+                {
+                    SelectVerticesInSpreadsheet(vertexList);
+                    InitiateToolbox(null);
+                }
                 codeTextBox.Focus();
             }
         }
