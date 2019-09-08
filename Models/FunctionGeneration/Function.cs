@@ -9,15 +9,17 @@ namespace Thesis.Models.FunctionGeneration
 {
     public abstract class CellFunction
     {
-        public string Name { get; protected set; }
+        public Name Name { get; set; }
         public CellType ReturnType { get; protected set; }
         public InputReference[] Parameters { get; protected set; }
 
         protected CellFunction(CellVertex vertex)
         {
-            Name = vertex.Name;
+            Name = vertex.Name.Copy();
             ReturnType = vertex.CellType;
         }
+
+        public abstract bool IsStructurallyEquivalentTo(CellFunction otherFunction);
     }
 
     public class FormulaFunction : CellFunction
@@ -28,6 +30,16 @@ namespace Thesis.Models.FunctionGeneration
         {
             Expression = expression;
             Parameters = expression.GetLeafsOfType<InputReference>().ToArray();
+
+            // make parameter names unique
+            Name.MakeNamesUnique(Parameters.Select(par => par.VariableName));
+        }
+
+        public override bool IsStructurallyEquivalentTo(CellFunction otherFunction)
+        {
+            if (otherFunction is FormulaFunction otherFormulaFunction)
+                return Expression.IsStructurallyEquivalentTo(otherFormulaFunction.Expression);
+            return false;
         }
     }
 
@@ -37,8 +49,8 @@ namespace Thesis.Models.FunctionGeneration
 
         public OutputFieldFunction(CellVertex outputFieldVertex, Statement[] statements) : base(outputFieldVertex)
         {
-            Name = "Calculate" + Name.RaiseFirstCharacter();
             Statements = statements;
+            Name.MakeNamesUnique(statements.Select(statement => statement.VariableName));
 
             var statementVariableNames = Statements.Select(statement => statement.VariableName).ToHashSet();
             Parameters = Statements
@@ -46,6 +58,19 @@ namespace Thesis.Models.FunctionGeneration
                 .SelectMany(statement => statement.Parameters)
                 .Where(inputReference => !statementVariableNames.Contains(inputReference.VariableName))
                 .ToArray();
+            Name.MakeNamesUnique(Parameters.Select(par => par.VariableName));
+        }
+
+        public override bool IsStructurallyEquivalentTo(CellFunction otherFunction)
+        {
+            if (!(otherFunction is OutputFieldFunction otherOutputFieldFunction) ||
+                Statements.Length != otherOutputFieldFunction.Statements.Length)
+                return false;
+            for(int i = 0; i < Statements.Length; i++)
+                if (!Statements[i].IsStructurallyEquivalentTo(otherOutputFieldFunction.Statements[i]))
+                    return false;
+
+            return true;
         }
     }
 
@@ -54,13 +79,11 @@ namespace Thesis.Models.FunctionGeneration
     {
         public abstract CellType GetCellType();
         public abstract T[] GetLeafsOfType<T>();
-        public abstract string Name { get; }
+        public abstract bool IsStructurallyEquivalentTo(Expression otherExpression);
     }
 
     public abstract class ReferenceOrConstant : Expression
     {
-        private new CellType[] ParameterTypes = null;
-
         public override T[] GetLeafsOfType<T>()
         {
             if (this is T)
@@ -71,43 +94,60 @@ namespace Thesis.Models.FunctionGeneration
 
     public abstract class Reference : ReferenceOrConstant
     {
-        public string VariableName { get; protected set; }
-        public override string Name => "Get" + VariableName;
+        public Name VariableName { get; protected set; }
+
+        protected Reference(Name variableName)
+        {
+            VariableName = variableName;
+        }
     }
 
     public class GlobalReference : Reference
     {
         public CellVertex ReferencedVertex { get; }
 
-        public GlobalReference(CellVertex cellVertex)
+        public GlobalReference(CellVertex cellVertex) : base(cellVertex.Name)
         {
             ReferencedVertex = cellVertex;
-            VariableName = cellVertex.Name;
         }
 
         public override CellType GetCellType()
         {
             return ReferencedVertex.CellType;
         }
+
+        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
+        {
+            return otherExpression is GlobalReference otherGlobalReference &&
+                   ReferencedVertex == otherGlobalReference.ReferencedVertex;
+        }
     }
 
     public abstract class InputReference : Reference
     {
+        protected InputReference(Name variableName) : base(variableName)
+        {
+        }
     }
 
     public class InputCellReference : InputReference
     {
         public CellType InputType { get; }
 
-        public InputCellReference(CellVertex cellVertex)
+        public InputCellReference(CellVertex cellVertex) : base(cellVertex.Name)
         {
             InputType = cellVertex.CellType;
-            VariableName = cellVertex.Name;
         }
 
         public override CellType GetCellType()
         {
             return InputType;
+        }
+
+        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
+        {
+            return otherExpression is InputCellReference otherInputCellReference &&
+                   InputType == otherInputCellReference.InputType;
         }
     }
 
@@ -116,16 +156,22 @@ namespace Thesis.Models.FunctionGeneration
         public int ColumnCount { get; }
         public int RowCount { get; }
 
-        public InputRangeReference(RangeVertex rangeVertex)
+        public InputRangeReference(RangeVertex rangeVertex) : base(rangeVertex.Name)
         {
             ColumnCount = rangeVertex.ColumnCount;
             RowCount = rangeVertex.RowCount;
-            VariableName = rangeVertex.Name;
         }
 
         public override CellType GetCellType()
         {
             return CellType.Unknown;
+        }
+
+        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
+        {
+            return otherExpression is InputRangeReference otherInputRangeReference &&
+                   ColumnCount == otherInputRangeReference.ColumnCount &&
+                   RowCount == otherInputRangeReference.RowCount;
         }
     }
 
@@ -133,7 +179,6 @@ namespace Thesis.Models.FunctionGeneration
     { 
         public dynamic ConstantValue { get; }
         public CellType ConstantType { get; }
-        public override string Name => "const";
 
         public Constant(string numberString)
         {
@@ -153,12 +198,18 @@ namespace Thesis.Models.FunctionGeneration
         {
             return ConstantType;
         }
+
+        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
+        {
+            if (otherExpression is Constant otherConstant)
+                return ConstantType == otherConstant.ConstantType && ConstantValue == otherConstant.ConstantValue;
+            return false;
+        }
     }
 
     public class Function : Expression
     {
         public string FunctionName { get; protected set; }
-        public override string Name => FunctionName;
         public Expression[] Arguments { get; protected set; }
 
         public static Dictionary<string, CellType> FunctionToCellTypeDictionary = new Dictionary<string, CellType>
@@ -243,17 +294,30 @@ namespace Thesis.Models.FunctionGeneration
         {
             return Arguments.SelectMany(function => function.GetLeafsOfType<T>()).ToArray();
         }
+
+        public override bool IsStructurallyEquivalentTo(Expression otherExpression)
+        {
+            if (!(otherExpression is Function otherFunction) ||
+                Arguments.Length != otherFunction.Arguments.Length) return false;
+
+            for(int i = 0; i < Arguments.Length; i++)
+                if (!Arguments[i].IsStructurallyEquivalentTo(otherFunction.Arguments[i]))
+                    return false;
+
+            return true;
+        }
     }
 
     public abstract class Statement
     {
-        public string VariableName { get; }
+        public Name VariableName { get; }
         public CellType VariableType { get; }
-        protected Statement(string variableName, CellType variableType)
+        protected Statement(Name variableName, CellType variableType)
         {
             VariableName = variableName;
             VariableType = variableType;
         }
+        public abstract bool IsStructurallyEquivalentTo(Statement otherStatement);
     }
 
     public class ConstantStatement : Statement
@@ -261,27 +325,41 @@ namespace Thesis.Models.FunctionGeneration
         // for Constant, store entire expression
         public Constant Constant { get; }
 
-        public ConstantStatement(string variableName, CellType variableType, Constant constant) : base(variableName, variableType)
+        public ConstantStatement(Name variableName, CellType variableType, Constant constant) : base(variableName, variableType)
         {
             Constant = constant;
+        }
+
+        public override bool IsStructurallyEquivalentTo(Statement otherStatement)
+        {
+            return otherStatement is ConstantStatement otherConstantStatement &&
+                  Constant.IsStructurallyEquivalentTo(otherConstantStatement.Constant);
         }
     }
 
     public class FunctionInvocationStatement : Statement
     {
-        // for Functions, only store the names of the parameters which will be used for invocation
-        public string FunctionName { get; }
-        public InputReference[] Parameters { get; }
+        private readonly FormulaFunction _formulaFunction;
 
-        public FunctionInvocationStatement(string variableName, CellType variableType, FormulaFunction function) : base(variableName, variableType)
+        // for Functions, only store the names of the parameters which will be used for invocation
+        public Name FunctionName => _formulaFunction.Name;
+        public InputReference[] Parameters => _formulaFunction.Parameters;
+
+        public FunctionInvocationStatement(Name variableName, CellType variableType, FormulaFunction function) : base(variableName, variableType)
         {
-            FunctionName = function.Name;
-            Parameters = function.Parameters;
+            _formulaFunction = function;
         }
 
         public string[] GetParameterNames()
         {
-            return Parameters.Select(parameter => parameter.VariableName).ToArray();
+            return Parameters.Select(parameter => parameter.VariableName.ToString()).ToArray();
+        }
+
+        public override bool IsStructurallyEquivalentTo(Statement otherStatement)
+        {
+            return otherStatement is FunctionInvocationStatement otherFunctionInvocationStatement &&
+                   FunctionName == otherFunctionInvocationStatement.FunctionName &&
+                   Parameters.Length == otherFunctionInvocationStatement.Parameters.Length;
         }
     }
 }

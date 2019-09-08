@@ -50,7 +50,7 @@ namespace Thesis.Models.VertexTypes
 
         public CellVertex(IRange cell, string name) : this(cell)
         {
-            Name = name.MakeNameVariableConform();
+            Name = new Name(name, StringAddress);
         }
 
         public CellType GetCellType(IRange cell)

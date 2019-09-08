@@ -25,15 +25,15 @@ namespace Thesis.Models
             DefaultName = defaultName;
             OutputVertex = outputVertex;
             Vertices = vertices;
-            foreach (var vertex in Vertices)
-            {
-                vertex.Name = vertex is CellVertex cellVertex 
-                    ? string.IsNullOrWhiteSpace(vertex.Name)
-                        ? "_" + cellVertex.StringAddress
-                        : vertex.Name.MakeNameVariableConform()
-                    : vertex.Name;
-                vertex.Class = this;
-            }
+            //foreach (var vertex in Vertices)
+            //{
+            //    vertex.Name = vertex is CellVertex cellVertex 
+            //        ? string.IsNullOrWhiteSpace(vertex.Name)
+            //            ? "_" + cellVertex.StringAddress
+            //            : vertex.Name.MakeNameVariableConform()
+            //        : vertex.Name;
+            //    vertex.Class = this;
+            //}
 
             Color = color.GetValueOrDefault();
         }

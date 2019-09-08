@@ -146,8 +146,8 @@ namespace Thesis.ViewModels
                         Offset = new Point(0, 0),
                         HorizontalAlignment = HorizontalAlignment.Left,
                         VerticalAlignment = VerticalAlignment.Bottom,
-                        Content = string.IsNullOrEmpty(cellVertex.Name) ? cellVertex.StringAddress : cellVertex.Name,
-                        ViewTemplate =!string.IsNullOrEmpty(cellVertex.Name) ? _normalLabelTemplate : _redLabelTemplate,
+                        Content = cellVertex.Name == null ? cellVertex.StringAddress : (string)cellVertex.Name,
+                        ViewTemplate = cellVertex.Name == null ? _redLabelTemplate : _normalLabelTemplate,
                         UnitWidth = 200
                     }
                 }

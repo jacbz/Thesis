@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -79,7 +80,7 @@ namespace Thesis.Models
             var cellVertices = graph.Vertices.GetCellVertices();
             graph.Regions = LabelGenerator.CreateRegions(cellVertices);
             // generate labels
-            LabelGenerator.GenerateLabelsFromRegions(cellVertices.Where(c => c.Region != null && c.Region is LabelGenerator.DataRegion));
+            LabelGenerator.GenerateLabelsFromRegions(cellVertices.Where(c => c.Region is LabelGenerator.DataRegion));
 
             graph.AllVertices = graph.Vertices.ToList();
 
@@ -103,28 +104,29 @@ namespace Thesis.Models
                 $"Filtered for reachable vertices from output fields. {graph.Vertices.Count} remaining");
 
 
-            // generate unique names
             var addressToVertexDictionary = graph.Vertices
                 .GetCellVertices()
                 .ToDictionary(v => (v.WorksheetName, v.StringAddress), v => v);
             foreach(var kvp in externalVerticesDict)
                 if (kvp.Value is CellVertex externalCellVertex)
                     addressToVertexDictionary.Add(kvp.Key, externalCellVertex);
+            
+            // default name for those without LabelGenerator name
+            foreach (var vertex in graph.Vertices.Where(vertex => vertex.Name == null))
+            {
+                vertex.Name = new Name(null, null, vertex.StringAddress);
+            }
 
-            //
-            foreach (var vertex in graph.Vertices)
-            {
-                vertex.Name = vertex is CellVertex cellVertex
-                    ? string.IsNullOrWhiteSpace(vertex.Name)
-                        ? "_" + cellVertex.StringAddress
-                        : vertex.Name.MakeNameVariableConform()
-                    : vertex.Name;
-            }
-            // append string address to duplicates
-            foreach (var vertex in graph.Vertices.GroupBy(v => v.Name).Where(x => x.Count() > 1).SelectMany(x => x))
-            {
-                vertex.Name += "_" + vertex.StringAddress;
-            }
+            //// duplicates? use headers
+            //foreach (var vertex in graph.Vertices.GroupBy(v => v.Name.ToString()).Where(x => x.Count() > 1).SelectMany(x => x))
+            //{
+            //    vertex.Name.MakeMoreUnique();
+            //}
+            //// still duplicate? use address
+            //foreach (var vertex in graph.Vertices.GroupBy(v => v.Name.ToString()).Where(x => x.Count() > 1).SelectMany(x => x))
+            //{
+            //    vertex.Name.MakeMoreUnique();
+            //}
 
             graph.GlobalVertices = GetGlobalVertices(graph);
             var formulaToFunctionConverter = FunctionGenerator.Instantiate(graph.GlobalVertices, addressToVertexDictionary,
@@ -137,13 +139,46 @@ namespace Thesis.Models
                 if (cellVertex.NodeType == NodeType.Constant)
                     Graph.ConstantDictionary.Add(cellVertex, new Constant(cellVertex.Value, cellVertex.CellType));
                 else if(cellVertex.NodeType != NodeType.InputField)
-                    Graph.FormulaFunctionDictionary.Add(cellVertex, new FormulaFunction(cellVertex,
-                        formulaToFunctionConverter.ParseTreeNodeToExpression(cellVertex.ParseTree, cellVertex.Formula)));
+                    Graph.FormulaFunctionDictionary.Add(cellVertex,
+                        formulaToFunctionConverter.FormulaToFunction(cellVertex));
             }
+
+            // structural equality compare
+            var functions = new HashSet<FormulaFunction>();
+            foreach(var cellVertex in Graph.FormulaFunctionDictionary.Keys.ToArray())
+            {
+                var function = Graph.FormulaFunctionDictionary[cellVertex];
+                var existingFunction = functions.FirstOrDefault(f => f.IsStructurallyEquivalentTo(function));
+                if (existingFunction != null)
+                {
+                    function.Name = existingFunction.Name;
+                    Graph.FormulaFunctionDictionary[cellVertex] = existingFunction;
+                }
+                else
+                {
+                    functions.Add(function);
+                }
+            }
+
+            var constantAndFunctionNames = new HashSet<string>();
+
+            Name.MakeNamesUnique(ConstantDictionary.Keys.Select(vertex => vertex.Name), 
+                constantAndFunctionNames);
+
+            Name.MakeNamesUnique(FormulaFunctionDictionary.Values.Distinct().Select(vertex => vertex.Name), 
+                constantAndFunctionNames);
+
+            // make global constants / functions globally unique
+
             foreach (var cellVertex in graph.Vertices.OfType<CellVertex>().Where(v => v.NodeType == NodeType.OutputField))
             {
                 Graph.OutputFieldFunctionDictionary.Add(cellVertex, formulaToFunctionConverter.OutputFieldToFunction(cellVertex));
             }
+
+            // remove unnecessary headers/addresses in name
+
+
+
 
             // create OutputFieldFunctions and sort topologically
 
@@ -223,7 +258,7 @@ namespace Thesis.Models
                         // simply assign the named range to the cell vertex
                         if (verticesDict.TryGetValue(nameAddress, out nameVertex))
                         {
-                            nameVertex.Name = nameTitle;
+                            nameVertex.Name = new Name(nameTitle, nameAddress);
                         }
                         else
                         {

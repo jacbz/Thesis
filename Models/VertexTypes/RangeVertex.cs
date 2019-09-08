@@ -19,7 +19,7 @@ namespace Thesis.Models.VertexTypes
         public RangeVertex(IRange[] cellsInRange, string name, string address)
         {
             CellsInRange = cellsInRange;
-            Name = name.MakeNameVariableConform();
+            Name = new Name(name, address);
             StringAddress = address;
             AddressToCellDictionary = new Dictionary<(int Row, int Column), IRange>();
 

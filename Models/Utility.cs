@@ -108,47 +108,5 @@ namespace Thesis.Models
                 sheetName = sheetName.Substring(0, sheetName.Length - 1);
             return sheetName;
         }
-
-        public static string ToPascalCase(this string inputString)
-        {
-            if (inputString == "") return "";
-            var textInfo = new CultureInfo("en-US", false).TextInfo;
-            inputString = textInfo.ToTitleCase(inputString);
-            inputString = inputString.MakeNameVariableConform();
-            if (inputString == "") return "";
-            return inputString;
-        }
-
-        public static string MakeNameVariableConform(this string inputString)
-        {
-            inputString = ProcessDiacritics(inputString);
-            inputString = inputString.Replace("%", "Percent");
-            inputString = Regex.Replace(inputString, "[^0-9a-zA-Z_]+", "");
-            if (inputString == "") return "_";
-            if (inputString.Length > 0 && char.IsDigit(inputString.ToCharArray()[0]))
-            {
-                if (char.IsDigit(inputString.ToCharArray()[0]))
-                    inputString = "_" + inputString;
-            }
-            return inputString;
-        }
-
-        public static string ProcessDiacritics(this string inputString)
-        {
-            inputString = inputString
-                .Replace("ö", "oe")
-                .Replace("ä", "ae")
-                .Replace("ü", "ue")
-                .Replace("ß", "ss");
-            var normalizedString = inputString.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder();
-            foreach (var c in normalizedString)
-            {
-                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                    stringBuilder.Append(c);
-            }
-
-            return stringBuilder.ToString();
-        }
     }
 }

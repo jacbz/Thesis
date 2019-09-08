@@ -23,6 +23,7 @@
             <views:TypeOfConverter x:Key="TypeOfConverter"/>
             <views:ColorToSolidBrushConverter x:Key="ColorToSolidBrushConverter"/>
             <views:CellVertexVisibilityConverter x:Key="CellVertexVisibilityConverter"/>
+            <views:NameConverter x:Key="NameConverter"/>
 
             <Style TargetType="fa5:SvgAwesome">
                 <Setter Property="Margin" Value="0,0,6,0" />

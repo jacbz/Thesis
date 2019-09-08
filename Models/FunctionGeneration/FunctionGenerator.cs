@@ -29,6 +29,12 @@ namespace Thesis.Models.FunctionGeneration
             return formulaToFunctionConverter;
         }
 
+        public FormulaFunction FormulaToFunction(CellVertex formulaVertex)
+        {
+            return new FormulaFunction(formulaVertex,
+                ParseTreeNodeToExpression(formulaVertex.ParseTree, formulaVertex.Formula));
+        }
+
         public OutputFieldFunction OutputFieldToFunction(CellVertex outputFieldVertex)
         {
             var verticesInFunction = outputFieldVertex.GetReachableVertices();

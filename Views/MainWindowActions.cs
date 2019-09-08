@@ -183,7 +183,7 @@ namespace Thesis.Views
 
             var line = codeTextBox.Document.GetLineByOffset(indexOfVariableInCode);
             codeTextBox.ScrollTo(line.LineNumber, line.Length);
-            codeTextBox.Select(indexOfVariableInCode, vertex.Name.Length);
+            codeTextBox.Select(indexOfVariableInCode, ((string)vertex.Name).Length);
         }
 
         public void StyleBackground(Color color, IStyle cellStyle)

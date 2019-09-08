@@ -63,7 +63,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
             //}
 
             var methodDeclaration = MethodDeclaration(
-                IdentifierName(CellTypeToTypeString(formulaFunction.ReturnType)), Identifier(formulaFunction.Name))
+                IdentifierName(CellTypeToTypeString(formulaFunction.ReturnType)), Identifier(formulaFunction.Name.AsFunctionName()))
                 .AddParameterListParameters(formulaFunction.Parameters.Select(inputReference =>
                     Parameter(Identifier(inputReference.VariableName))
                         .WithType(IdentifierName(
@@ -92,11 +92,11 @@ namespace Thesis.Models.CodeGeneration.CSharp
         {
             var parameters = functionInvocationStatement.Parameters;
             if (parameters.Length == 2 &&
-                _binaryOperators.ContainsKey(functionInvocationStatement.FunctionName))
+                _binaryOperators.ContainsKey(functionInvocationStatement.FunctionName.AsFunctionName()))
                 return BinaryExpression(_binaryOperators[functionInvocationStatement.FunctionName],
                     IdentifierName(parameters[0].VariableName),
                     IdentifierName(parameters[1].VariableName));
-            return InvocationExpression(IdentifierName(functionInvocationStatement.FunctionName))
+            return InvocationExpression(IdentifierName(functionInvocationStatement.FunctionName.AsFunctionName()))
                 .AddArgumentListArguments(functionInvocationStatement.GetParameterNames()
                     .Select(parameterName => Argument(IdentifierName(parameterName)))
                     .ToArray());
@@ -132,10 +132,12 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 .ToArray<MemberDeclarationSyntax>();
 
             var outputFields = Graph.OutputFieldFunctionDictionary.Values
+                .Distinct()
                 .Select(OutputFieldFunctionToCode)
                 .ToArray();
 
             var functionList = Graph.FormulaFunctionDictionary.Values
+                .Distinct()
                 .Select(FormulaFunctionToCode).ToArray();
 
             var compilationUnit = CompilationUnit()
@@ -569,9 +571,8 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 case CellType.Text:
                     return "string";
                 case CellType.Error:
-                    return "FormulaError";
                 case CellType.Unknown:
-                    return "EmptyCell";
+                    return "dynamic";
                 default:
                     return "";
             }

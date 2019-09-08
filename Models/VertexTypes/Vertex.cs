@@ -7,12 +7,12 @@ using Thesis.ViewModels;
 
 namespace Thesis.Models.VertexTypes
 {
-    public abstract class Vertex : INotifyPropertyChanged
+    public abstract class Vertex : INotifyPropertyChanged 
     {
         public HashSet<Vertex> Parents { get; set; }
         public HashSet<Vertex> Children { get; set; }
-        private string _name;
-        public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
+        private Name _name;
+        public Name Name { get => _name; set { _name = value; OnPropertyChanged(); } }
         public string StringAddress { get; set; }
         public bool IsExternal => !string.IsNullOrEmpty(ExternalWorksheetName);
         public string ExternalWorksheetName { get; set; }
@@ -38,12 +38,12 @@ namespace Thesis.Models.VertexTypes
         public void MarkAsExternal(string worksheetName, string variableName)
         {
             ExternalWorksheetName = worksheetName;
-            Name = GenerateExternalVariableName(worksheetName, variableName);
+            Name = new Name(GenerateExternalVariableName(worksheetName, variableName), StringAddress);
         }
 
         public static string GenerateExternalVariableName(string worksheetName, string variableName)
         {
-            return worksheetName.MakeNameVariableConform() + "_" + variableName.MakeNameVariableConform();
+            return Name.MakeNameVariableConform(worksheetName) + "_" + Name.MakeNameVariableConform(variableName);
         }
 
         public HashSet<Vertex> GetReachableVertices(bool ignoreExternal = true)

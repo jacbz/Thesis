@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Syncfusion.UI.Xaml.CellGrid.Helpers;
 using Thesis.Models.VertexTypes;
@@ -127,7 +128,7 @@ namespace Thesis.Models
             foreach (var vertex in cellVertices)
             {
                 // do not generate name for vertices which already have a name
-                if (!string.IsNullOrEmpty(vertex.Name)) continue;
+                if (vertex.Name != null) continue;
 
                 if (!(vertex.Region is DataRegion dataRegion)) continue;
                 var headers = dataRegion.LabelRegions
@@ -135,27 +136,20 @@ namespace Thesis.Models
                     .SelectMany(lr => lr.Cells)
                     .Where(cell => cell.Address.col == vertex.Address.col)
                     .OrderBy(cell => cell.Address.row)
-                    .Select(cell => cell.DisplayValue.ToPascalCase())
-                    .Where(s => !string.IsNullOrWhiteSpace(s) && s != "_")
-                    .ToList();
+                    .ToArray();
                 var attributes = dataRegion.LabelRegions
                     .Where(lr => lr.Type == LabelRegionType.Attribute)
                     .SelectMany(lr => lr.Cells)
                     .Where(cell => cell.Address.row == vertex.Address.row)
                     .OrderBy(cell => cell.Address.col)
-                    .Select(cell => cell.DisplayValue.ToPascalCase())
-                    .Where(s => !string.IsNullOrWhiteSpace(s) && s != "_")
-                    .ToList();
-                var name = string.Join("_", headers.Concat(attributes));
-                if (!string.IsNullOrWhiteSpace(name))
-                    vertex.Name = name.LowerFirstCharacter();
+                    .ToArray();
+                vertex.Name = new Name(attributes, headers, vertex.StringAddress);
             }
         }
 
         public abstract class Region
         {
             public CellVertex[] Cells { get; private set; }
-
             public (int row, int column) TopLeft { get; private set; }
             public (int row, int column) BottomRight { get; private set; }
 
@@ -167,7 +161,6 @@ namespace Thesis.Models
             {
                 Horizontal, Vertical
             }
-
 
             protected Region(CellVertex cellVertex)
             {
