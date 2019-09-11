@@ -58,27 +58,27 @@
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Range"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.Formula}" >
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:Classification.Formula}" >
                                                     <Setter Property="Background" Value="{StaticResource FormulaColorBrush}"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Formula"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.OutputField}" >
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:Classification.OutputField}" >
                                                     <Setter Property="Background" Value="{StaticResource OutputColorBrush}"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Output field"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.Constant}" >
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:Classification.Constant}" >
                                                     <Setter Property="Background" Value="{StaticResource ConstantColorBrush}"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Constant"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.InputField}" >
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:Classification.InputField}" >
                                                     <Setter Property="Background" Value="{StaticResource InputColorBrush}"/>
                                                     <Setter Property="Foreground" Value="White"/>
                                                     <Setter Property="Text" Value="Input field"/>
                                                 </DataTrigger>
-                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:NodeType.None}" >
+                                                <DataTrigger Binding="{Binding NodeType}" Value="{x:Static vertexTypes:Classification.None}" >
                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                 </DataTrigger>
                                             </Style.Triggers>

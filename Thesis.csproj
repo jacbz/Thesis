@@ -210,7 +210,7 @@
     <Compile Include="Models\FunctionGeneration\FunctionGenerator.cs" />
     <Compile Include="Models\FunctionGeneration\Function.cs" />
     <Compile Include="Models\Graph.cs" />
-    <Compile Include="Models\LabelGenerator.cs" />
+    <Compile Include="Models\NameGenerator.cs" />
     <Compile Include="Models\Name.cs" />
     <Compile Include="Models\Utility.cs" />
     <Compile Include="Models\VertexTypes\CellVertex.cs" />

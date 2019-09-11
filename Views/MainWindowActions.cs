@@ -145,7 +145,7 @@ namespace Thesis.Views
 
         private void SelectVertexInOutputListView(Vertex vertex)
         {
-            if (vertex is CellVertex cell && cell.NodeType == NodeType.OutputField)
+            if (vertex is CellVertex cell && cell.Classification == Classification.OutputField)
             {
                 outputFieldsListView.Tag = true; // avoiding triggering OutputFieldsListView_SelectionChanged
                 outputFieldsListView.ScrollIntoView(cell);
@@ -177,10 +177,10 @@ namespace Thesis.Views
             cellStyle.Font.RGBColor = color.GetTextColor();
         }
 
-        public void StyleBorderByNodeType(CellVertex cellVertex, IBorders borderStyle)
+        public void StyleBorderByClassification(CellVertex cellVertex, IBorders borderStyle)
         {
-            borderStyle.ColorRGB = cellVertex.GetNodeTypeColor();
-            borderStyle.LineStyle = cellVertex.NodeType == NodeType.None ? ExcelLineStyle.None : ExcelLineStyle.Thick;
+            borderStyle.ColorRGB = cellVertex.GetClassificationColor();
+            borderStyle.LineStyle = cellVertex.Classification == Classification.None ? ExcelLineStyle.None : ExcelLineStyle.Thick;
         }
 
         /// <summary>

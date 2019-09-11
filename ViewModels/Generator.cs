@@ -50,11 +50,11 @@ namespace Thesis.ViewModels
 
             var allCells = _window.spreadsheet.ActiveSheet.Range[1, 1, rowCount, columnCount];
 
-            LabelGenerator.HorizontalMergingRange = (int) _window.horizontalMergingRangeNum.Value;
-            LabelGenerator.VerticalMergingRange = (int)_window.verticalMergingRangeNum.Value;
-            LabelGenerator.MergeOutputFieldLabels = _window.mergeOutputFieldLabelsCheckBox.IsChecked.Value;
-            LabelGenerator.HeaderAssociationRange = (int) _window.headerAssociationRangeNum.Value;
-            LabelGenerator.AttributeAssociationRange = (int) _window.attributeAssosicationRangeNum.Value;
+            NameGenerator.HorizontalMergingRange = (int) _window.horizontalMergingRangeNum.Value;
+            NameGenerator.VerticalMergingRange = (int)_window.verticalMergingRangeNum.Value;
+            NameGenerator.MergeOutputFieldLabels = _window.mergeOutputFieldLabelsCheckBox.IsChecked.Value;
+            NameGenerator.HeaderAssociationRange = (int) _window.headerAssociationRangeNum.Value;
+            NameGenerator.AttributeAssociationRange = (int) _window.attributeAssosicationRangeNum.Value;
 
             Graph = Graph.FromSpreadsheet(
                 ActiveWorksheet, 
@@ -154,7 +154,7 @@ namespace Thesis.ViewModels
             logItem.AppendElapsedTime();
 
             _window.ResetSpreadsheetColors();
-            _window.ColorSpreadsheetCells(Graph.AllVertices.GetCellVertices(), _window.StyleBorderByNodeType);
+            _window.ColorSpreadsheetCells(Graph.AllVertices.GetCellVertices(), _window.StyleBorderByClassification);
             foreach (var region in Graph.Regions)
             {
                 var range = _window.spreadsheet.ActiveSheet.Range[region.TopLeft.row, region.TopLeft.column,

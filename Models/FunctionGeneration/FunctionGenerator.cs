@@ -29,7 +29,7 @@ namespace Thesis.Models.FunctionGeneration
 
         public Expression ConstantAndConstantFormulaVertexToExpression(CellVertex vertex)
         {
-            if (vertex.NodeType == NodeType.Constant)
+            if (vertex.Classification == Classification.Constant)
                 return new Constant(vertex.Value, vertex.CellType);
             return ParseTreeNodeToExpression(vertex.ParseTree, vertex.Formula);
         }

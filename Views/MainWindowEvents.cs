@@ -171,7 +171,7 @@ namespace Thesis.Views
             var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.CurrentRowColumnIndex.RowIndex, e.CurrentRowColumnIndex.ColumnIndex);
 
             if (vertex == null || (vertex is CellVertex cellVertex 
-                                   && cellVertex.NodeType == NodeType.None 
+                                   && cellVertex.Classification == Classification.None 
                                    && cellVertex.CellType == CellType.Unknown))
             {
                 InitiateToolbox(null);
@@ -282,7 +282,7 @@ namespace Thesis.Views
             string sheetName = spreadsheet.ActiveSheet.Name;
             var vertex = _generator.Graph.GetVertexByAddress(sheetName, e.Cell.RowIndex, e.Cell.ColumnIndex);
 
-            if (vertex is CellVertex cellVertex && cellVertex.NodeType == NodeType.OutputField)
+            if (vertex is CellVertex cellVertex && cellVertex.Classification == Classification.OutputField)
             {
                 var includeInGeneration = new MenuItem
                 {

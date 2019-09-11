@@ -132,7 +132,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
         //            else
         //            {
         //                var cellVertex = (CellVertex)keyValuePair.Value;
-        //                if (cellVertex.NodeType == NodeType.Constant || cellVertex.IsExternal) continue;
+        //                if (cellVertex.Classification == Classification.Constant || cellVertex.IsExternal) continue;
 
         //                testResult.SetExpectedValue(cellVertex);
         //                var actualValueIsNumeric = IsNumeric(testResult.ActualValue);

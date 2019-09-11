@@ -8,7 +8,7 @@ using Thesis.ViewModels;
 
 namespace Thesis.Models
 {
-    public class LabelGenerator
+    public class NameGenerator
     {
         private static Dictionary<(int row, int col), Region> _regionDictionary;
         public static int HorizontalMergingRange { get; set; }
@@ -20,18 +20,18 @@ namespace Thesis.Models
 
         public static List<Region> CreateRegions(List<CellVertex> cellVertices)
         {
+            var logItem = Logger.Log(LogItemType.Info, "Create label regions...", true);
+            ;
             _regionDictionary = new Dictionary<(int row, int col), Region>();
             foreach (var cellVertex in cellVertices)
             {
-                if (cellVertex.NodeType != NodeType.None)
+                if (cellVertex.Classification != Classification.None)
                     _regionDictionary.Add(cellVertex.Address, new DataRegion(cellVertex));
-                else if (cellVertex.NodeType == NodeType.None && cellVertex.CellType == CellType.Text)
+                else if (cellVertex.Classification == Classification.None && cellVertex.CellType == CellType.Text)
                     _regionDictionary.Add(cellVertex.Address, new LabelRegion(cellVertex));
             }
 
-            var regions = new List<Region>();
-
-            var dataRegionsList = _regionDictionary.Values.OfType<DataRegion>().ToList();
+            var regions = _regionDictionary.Values.ToList();
 
             // merge data regions
             bool didSomething = true;
@@ -41,77 +41,45 @@ namespace Thesis.Models
                 iterations++;
                 didSomething = false;
 
-                for (int i = 0; i < dataRegionsList.Count; i++)
+                for (int i = 0; i < regions.Count; i++)
                 {
-                    for(int j = i + 1; j < dataRegionsList.Count; j++)
+                    for(int j = i + 1; j < regions.Count; j++)
                     {
-                        var regionsToRemove = dataRegionsList[i].MergeIfAllowed(dataRegionsList[j]);
-                        if (regionsToRemove.Count > 0)
+                        var mergedRegions = regions[i].Merge(regions[j]);
+                        if (mergedRegions.Count > 0)
                         {
                             didSomething = true;
-                            dataRegionsList.RemoveAll(dr => regionsToRemove.Contains(dr));
+                            regions.RemoveAll(dr => mergedRegions.Contains(dr));
                         }
                     }
                 }
             }
 
+            logItem.AppendElapsedTime();
             Logger.Log(LogItemType.Info,
-                $"Discovered {dataRegionsList.Count} data regions after {iterations} iterations");
-
-            regions.AddRange(dataRegionsList);
-
+                $"Discovered {regions.Count} regions after {iterations} iterations");
+            
+            var dataRegionsList = _regionDictionary.Values.OfType<DataRegion>().ToList();
             var labelRegionList = _regionDictionary.Values.OfType<LabelRegion>().ToList();
-
-            // merge data regions
-            didSomething = true;
-            iterations = 0;
-            while (didSomething)
-            {
-                iterations++;
-                didSomething = false;
-
-                for (int i = 0; i < labelRegionList.Count; i++)
-                {
-                    for (int j = i + 1; j < labelRegionList.Count; j++)
-                    {
-                        var regionsToRemove = labelRegionList[i].MergeIfAllowed(labelRegionList[j]);
-                        if (regionsToRemove.Count > 0)
-                        {
-                            didSomething = true;
-                            labelRegionList.RemoveAll(dr => regionsToRemove.Contains(dr));
-                        }
-                    }
-                }
-            }
-            Logger.Log(LogItemType.Info,
-                $"Discovered {labelRegionList.Count} label regions after {iterations} iterations");
-
             // assign DataRegions for each LabelRegion
             foreach (var labelRegion in labelRegionList)
             {
-                if (labelRegion.Type == LabelRegionType.Header)
+                foreach (var dataRegion in dataRegionsList)
                 {
-                    var initialRow = labelRegion.BottomRight.row;
-                    for (int row = initialRow; row <= initialRow + HeaderAssociationRange; row++)
+                    if (labelRegion.Type == LabelRegionType.Header)
                     {
-                        for (int column = labelRegion.TopLeft.column; column <= labelRegion.BottomRight.column; column++)
+                        if (labelRegion.BottomRight.row < dataRegion.TopLeft.row &&
+                            dataRegion.VerticalDistanceTo(labelRegion) <= HeaderAssociationRange)
                         {
-                            if (_regionDictionary.TryGetValue((row, column), out var region) &&
-                                region is DataRegion dataRegion)
-                                dataRegion.LabelRegions.Add(labelRegion);
+                            dataRegion.LabelRegions.Add(labelRegion);
                         }
                     }
-                }
-                else if (labelRegion.Type == LabelRegionType.Attribute)
-                {
-                    var initialColumn = labelRegion.BottomRight.column;
-                    for (int column = initialColumn; column <= initialColumn + AttributeAssociationRange; column++)
+                    else
                     {
-                        for (int row = labelRegion.TopLeft.row; row <= labelRegion.BottomRight.row; row++)
+                        if (labelRegion.BottomRight.column < dataRegion.TopLeft.column &&
+                            dataRegion.HorizontalDistanceTo(labelRegion) <= AttributeAssociationRange)
                         {
-                            if (_regionDictionary.TryGetValue((row, column), out var region) &&
-                                region is DataRegion dataRegion)
-                                dataRegion.LabelRegions.Add(labelRegion);
+                            dataRegion.LabelRegions.Add(labelRegion);
                         }
                     }
                 }
@@ -179,7 +147,7 @@ namespace Thesis.Models
             }
 
             // is commutative
-            private int HorizontalDistanceTo(Region otherRegion)
+            public int HorizontalDistanceTo(Region otherRegion)
             {
                 if (BottomRight.column <= otherRegion.TopLeft.column)
                     return otherRegion.TopLeft.column - BottomRight.column;
@@ -189,7 +157,7 @@ namespace Thesis.Models
             }
 
             // is commutative
-            private int VerticalDistanceTo(Region otherRegion)
+            public int VerticalDistanceTo(Region otherRegion)
             {
                 if (BottomRight.row <= otherRegion.TopLeft.row)
                     return otherRegion.TopLeft.row - BottomRight.row;
@@ -198,8 +166,8 @@ namespace Thesis.Models
                 return -1;
             }
 
-            // returns empty list if can't merge
-            public List<Region> MergeIfAllowed(Region otherRegion)
+            // returns list of regions that were merged (if aborted, list is empty)
+            public List<Region> Merge(Region otherRegion)
             {
                 var regionsToRemove = new List<Region>();
                 if (GetType() != otherRegion.GetType())
@@ -227,7 +195,7 @@ namespace Thesis.Models
                                 continue;
 
                             if (MergeOutputFieldLabels && this is LabelRegion && thirdRegion is DataRegion dataRegion
-                                && dataRegion.Cells.All(c => c.NodeType == NodeType.OutputField))
+                                && dataRegion.Cells.All(c => c.Classification == Classification.OutputField))
                             {
                                regionsToMergeTogether.Add(thirdRegion);
                             }

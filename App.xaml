@@ -45,9 +45,9 @@
             <SolidColorBrush x:Key="ExternalColorBrush" Color="{DynamicResource ExternalColor}" />
             <SolidColorBrush x:Key="RangeColorBrush" Color="{DynamicResource RangeColor}" />
 
-            <Color x:Key="HeaderColor">#aaaaaa</Color>
-            <Color x:Key="AttributeColor">#83d0c9</Color>
-            <Color x:Key="DataColor">#b3cde0</Color>
+            <Color x:Key="HeaderColor">#c9c9c9</Color>
+            <Color x:Key="AttributeColor">#b4e2de</Color>
+            <Color x:Key="DataColor">#bad2e3</Color>
             <SolidColorBrush x:Key="HeaderColorBrush" Color="{DynamicResource HeaderColor}" />
             <SolidColorBrush x:Key="AttributeColorBrush" Color="{DynamicResource AttributeColor}" />
             <SolidColorBrush x:Key="DataColorBrush" Color="{DynamicResource DataColor}" />

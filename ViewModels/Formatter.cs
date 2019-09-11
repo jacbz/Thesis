@@ -90,36 +90,36 @@ namespace Thesis.ViewModels
         private const int DIAGRAM_PADDING = 40;
         private const int VERTEX_BOX = 60; // width and height of a vertex including spacing
 
-        public static DColor GetNodeTypeColor(this CellVertex cellVertex)
+        public static DColor GetClassificationColor(this CellVertex cellVertex)
         {
             if (cellVertex.IsExternal)
             {
                 return _externalNodeColor;
             }
 
-            switch (cellVertex.NodeType)
+            switch (cellVertex.Classification)
             {
-                case NodeType.InputField:
+                case Classification.InputField:
                     return _inputNodeColor;
-                case NodeType.Constant:
+                case Classification.Constant:
                     return _constantNodeColor;
-                case NodeType.OutputField:
+                case Classification.OutputField:
                     return _outputNodeColor;
-                case NodeType.Formula:
+                case Classification.Formula:
                     return _formulaNodeColor;
                 default:
                     return DColor.Transparent;
             }
         }
 
-        public static DColor GetRegionColor(this LabelGenerator.Region region)
+        public static DColor GetRegionColor(this NameGenerator.Region region)
         {
-            if (region is LabelGenerator.LabelRegion labelRegion)
+            if (region is NameGenerator.LabelRegion labelRegion)
                 return ((MColor)Application.Current.Resources[
-                    labelRegion.Type == LabelGenerator.LabelRegionType.Header
+                    labelRegion.Type == NameGenerator.LabelRegionType.Header
                         ? "HeaderColor"
                         : "AttributeColor"]).ToDColor();
-            if (region is LabelGenerator.DataRegion)
+            if (region is NameGenerator.DataRegion)
                 return ((MColor)Application.Current.Resources["DataColor"]).ToDColor();
             return DColor.Transparent;
         }
@@ -133,7 +133,7 @@ namespace Thesis.ViewModels
 
         public static NodeViewModel FormatCellVertex(this CellVertex cellVertex, double posX, double posY)
         {
-            var size = cellVertex.NodeType == NodeType.OutputField ? 40 : Math.Min(55, cellVertex.Parents.Count * 4 + 25);
+            var size = cellVertex.Classification == Classification.OutputField ? 40 : Math.Min(55, cellVertex.Parents.Count * 4 + 25);
             var node = new NodeViewModel
             {
                 ID = _nodeCounter++,
@@ -157,21 +157,21 @@ namespace Thesis.ViewModels
                     }
                 }
             };
-            switch (cellVertex.NodeType)
+            switch (cellVertex.Classification)
             {
-                case NodeType.InputField:
+                case Classification.InputField:
                     node.Shape = _inputShape;
                     node.ShapeStyle = _inputShapeStyle;
                     break;
-                case NodeType.Constant:
+                case Classification.Constant:
                     node.Shape = _constantShape;
                     node.ShapeStyle = _constantShapeStyle;
                     break;
-                case NodeType.Formula:
+                case Classification.Formula:
                     node.Shape = _formulaShape;
                     node.ShapeStyle = _formulaShapeStyle;
                     break;
-                case NodeType.OutputField:
+                case Classification.OutputField:
                     node.Shape = _outputShape;
                     node.ShapeStyle = _outputShapeStyle;
                     break;

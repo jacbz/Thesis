@@ -19,21 +19,21 @@ namespace Thesis.Models.VertexTypes
         public dynamic Value { get; set; }
         public string DisplayValue { get; set; }
         public string Formula { get; set; }
-        public LabelGenerator.Region Region { get; set; }
+        public NameGenerator.Region Region { get; set; }
         public ParseTreeNode ParseTree { get; set; }
 
         public CellType CellType { get; set; }
 
-        public NodeType NodeType =>
+        public Classification Classification =>
             Parents.Count > 0
                 ? Children.Count == 0
                     ? string.IsNullOrEmpty(Value.ToString())
-                      ? NodeType.InputField
-                      : NodeType.Constant
-                    : NodeType.Formula
+                      ? Classification.InputField
+                      : Classification.Constant
+                    : Classification.Formula
                 : Children.Count > 0 || ParseTree != null
-                    ? NodeType.OutputField
-                    : NodeType.None;
+                    ? Classification.OutputField
+                    : Classification.None;
 
         public CellVertex(IRange cell)
         {
@@ -106,7 +106,7 @@ namespace Thesis.Models.VertexTypes
         Unknown
     }
 
-    public enum NodeType
+    public enum Classification
     {
         InputField,
         Constant,

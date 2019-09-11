@@ -31,7 +31,7 @@ namespace Thesis.Models
         // For layouting purposes
         public int[] PopulatedRows { get; set; }
         public int[] PopulatedColumns { get; set; }
-        public List<LabelGenerator.Region> Regions { get; set; }
+        public List<NameGenerator.Region> Regions { get; set; }
 
         public Graph(string worksheetName)
         {
@@ -77,9 +77,9 @@ namespace Thesis.Models
 
             // create regions
             var cellVertices = graph.Vertices.GetCellVertices();
-            graph.Regions = LabelGenerator.CreateRegions(cellVertices);
+            graph.Regions = NameGenerator.CreateRegions(cellVertices);
             // generate labels
-            LabelGenerator.GenerateLabelsFromRegions(cellVertices.Where(c => c.Region is LabelGenerator.DataRegion));
+            NameGenerator.GenerateLabelsFromRegions(cellVertices.Where(c => c.Region is NameGenerator.DataRegion));
 
             graph.AllVertices = graph.Vertices.ToList();
 
@@ -128,12 +128,12 @@ namespace Thesis.Models
             var formulaFunctionVertices = new List<CellVertex>();
             foreach (CellVertex cellVertex in functionGenerator.TopologicalSort(Vertices.Where(v => v is CellVertex).ToHashSet()))
             {
-                if (cellVertex.NodeType == NodeType.Constant ||
-                    cellVertex.NodeType == NodeType.Formula && !cellVertex.GetReachableVertices()
-                        .Any(v => v is CellVertex cv && cv.NodeType == NodeType.InputField))
+                if (cellVertex.Classification == Classification.Constant ||
+                    cellVertex.Classification == Classification.Formula && !cellVertex.GetReachableVertices()
+                        .Any(v => v is CellVertex cv && cv.Classification == Classification.InputField))
                     Graph.ConstantsAndConstantFormulas.Add((cellVertex,
                         functionGenerator.ConstantAndConstantFormulaVertexToExpression(cellVertex)));
-                else if (cellVertex.NodeType != NodeType.InputField)
+                else if (cellVertex.Classification != Classification.InputField)
                     formulaFunctionVertices.Add(cellVertex);
             }
             foreach (var cellVertex in formulaFunctionVertices)
@@ -143,7 +143,7 @@ namespace Thesis.Models
 
             RemoveStructurallyEquivalentFunctions(Graph.FormulaFunctionDictionary);
 
-            foreach (var cellVertex in Vertices.OfType<CellVertex>().Where(v => v.NodeType == NodeType.OutputField))
+            foreach (var cellVertex in Vertices.OfType<CellVertex>().Where(v => v.Classification == Classification.OutputField))
             {
                 Graph.OutputFieldFunctionDictionary.Add(cellVertex,
                     functionGenerator.OutputFieldVertexToFunction(cellVertex));
@@ -490,7 +490,7 @@ namespace Thesis.Models
         {
             return Vertices
                 .OfType<CellVertex>()
-                .Where(v => v.NodeType == NodeType.OutputField).ToList();
+                .Where(v => v.Classification == Classification.OutputField).ToList();
         }
 
         // Remove all vertices that are not transitively reachable from any vertex in the given list
