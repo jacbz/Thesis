@@ -126,20 +126,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
                     ? TreeNodeToExpression(cellVertex.ParseTree, cellVertex)
                     : RangeVertexToExpression(formula as RangeVertex);
 
-                if (@class.IsStaticClass)
-                {
-                    // for static classes: omit type name as already declared
-
-                    // test result comment
-                    var identifier =  GenerateIdentifierNameSyntaxWithTestResult(formula, testResults);
-
-                    var assignmentExpression = AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
-                        identifier,
-                        expression);
-                    statements.Add(ExpressionStatement(assignmentExpression));
-                }
-                else
+                if (!@class.IsStaticClass)
                 {
                     // test result comment
                     var type = GenerateTypeSyntaxWithTestResult(formula, testResults);
@@ -182,9 +169,15 @@ namespace Thesis.Models.CodeGeneration.CSharp
                 // add formula fields
                 foreach (var formula in formulas)
                 {
+                    var expression = formula is CellVertex cellVertex
+                        ? TreeNodeToExpression(cellVertex.ParseTree, cellVertex)
+                        : RangeVertexToExpression(formula as RangeVertex);
+
                     var formulaField = FieldDeclaration(
                             VariableDeclaration(ParseTypeName(GetTypeString(formula)))
-                                .AddVariables(VariableDeclarator(formula.Name)))
+                                .AddVariables(VariableDeclarator(formula.Name)
+                                    .WithInitializer(
+                                    EqualsValueClause(expression))))
                         .AddModifiers(
                             Token(SyntaxKind.PublicKeyword),
                             Token(SyntaxKind.StaticKeyword));
@@ -194,7 +187,7 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
             newClass = newClass.AddMembers(fields.ToArray());
 
-            if (statements.Count > 0)
+            if (!@class.IsStaticClass && statements.Count > 0)
             {
                 // generate Calculate/Init method
                 var method = GenerateMethod(@class, statements);
@@ -245,29 +238,16 @@ namespace Thesis.Models.CodeGeneration.CSharp
 
         private MemberDeclarationSyntax GenerateMethod(Class @class, List<StatementSyntax> statements)
         {
-            if (@class.IsStaticClass)
-            {
-                // public static void Init()
-                var initMethod = MethodDeclaration(ParseTypeName("void"), "Init")
-                    .AddModifiers(
-                        Token(SyntaxKind.PublicKeyword),
-                        Token(SyntaxKind.StaticKeyword))
-                    .WithBody(Block(statements));
-                return initMethod;
-            }
-            else
-            {
-                // return output vertex
-                statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.Name)));
+            // return output vertex
+            statements.Add(ReturnStatement(IdentifierName(@class.OutputVertex.Name)));
 
-                // public {type} Calculate()
-                var outputField = @class.OutputVertex;
-                var calculateMethod = MethodDeclaration(ParseTypeName(GetTypeString(outputField)), "Calculate")
-                    .AddModifiers(
-                        Token(SyntaxKind.PublicKeyword))
-                    .WithBody(Block(statements));
-                return calculateMethod;
-            }
+            // public {type} Calculate()
+            var outputField = @class.OutputVertex;
+            var calculateMethod = MethodDeclaration(ParseTypeName(GetTypeString(outputField)), "Calculate")
+                .AddModifiers(
+                    Token(SyntaxKind.PublicKeyword))
+                .WithBody(Block(statements));
+            return calculateMethod;
         }
 
         private ClassDeclarationSyntax GenerateResultClass(TestResults testResults = null)
@@ -286,37 +266,23 @@ namespace Thesis.Models.CodeGeneration.CSharp
             // method body
             var methodBody = new List<StatementSyntax>();
             foreach (var generatedClass in ClassCollection.Classes
-                .Where(c => c.Vertices.Count(v => !v.IsExternal && 
-                                                  v is CellVertex cellVertex && cellVertex.NodeType != NodeType.Constant) > 0)
-                .OrderBy(v => !v.IsStaticClass))
+                .Where(c => !c.IsStaticClass && c.Vertices.Count(v => !v.IsExternal && 
+                                                  v is CellVertex cellVertex && cellVertex.NodeType != NodeType.Constant) > 0))
             {
-                if (generatedClass.IsStaticClass)
-                {
-                    // {classname}.Init()
-                    methodBody.Add(ExpressionStatement(
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                IdentifierName(generatedClass.Name),
-                                IdentifierName("Init")))));
-                }
-                else
-                {
-                    // test
-                    var type =  GenerateTypeSyntaxWithTestResult(generatedClass.OutputVertex, testResults);
+                // test
+                var type =  GenerateTypeSyntaxWithTestResult(generatedClass.OutputVertex, testResults);
 
-                    // {type} {outputvertexname} = new {classname}().Calculate()
-                    methodBody.Add(LocalDeclarationStatement(
-                        VariableDeclaration(type)
-                            .AddVariables(VariableDeclarator(generatedClass.OutputVertex.Name)
-                                .WithInitializer(EqualsValueClause(InvocationExpression(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ObjectCreationExpression(
-                                                        IdentifierName(generatedClass.Name))
-                                                    .WithArgumentList(
-                                                        ArgumentList()),
-                                                IdentifierName("Calculate"))))))));
-                }
+                // {type} {outputvertexname} = new {classname}().Calculate()
+                methodBody.Add(LocalDeclarationStatement(
+                    VariableDeclaration(type)
+                        .AddVariables(VariableDeclarator(generatedClass.OutputVertex.Name)
+                            .WithInitializer(EqualsValueClause(InvocationExpression(
+                                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                            ObjectCreationExpression(
+                                                    IdentifierName(generatedClass.Name))
+                                                .WithArgumentList(
+                                                    ArgumentList()),
+                                            IdentifierName("Calculate"))))))));
             }
 
             mainMethod = mainMethod.WithBody(Block(methodBody));

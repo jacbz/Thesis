@@ -155,8 +155,8 @@ namespace Thesis.ViewModels
                 {
                     new AnnotationEditorViewModel
                     {
-                        Offset = new Point(0, 0),
-                        HorizontalAlignment = HorizontalAlignment.Left,
+                        Offset = new Point(0.5, 0),
+                        HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Bottom,
                         Content = string.IsNullOrEmpty(cellVertex.Name) ? cellVertex.StringAddress : cellVertex.Name,
                         ViewTemplate =!string.IsNullOrEmpty(cellVertex.Name) ? _normalLabelTemplate : _redLabelTemplate,

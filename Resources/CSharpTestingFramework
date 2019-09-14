@@ -39,8 +39,7 @@ public static double Round(double value, double digits)
     else
     {
         digits = Math.Abs(digits);
-        double temp = value / Math.Pow(10, digits);
-        temp = Math.Round(temp, 0, MidpointRounding.AwayFromZero);
+        double temp = Math.Round(value / Math.Pow(10, digits), 0, MidpointRounding.AwayFromZero);
         return temp * Math.Pow(10, digits);
     }
 }
