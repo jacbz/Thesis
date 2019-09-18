@@ -34,30 +34,23 @@ namespace Thesis.Models
             var regions = _regionDictionary.Values.ToList();
 
             // merge data regions
-            bool didSomething = true;
-            int iterations = 0;
-            while (didSomething)
-            {
-                iterations++;
-                didSomething = false;
 
-                for (int i = 0; i < regions.Count; i++)
+            for (int i = 0; i < regions.Count; i++)
+            {
+                for(int j = 0; j < regions.Count; j++)
                 {
-                    for(int j = i + 1; j < regions.Count; j++)
-                    {
-                        var mergedRegions = regions[i].Merge(regions[j]);
-                        if (mergedRegions.Count > 0)
-                        {
-                            didSomething = true;
-                            regions.RemoveAll(dr => mergedRegions.Contains(dr));
-                        }
+                    if (i == j) continue;
+                    var mergedRegions = regions[i].Merge(regions[j]);
+                    if (mergedRegions.Count > 0)
+                    {;
+                        regions.RemoveAll(dr => mergedRegions.Contains(dr));
+                        j--;
                     }
                 }
             }
-
             logItem.AppendElapsedTime();
             Logger.Log(LogItemType.Info,
-                $"Discovered {regions.Count} regions after {iterations} iterations");
+                $"Discovered {regions.Count} regions");
             
             var dataRegionsList = _regionDictionary.Values.OfType<DataRegion>().ToList();
             var labelRegionList = _regionDictionary.Values.OfType<LabelRegion>().ToList();
