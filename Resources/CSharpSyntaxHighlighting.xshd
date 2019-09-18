@@ -18,7 +18,7 @@
 	<Color name="Keywords" foreground="#8F08C4" exampleText="if (a) {} else {}"/>
 	<Color name="GotoKeywords" foreground="#8F08C4" exampleText="continue; return null;"/>
 	<Color name="ContextKeywords" foreground="#0000FF" exampleText="var a = from x in y select z;"/>
-	<Color name="ExceptionKeywords" foreground="#0000FF" exampleText="try {} catch {} finally {}"/>
+	<Color name="ExceptionKeywords" foreground="#8F08C4" exampleText="try {} catch {} finally {}"/>
 	<Color name="CheckedKeyword" foreground="#0000FF" exampleText="checked {}"/>
 	<Color name="UnsafeKeywords" foreground="#0000FF" exampleText="unsafe { fixed (..) {} }"/>
 	<Color name="OperatorKeywords" foreground="#0000FF" exampleText="public static implicit operator..."/>
