@@ -524,23 +524,57 @@ public static EmptyCell Empty = new EmptyCell();
 // mimics the behavior of an empty cell in Excel
 public struct EmptyCell
 {
-    public static double operator +(EmptyCell a, EmptyCell b) { return 0; }
-    public static double operator -(EmptyCell a, EmptyCell b) { return 0; }
-    public static double operator *(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator +(dynamic a, EmptyCell b) { return a; }
+    public static dynamic operator +(EmptyCell a, dynamic b) { return b; }
+    public static EmptyCell operator +(EmptyCell a, EmptyCell b) { return a; }
+	public static dynamic operator -(dynamic a, EmptyCell b) { return a; }
+    public static dynamic operator -(EmptyCell a, dynamic b) { return 0 - b; }
+    public static dynamic operator -(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator *(dynamic a, EmptyCell b) { return 0; }
+    public static dynamic operator *(EmptyCell a, dynamic b) { return 0; }
+    public static dynamic operator *(EmptyCell a, EmptyCell b) { return 0; }
     public static dynamic operator /(dynamic a, EmptyCell b) { return new FormulaError("Division by zero"); }
+    public static dynamic operator /(EmptyCell a, dynamic b) { return 0 * b; }
     public static dynamic operator /(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static dynamic operator %(dynamic a, EmptyCell b) { return new FormulaError("Division by zero"); }
+    public static dynamic operator %(EmptyCell a, dynamic b) { return 0 % b; }
     public static dynamic operator %(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
-    public static bool operator ==(EmptyCell a, EmptyCell empty) { return true; }
-    public static bool operator !=(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator ==(dynamic a, EmptyCell empty) { return empty.Equals(a); }
+    public static bool operator ==(EmptyCell a, dynamic b) { return a.Equals(b); }
+    public static bool operator !=(dynamic a, EmptyCell b) { return !a.Equals(b); }
+    public static bool operator !=(EmptyCell a, dynamic b) { return !b.Equals(a); }
+    public static bool operator <(dynamic a, EmptyCell b) { return a < 0; }
+    public static bool operator <(EmptyCell a, dynamic b) { return 0 < b; }
     public static bool operator <(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator >(dynamic a, EmptyCell b) { return a > 0; }
+    public static bool operator >(EmptyCell a, dynamic b) { return 0 > b; }
     public static bool operator >(EmptyCell a, EmptyCell b) { return false; }
+    public static bool operator <=(dynamic a, EmptyCell b) { return a <= 0; }
+    public static bool operator <=(EmptyCell a, dynamic b) { return 0 <= b; }
     public static bool operator <=(EmptyCell a, EmptyCell b) { return true; }
+    public static bool operator >=(dynamic a, EmptyCell b) { return a >= 0; }
+    public static bool operator >=(EmptyCell a, dynamic b) { return 0 >= b; }
     public static bool operator >=(EmptyCell a, EmptyCell b) { return true; }
+    public static dynamic operator !(EmptyCell a) { return true; }
 
     public static implicit operator double(EmptyCell a) => 0;
     public static implicit operator string(EmptyCell a) => "";
     public static implicit operator bool(EmptyCell a) => false;
+
+    public override bool Equals(dynamic a)
+	{
+		if (a is EmptyCell) return true;
+		if (IsNumeric(a)) return a == 0;
+        switch (a)
+        {
+            case string s:
+                return s == "";
+            case bool b:
+                return b == false;
+            default:
+                return false;
+        }
+	}
     public override int GetHashCode() { return 0; }
 }
 
