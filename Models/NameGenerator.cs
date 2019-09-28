@@ -114,7 +114,7 @@ namespace Thesis.Models
             public (int row, int column) TopLeft { get; private set; }
             public (int row, int column) BottomRight { get; private set; }
 
-            protected RegionOrientation Orientation => BottomRight.row - TopLeft.row >= BottomRight.column - TopLeft.column
+            protected RegionOrientation Orientation => BottomRight.row - TopLeft.row > BottomRight.column - TopLeft.column
                 ? RegionOrientation.Vertical
                 : RegionOrientation.Horizontal;
 

@@ -245,15 +245,15 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Label Grid.Row="0" Grid.Column="0" Content="Horizontal merging range:" ToolTip="Determines the number of columns allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one column apart, etc.)" />
-                            <controls:NumericUpDown x:Name="horizontalMergingRangeNum" Grid.Row="0" Grid.Column="2" Value="1" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
+                            <controls:NumericUpDown x:Name="horizontalMergingRangeNum" Grid.Row="0" Grid.Column="2" Value="2" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
                             <Label Grid.Row="2" Grid.Column="0" Content="Vertical merging range:" ToolTip="Determines the number of rows allowed between two label regions that can be merged. (0 = the two regions must be adjacent, 1 = the two regions can be one row apart, etc.)" />
-                            <controls:NumericUpDown x:Name="verticalMergingRangeNum" Grid.Row="2" Grid.Column="2" Value="1" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
+                            <controls:NumericUpDown x:Name="verticalMergingRangeNum" Grid.Row="2" Grid.Column="2" Value="2" Minimum="1" Maximum="20" FontFamily="{DynamicResource Nunito}"/>
                             <CheckBox x:Name="mergeOutputFieldLabelsCheckBox" Grid.Row="4" Grid.ColumnSpan="3" Content="     :Merge output field labels" FlowDirection="RightToLeft" HorizontalAlignment="Left" Padding="6,5,5,5" ToolTip=".Determines whether to merge labels that are also output fields into label regions" FontFamily="{DynamicResource Nunito}"/>
 
                             <Label Grid.Row="6" Grid.Column="0" Content="Header association range:" ToolTip="Determines the maximum number of rows that a header region can be away from a data region while still being considered a header for that region." />
                             <controls:NumericUpDown x:Name="headerAssociationRangeNum" Grid.Row="6" Grid.Column="2" Value="3" Minimum="1" Maximum="50" FontFamily="{DynamicResource Nunito}"/>
                             <Label Grid.Row="8" Grid.Column="0" Content="Attribute association range:" ToolTip="Determines the maximum number of columns that a attribute region can be away from a data region while still being considered an attribute for that region." />
-                            <controls:NumericUpDown x:Name="attributeAssosicationRangeNum" Grid.Row="8" Grid.Column="2" Value="5" Minimum="1" Maximum="50" FontFamily="{DynamicResource Nunito}"/>
+                            <controls:NumericUpDown x:Name="attributeAssosicationRangeNum" Grid.Row="8" Grid.Column="2" Value="3" Minimum="1" Maximum="50" FontFamily="{DynamicResource Nunito}"/>
                         </Grid>
 
                         <StackPanel x:Name="outputFieldsButtons" Grid.Row="0" Grid.Column="3" Orientation="Horizontal" IsEnabled="False">
