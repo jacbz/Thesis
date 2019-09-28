@@ -530,10 +530,10 @@ public struct EmptyCell
     public static EmptyCell operator +(EmptyCell a, EmptyCell b) { return a; }
 	public static dynamic operator -(dynamic a, EmptyCell b) { return a; }
     public static dynamic operator -(EmptyCell a, dynamic b) { return 0 - b; }
-    public static double operator -(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator -(EmptyCell a, EmptyCell b) { return 0; }
     public static dynamic operator *(dynamic a, EmptyCell b) { return 0; }
     public static dynamic operator *(EmptyCell a, dynamic b) { return 0; }
-    public static double operator *(EmptyCell a, EmptyCell b) { return 0; }
+    public static dynamic operator *(EmptyCell a, EmptyCell b) { return 0; }
     public static dynamic operator /(dynamic a, EmptyCell b) { return new FormulaError("Division by zero"); }
     public static dynamic operator /(EmptyCell a, dynamic b) { return 0 * b; }
     public static dynamic operator /(EmptyCell a, EmptyCell b) { return new FormulaError("Division by zero"); }
