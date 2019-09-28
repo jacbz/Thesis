@@ -103,7 +103,7 @@ namespace Thesis.Models
             if (IsFunction)
                 return AsFunctionName();
             if (IsOutputField)
-                return "OUTPUT_" + ToStringInner().RaiseFirstCharacter();
+                return "Output" + ToStringInner().RaiseFirstCharacter();
             return ToStringInner();
         }
 
