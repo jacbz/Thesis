@@ -348,7 +348,7 @@
                                         </StackPanel>
                                     </Button>
 
-                                    <Button x:Name="testCodeButton" IsEnabled="False" Click="TestCodeButton_Click" Margin="0,0,8,0">
+                                    <Button x:Name="testCodeButton" IsEnabled="False" Click="TestCodeButton_Click" Margin="0,0,8,0" Visibility="Collapsed">
                                         <StackPanel Orientation="Horizontal">
                                             <fa5:SvgAwesome Icon="Solid_Play" Width="12" Height="12" />
                                             <TextBlock><Run Text="Test code"/></TextBlock>
@@ -358,7 +358,7 @@
                                     <controls:ProgressRing x:Name="codeGeneratorProgressRing" IsActive="False" Height="16" Width="16" />
                                 </StackPanel>
 
-                                <Button x:Name="showTestFrameworkButton" IsEnabled="True" DockPanel.Dock="Right" Click="ShowTestFrameworkButton_Click">
+                                <Button x:Name="showTestFrameworkButton" IsEnabled="True" DockPanel.Dock="Right" Click="ShowTestFrameworkButton_Click"  Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal">
                                         <fa5:SvgAwesome Icon="Regular_WindowRestore" />
                                         <TextBlock><Run Text="Show test framework code"/></TextBlock>
@@ -382,7 +382,7 @@
 
         <StackPanel Orientation="Horizontal" Grid.Column="2" Height="20" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,6,0" >
             <controls:ProgressRing x:Name="magicButtonProgressRing" IsActive="False" Height="16" Width="16" Margin="0,0,6,0" MinWidth="16" MinHeight="16" />
-            <Button x:Name="magicButton" Padding="10,0" ToolTip="Generate graph, generate classes, generate code, test code – in one click." Click="MagicButton_Click" IsEnabled="False">
+            <Button x:Name="magicButton" Padding="10,0" Visibility="Collapsed" ToolTip="Generate graph, generate classes, generate code, test code – in one click." Click="MagicButton_Click" IsEnabled="False">
                 <StackPanel Orientation="Horizontal">
                     <fa5:SvgAwesome Icon="Solid_Magic" Width="12" Height="12"/>
                     <TextBlock FontSize="10">Do <Bold FontFamily="{DynamicResource NunitoBold}"><Underline>everything</Underline></Bold></TextBlock>
