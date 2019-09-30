@@ -18,7 +18,7 @@ namespace Thesis.ViewModels
             set
             {
                 _selectedFile = value;
-                if (CurrentFileSettings == null)
+                if (_selectedFile != null && CurrentFileSettings == null)
                     _fileDataDictionary.Add(_selectedFile, new FileSettings());
             }
         }
@@ -30,7 +30,7 @@ namespace Thesis.ViewModels
             set
             {
                 _selectedWorksheet = value;
-                if (CurrentWorksheetSettings == null)
+                if (SelectedWorksheet != null && CurrentWorksheetSettings == null)
                     CurrentFileSettings.WorksheetDataDictionary
                         .Add(_selectedWorksheet, new WorksheetSettings());
             }
