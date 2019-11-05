@@ -14,8 +14,9 @@ namespace Thesis
 
         public App()
         {
+			string license = "put your license here";
             // Register Syncfusion license
-            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("***REMOVED***");
+            Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(license);
         }
     }
 }
